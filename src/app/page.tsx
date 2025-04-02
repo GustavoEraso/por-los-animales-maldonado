@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import CardContainer from "@/Containers/CardContainer";
+import Hero from "@/components/Hero";
 
 import { Animal } from "@/types";
 
@@ -88,6 +89,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center min-h-screen font-[family-name:var(--font-geist-sans)]">
       <Header/>
+        <Hero/>
       <main className="flex flex-col w-full max-w-6xl items-center justify-center">
         <CardContainer animalsList={provisoria}/>
         
