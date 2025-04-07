@@ -23,26 +23,32 @@ export default function Header() {
 
     const links: Links[] = [
         { id: 'LINKSNOSOTROS', name: 'NOSOTROS', url: '/#nosotros' },
-        { id: 'LINKSADOPTA', name: 'ADOPTÁ', url: '/#adopta', childs: [
-            { id: 'LINKSADOPTACONOCELOS', name: 'CONOCELOS', url: '/#conocelos' },
-            { id: 'LINKSADOPTAQUIEROADOTAR', name: 'QUIERO ADOPTAR', url: '/#quiero-adoptar' },
-            { id: 'LINKSADOPTAREQUISITOSDEADOPCION', name: 'REQUISOTOS DE ADOPCIÓN', url: '/#requisitos-de-adopcion' },
-        ]},
-        { id: 'LINKSSALVAVIDAS', name: 'SALVÁ VIDAS', url: '/#salva-vidas', childs: [
-            { id: 'LINKSSALVAVIDASCASTA', name: 'CASTRÁ', url: '/#castrá' },
-            { id: 'LINKSSALVAVIDASDENICIAMALTRATO', name: 'DENINCIA EL MALTRATO', url: '/#denuncia-el-maltrato' },
-        ]},
+        {
+            id: 'LINKSADOPTA', name: 'ADOPTÁ', url: '/#adopta', childs: [
+                { id: 'LINKSADOPTACONOCELOS', name: 'CONOCELOS', url: '/#conocelos' },
+                { id: 'LINKSADOPTAQUIEROADOTAR', name: 'QUIERO ADOPTAR', url: '/#quiero-adoptar' },
+                { id: 'LINKSADOPTAREQUISITOSDEADOPCION', name: 'REQUISOTOS DE ADOPCIÓN', url: '/#requisitos-de-adopcion' },
+            ]
+        },
+        {
+            id: 'LINKSSALVAVIDAS', name: 'SALVÁ VIDAS', url: '/#salva-vidas', childs: [
+                { id: 'LINKSSALVAVIDASCASTA', name: 'CASTRÁ', url: '/#castrá' },
+                { id: 'LINKSSALVAVIDASDENICIAMALTRATO', name: 'DENINCIA EL MALTRATO', url: '/#denuncia-el-maltrato' },
+            ]
+        },
         {
             id: 'LINKSPARTICIPA', name: 'PARTICIPÁ', url: '/#cparticipa', childs: [
                 { id: 'LINKSPARTICIPAVOLUNTARIOS', name: 'VOLUNTARIOS', url: '/#sobre-nosotros' },
                 { id: 'LINKSPARTICIPAHOGARDETRANSITO', name: 'HOGAR DE TRÁNSITO', url: '/#hogar-de-transito' },
-                
+
             ]
         },
         { id: 'LINKSTIENDA', name: 'TIENDA', url: '/#tienda' },
-        { id: 'LINKSDONACIONES', name: 'DONACIONES', url: '/#donaciones', childs: [
-            { id: 'LINKSDONACIONESAPORTESECONOMICOS', name: 'APORTES ECONÓMICOS', url: '/#aportes-economicos' },
-            { id: 'LINKSDONACIONESDONACIONDEINSUMOS', name: 'DONACÓN DE INSUMOS', url: '/donacion-de-insumos' },]},
+        {
+            id: 'LINKSDONACIONES', name: 'DONACIONES', url: '/#donaciones', childs: [
+                { id: 'LINKSDONACIONESAPORTESECONOMICOS', name: 'APORTES ECONÓMICOS', url: '/#aportes-economicos' },
+                { id: 'LINKSDONACIONESDONACIONDEINSUMOS', name: 'DONACÓN DE INSUMOS', url: '/#donacion-de-insumos' },]
+        },
         { id: 'LINKSCONTACTO', name: 'CONTACTO', url: '/#contacto' },
     ]
 
@@ -51,14 +57,28 @@ export default function Header() {
             <div className='w-32 h-32 flex-shrink-0' >
                 <Link href="/"><img className='block w-32 h-32  object-contain' src="/logo300.png" alt="logo de por los animales maldonado" /></Link>
             </div>
-            <div className='hidden md:block'>
-                <ul className='flex space-x-4 text-md flex-wrap justify-center  bg-white'>
+            <nav className='hidden md:block'>
+                <ul className="flex space-x-4 text-md flex-wrap justify-center bg-white">
                     {links.map((link) => (
                         <li className="group relative flex flex-col items-center" key={link.id + 'desktop'}>
-                            <a className={`inline-flex items-center gap-1 relative text-center p-2 ${styles.outline_bottom}`} href={link.url}>
+                            <a
+                                className={`inline-flex items-center gap-1 relative text-center p-2 ${styles.outline_bottom}`}
+                                href={link.url}
+                                aria-label={`Enlace a ${link.name}`}
+                            >
                                 {link.name}
                                 {link.childs && (
-                                    <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg
+                                        className="w-3 h-3"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
                                         <path d="M6 9l6 6 6-6"></path>
                                     </svg>
                                 )}
@@ -67,7 +87,11 @@ export default function Header() {
                                 <ul className="absolute hidden group-hover:flex flex-col bottom-0 translate-y-full z-10 bg-white">
                                     {link.childs.map((child) => (
                                         <li key={child.id + 'desktop'}>
-                                            <a className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`} href={child.url}>
+                                            <a
+                                                className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`}
+                                                href={child.url}
+                                                aria-label={`Enlace a ${child.name}`}
+                                            >
                                                 {child.name}
                                             </a>
                                         </li>
@@ -75,10 +99,10 @@ export default function Header() {
                                 </ul>
                             )}
                         </li>
-
                     ))}
                 </ul>
-            </div>
+
+            </nav>
 
             <div>
                 <Link href="/donar" ><span className=' block text-lg  text-white leading-tight p-2 bg-cyan-900 hover:bg-emerald-500 uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>Doná ahora</span></Link>
@@ -91,33 +115,47 @@ export default function Header() {
                 </button>
             </div>
             {/* Menu responsive */}
-            <div className={`${visible ? 'block' : 'hidden'} md:hidden  fixed top-0 right-0 left-0 bottom-0 bg-gray-200 flex flex-col items-center overflow-scroll`}>
+            <nav className={`${visible ? 'block' : 'hidden'} md:hidden  fixed top-0 right-0 left-0 bottom-0 bg-gray-200 flex flex-col items-center overflow-scroll`}>
                 <button onClick={(e) => { e.preventDefault(); setVisibe(!visible) }} className='bg-gray-100 p-2 rounded-full self-end m-2'>
                     <svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M6 18L18 6M6 6l12 12'></path>
                     </svg>
                 </button>
-                <ul className='flex flex-col w-full space-x-4 gap-4 px-4 text-lg'>
-                    {links.map((link) => (<>
-                        {link.childs && (
-                            <p key={link.id + 'mobile-title'} className='text-sm text-center font-bold'>{link.name} :</p>
-                        )}
-                        {link.childs &&
-                            link.childs.map((child) => (
-                                <li className='w-full rounded-2xl overflow-hidden' key={child.id + 'mobile'}>
-                                    <a className='block text-center  hover:bg-gray-300 p-2' href={child.url}>{child.name}</a>
-                                </li>
-                            ))
-                        }
-                        {!link.childs &&
-                            <li className=' w-full rounded-2xl overflow-hidden' onClick={() => setVisibe(false)} key={link.id + 'mobile'}>
-                                <a className='block w- text-center hover:bg-gray-300 p-2' href={link.url}>{link.name}</a>
-                            </li>
-                        }
-                    </>
+                <ul className="flex flex-col w-full gap-4 px-4 text-lg">
+                    {links.map((link) => (
+                        <li key={link.id + 'mobile'} className="w-full rounded-2xl overflow-hidden">
+                            {link.childs ? (
+                                <>
+                                    <h3 className="text-sm text-center font-bold">{link.name}:</h3>
+                                    <ul className="pl-4">
+                                        {link.childs.map((child) => (
+                                            <li key={child.id + 'mobile'} className="w-full rounded-2xl overflow-hidden">
+                                                <a
+                                                    className="block text-center hover:bg-gray-300 p-2"
+                                                    href={child.url}
+                                                    aria-label={`Enlace a ${child.name}`}
+                                                >
+                                                    {child.name}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            ) : (
+                                <a
+                                    className="block w-full text-center hover:bg-gray-300 p-2"
+                                    href={link.url}
+                                    onClick={() => setVisibe(false)}
+                                    aria-label={`Enlace a ${link.name}`}
+                                >
+                                    {link.name}
+                                </a>
+                            )}
+                        </li>
                     ))}
                 </ul>
-            </div>
+
+            </nav>
         </header>
     )
 }
