@@ -1,56 +1,16 @@
 'use client'
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { navLinks } from '@/lib/navLinks';
 
 import styles from './styles.module.css'
 
-interface LinkChild {
-    id: string;
-    name: string;
-    url: string;
-}
-
-interface Links {
-    id: string;
-    name: string;
-    url: string;
-    childs?: LinkChild[];
-}
 
 
 export default function Header() {
     const [visible, setVisibe] = useState<boolean>(false);
 
-    const links: Links[] = [
-        { id: 'LINKSNOSOTROS', name: 'NOSOTROS', url: '/#nosotros' },
-        {
-            id: 'LINKSADOPTA', name: 'ADOPTÁ', url: '/#adopta', childs: [
-                { id: 'LINKSADOPTACONOCELOS', name: 'CONOCELOS', url: '/#conocelos' },
-                { id: 'LINKSADOPTAQUIEROADOTAR', name: 'QUIERO ADOPTAR', url: '/#quiero-adoptar' },
-                { id: 'LINKSADOPTAREQUISITOSDEADOPCION', name: 'REQUISOTOS DE ADOPCIÓN', url: '/#requisitos-de-adopcion' },
-            ]
-        },
-        {
-            id: 'LINKSSALVAVIDAS', name: 'SALVÁ VIDAS', url: '/#salva-vidas', childs: [
-                { id: 'LINKSSALVAVIDASCASTA', name: 'CASTRÁ', url: '/#castrá' },
-                { id: 'LINKSSALVAVIDASDENICIAMALTRATO', name: 'DENINCIA EL MALTRATO', url: '/#denuncia-el-maltrato' },
-            ]
-        },
-        {
-            id: 'LINKSPARTICIPA', name: 'PARTICIPÁ', url: '/#cparticipa', childs: [
-                { id: 'LINKSPARTICIPAVOLUNTARIOS', name: 'VOLUNTARIOS', url: '/#sobre-nosotros' },
-                { id: 'LINKSPARTICIPAHOGARDETRANSITO', name: 'HOGAR DE TRÁNSITO', url: '/#hogar-de-transito' },
-
-            ]
-        },
-        { id: 'LINKSTIENDA', name: 'TIENDA', url: '/#tienda' },
-        {
-            id: 'LINKSDONACIONES', name: 'DONACIONES', url: '/#donaciones', childs: [
-                { id: 'LINKSDONACIONESAPORTESECONOMICOS', name: 'APORTES ECONÓMICOS', url: '/#aportes-economicos' },
-                { id: 'LINKSDONACIONESDONACIONDEINSUMOS', name: 'DONACÓN DE INSUMOS', url: '/#donacion-de-insumos' },]
-        },
-        { id: 'LINKSCONTACTO', name: 'CONTACTO', url: '/#contacto' },
-    ]
+ 
 
     return (
         <header className='flex justify-between w-full items-center relative z-50 bg-white shadow-md p-4'>
@@ -59,7 +19,7 @@ export default function Header() {
             </div>
             <nav className='hidden md:block'>
                 <ul className="flex space-x-4 text-md flex-wrap justify-center bg-white">
-                    {links.map((link) => (
+                    {navLinks.map((link) => (
                         <li className="group relative flex flex-col items-center" key={link.id + 'desktop'}>
                             <a
                                 className={`inline-flex items-center gap-1 relative text-center p-2 ${styles.outline_bottom}`}
@@ -122,7 +82,7 @@ export default function Header() {
                     </svg>
                 </button>
                 <ul className="flex flex-col w-full gap-4 px-4 text-lg">
-                    {links.map((link) => (
+                    {navLinks.map((link) => (
                         <li key={link.id + 'mobile'} className="w-full rounded-2xl overflow-hidden">
                             {link.childs ? (
                                 <>
