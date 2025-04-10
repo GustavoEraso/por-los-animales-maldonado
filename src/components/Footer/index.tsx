@@ -102,7 +102,7 @@ export default function Footer() {
                 </nav>
 
             </section>
-            <div className="container mx-auto text-center bg-gray-800 py-4">
+            <div className="w-full text-center bg-gray-800 py-4">
                 <span className="text-sm">© 2024 Por los animales maldonado.</span>
                 <span> | </span>
 
