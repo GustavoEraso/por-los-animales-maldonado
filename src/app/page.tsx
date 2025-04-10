@@ -3,6 +3,7 @@ import CardContainer from "@/Containers/CardContainer";
 import Hero from "@/components/Hero";
 import Carrousel from "@/components/Carrousel";
 import { Animal } from "@/types";
+import CircleCard from "@/components/CircleCard";
 
 
 
@@ -93,6 +94,30 @@ export default function Home() {
         <Hero/>
       <main className="flex flex-col w-full max-w-6xl items-center justify-center">
         <CardContainer animalsList={provisoria}/>
+
+
+        
+          <div className="grid grid-cols-1 sm:grid-cols-2  gap-8 w-full max-w-6xl p-4">
+            
+              <CircleCard
+                key={provisoria[0].id}
+                imgUrl={'https://media.istockphoto.com/id/1589824836/es/foto/lindo-perro-marr%C3%B3n-que-sonr%C3%ADe-fondo-aislado.jpg?s=612x612&w=0&k=20&c=ot8ABTfJKcWmy41FwVf0w4auYTU5gsojkylCch_Rk8g='}
+                imgAlt={provisoria[0].images[0].imgAlt}
+                linkUrl={`/animals/${provisoria[0].id}`}
+                linkText='doná ahora'
+                invert={true}
+              />
+              <CircleCard
+                key={provisoria[1].id}
+                imgUrl='https://estaticos-cdn.prensaiberica.es/clip/340f9f56-f9ea-40ad-b63a-c4c764d897e6_16-9-aspect-ratio_default_0.jpg'
+                imgAlt={provisoria[1].images[0].imgAlt}
+                linkUrl={`/animals/${provisoria[1].id}`}
+                linkText='doná insumos'
+                invert={false}
+                />
+            
+            </div>
+          
         
    
       </main>
