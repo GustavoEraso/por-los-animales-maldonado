@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import Header from "@/components/Header";
-import CardContainer from "@/Containers/CardContainer";
-import Hero from "@/components/Hero";
+// import CardContainer from "@/Containers/CardContainer";
+// import Hero from "@/components/Hero";
 import Carrousel from "@/components/Carrousel";
 import { Animal } from "@/types";
 import CircleCard from "@/components/CircleCard";
@@ -102,20 +102,20 @@ export default function Home() {
           <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="bg-beige-light rounded-full w-full max-w-lg aspect-square flex items-center justify-center">
 
-            <img className="w-9/12" src="/logo300.png" alt="logo" />
+              <img className="w-9/12" src="/logo300.png" alt="logo" />
             </div>
             <div className="flex flex-col gap-4 font-barlow text-start text-dark-text px-2">
               <h3 className="font-bold text-4xl">CONOCENOS</h3>
               <p>Somos un equipo de personas impulsadas por la empatía hacia los animales, reconociéndolos como nuestros semejantes debido a su capacidad para experimentar placer, alegría, dolor y sufrimiento.</p>
               <Link href="/about" className="w-fit text-2xl rounded-full px-8 py-4 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive">
-              Ver más
+                Ver más
               </Link>
             </div>
-      
+
 
           </div>
 
-          
+
         </section>
 
         <section className="flex flex-col items-center justify-center w-full bg-beige-light ">
@@ -140,6 +140,30 @@ export default function Home() {
             />
 
           </div>
+        </section>
+
+        <section className="flex flex-col items-center justify-center w-full bg-white px-6">
+
+          <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
+            <div className="w-full min-w-1/3 flex items-center justify-center">
+
+              <CircleCard imgAlt="imagen de un perrito" imgUrl="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHeEnjfGAtaP66V1hj4kA5q8obroSBozzo4Q&s" linkUrl="/" linkText="Postulate aqui" />
+            </div>
+            <div className="flex flex-col gap-4 font-barlow text-start text-dark-text px-2">
+              <h3 className="font-bold text-4xl uppercase">adoptá</h3>
+              <p>Al pensar en adoptar, es crucial tener en cuenta diversos factores para garantizar una convivencia armoniosa. Evalúa el espacio disponible en tu hogar, el tiempo que puedes dedicar al juego y paseo, así como los costos asociados con la alimentación, atención veterinaria y cuidado durante las vacaciones. Asegúrate de que tu elección de mascota se ajuste a tu estilo de vida y a la cantidad de tiempo que puedes comprometer.</p>
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
+                <Link href="/about" className="w-fit text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+                  Antes de adoptar
+                </Link>
+                <Link href="/about" className="w-fit text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+                  Requisitos
+                </Link>
+
+              </div>
+            </div>
+          </div>
+
         </section>
 
 
