@@ -168,8 +168,8 @@ export default function Home() {
 
         <section className="flex flex-col items-center justify-center w-full bg-beige-light px-6 py-12">
           <div className="flex flex-col gap-4 font-barlow text-start text-dark-text px-2">
-            <h3 className="font-bold text-4xl uppercase">siguenos en nuestras redes</h3>
-            <section className="flex gap-6 items-center justify-center " >
+            <h3 className="font-bold text-4xl uppercase text-center text-balance">siguenos en nuestras redes</h3>
+            <section className="flex flex-col md:flex-row gap-6 items-center justify-center " >
                         
                             <a
                                 href="https://www.facebook.com/PorLosAnimalesMaldonado"
