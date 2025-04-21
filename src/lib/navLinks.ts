@@ -13,7 +13,7 @@ interface Links {
 }
 
 export const navLinks: Links[] = [
-    { id: 'LINKSNOSOTROS', name: 'NOSOTROS', url: '/#nosotros' },
+    { id: 'LINKSNOSOTROS', name: 'NOSOTROS', url: '/nosotros' },
     {
         id: 'LINKSADOPTA', name: 'ADOPTÁ', url: '/#adopta', childs: [
             { id: 'LINKSADOPTACONOCELOS', name: 'CONOCELOS', url: '/#conocelos' },

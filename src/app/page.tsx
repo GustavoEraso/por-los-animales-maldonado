@@ -105,7 +105,7 @@ export default function Home() {
             <div className="flex flex-col gap-4 font-barlow text-start text-dark-text px-2">
               <h3 className="font-bold text-4xl">CONOCENOS</h3>
               <p>Somos un equipo de personas impulsadas por la empatía hacia los animales, reconociéndolos como nuestros semejantes debido a su capacidad para experimentar placer, alegría, dolor y sufrimiento.</p>
-              <Link href="/about" className="w-fit text-2xl rounded-full px-8 py-4 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive">
+              <Link  href="/nosotros" className="w-fit text-2xl rounded-full px-8 py-4 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive">
                 Ver más
               </Link>
             </div>
