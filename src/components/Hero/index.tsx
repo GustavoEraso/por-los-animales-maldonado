@@ -1,18 +1,38 @@
-export default function Hero() {
+'use client';
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+
+interface Props {
+    imgURL?: string;
+    imgAlt?: string;
+    title?: string;
+}
+export default function Hero({ imgURL, imgAlt, title }: Props) {
+    const pathName = usePathname().split("/").filter(Boolean).pop();
+
+    const imageSrc = imgURL ?? "/heroImg.jpg";
+    const imageAlt = imgAlt ?? "Hero image";
+    const displayTitle = title ?? pathName;
+
     return (
-        <div className="flex justify-center  w-full h-dvh bg-[url('/heroImg.jpg')] bg-fixed bg-cover bg-center">
-            <div className="flex flex-col md:flex-row items-center md:justify-around w-full max-w-5xl">
+       
+        <section className="flex justify-center  w-full h-[40svh]  overflow-hidden relative font-barlow">
+            <Image
+                src={imageSrc}
+                alt={imageAlt}
+                width={700}
+                height={400}
+                className="absolute w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+            />
+            <section className={'animate-wiggle w-full h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-[#3c3c3c] bg-gradient-to-t from-white to-zinc-900/0 p-4 '}>
 
-                <img src="/logo300.png" alt="logo de por los animales maldonado" />
-                <div className="flex  items-center justify-center flex-col">
+                <section className='flex flex-col gap-4 w-full h-2/3 justify-end max-w-4xl xl:pr-60 '>
 
-                    <h1 className="text-4xl font-bold text-white">¡Adopta un amigo!</h1>
-                    <p className="mt-4 text-lg text-white">Tu compañero ideal te está esperando</p>
-                    <button className="mt-6 px-6 py-2 text-lg font-semibold text-white bg-blue-500 rounded hover:bg-blue-600">
-                        ¡Adopta ahora!
-                    </button>
-                </div>
-            </div>
-        </div>
+                    <h3 className='text-5xl lg:text-8xl font-extrabold text-dark-text self-start uppercase '>{displayTitle}</h3>
+                                    
+
+                </section>
+            </section>
+        </section>
     );
 }
