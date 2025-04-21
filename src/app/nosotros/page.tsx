@@ -10,11 +10,11 @@ export default function Nosotros() {
       <section className="flex flex-col lg:flex-row gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
         <section className=" w-full ">
 
-          <p className="mt-4 text-sm font-barlow">
+          <p className="mt-4 text-md font-barlow">
             <strong>Por los animales Maldonado</strong> Somos una organización sin fines de lucro dedicada a la protección y bienestar de los animales en Maldonado.
           </p>
-          <p className="mt-4 text-sm font-barlow">Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!</p>
-          <p className="mt-4 text-sm font-barlow">
+          <p className="mt-4 text-md font-barlow">Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!</p>
+          <p className="mt-4 text-md font-barlow">
             <strong>Nuestra misión</strong> Somos una organización sin fines de lucro dedicada a la protección y bienestar de los animales en Maldonado.
           </p>
         </section>
