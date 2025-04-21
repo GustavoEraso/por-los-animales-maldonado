@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import Header from "@/components/Header";
 // import CardContainer from "@/Containers/CardContainer";
 // import Hero from "@/components/Hero";
 import Carrousel from "@/components/Carrousel";
@@ -91,7 +90,6 @@ const provisoria: Animal[] = [
 export default function Home() {
   return (
     <div className="flex flex-col items-center min-h-screen font-[family-name:var(--font-geist-sans)]">
-      <Header />
       <Carrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
