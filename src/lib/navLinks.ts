@@ -36,9 +36,9 @@ export const navLinks: Links[] = [
     },
     { id: 'LINKSTIENDA', name: 'TIENDA', url: '/#tienda' },
     {
-        id: 'LINKSDONACIONES', name: 'DONACIONES', url: '/#donaciones', childs: [
-            { id: 'LINKSDONACIONESAPORTESECONOMICOS', name: 'APORTES ECONÓMICOS', url: '/#aportes-economicos' },
-            { id: 'LINKSDONACIONESDONACIONDEINSUMOS', name: 'DONACÓN DE INSUMOS', url: '/#donacion-de-insumos' },]
+        id: 'LINKSDONACIONES', name: 'DONACIONES', url: '/donaciones', childs: [
+            { id: 'LINKSDONACIONESAPORTESECONOMICOS', name: 'APORTES ECONÓMICOS', url: '/donaciones#aportes-economicos' },
+            { id: 'LINKSDONACIONESDONACIONDEINSUMOS', name: 'DONACÓN DE INSUMOS', url: '/donaciones#donacion-de-insumos' },]
     },
     { id: 'LINKSCONTACTO', name: 'CONTACTO', url: '/#contacto' },
 ]
