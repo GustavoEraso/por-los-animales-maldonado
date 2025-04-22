@@ -42,28 +42,28 @@ export default function Donaciones() {
             <Image src='/Mercado-Pago-Logo-300x80.png' alt='logo mercado pago' width={300} height={80} />
             <p className="text-xl text-dark-text font-barlow font-bold">Links para donar</p>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
-              <Link href="https://mpago.la/1wGBy73" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/1wGBy73" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $50
               </Link>
-              <Link href="https://mpago.la/2rEweLb" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/2rEweLb" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $100
               </Link>
-              <Link href="https://mpago.la/2CwawDF" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/2CwawDF" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $200
               </Link>
-              <Link href="https://mpago.la/1NDdWeX" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/1NDdWeX" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $500
               </Link>
 
             </section>
             <section className="flex flex-col items-center justify-center gap-4">
-              <Link href="https://mpago.la/16nU73n" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/16nU73n" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $1000
               </Link>
-              <Link href="https://mpago.la/2L5g2xM" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/2L5g2xM" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $1500
               </Link>
-              <Link href="https://mpago.la/31eZYyd" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
+              <Link target="_blank" href="https://mpago.la/31eZYyd" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase">
                 DONÁ $2000
               </Link>
             </section>
