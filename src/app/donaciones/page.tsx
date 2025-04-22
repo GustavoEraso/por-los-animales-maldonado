@@ -10,11 +10,11 @@ export const generateMetadata = (): Metadata => {
   return {
     openGraph: {
       title: 'Ellos te necesitan 🐾',
-      description: 'Necesitamos de tu ayuda pra saldar nuestras deudas!.',
+      description: 'Necesitamos de tu ayuda para saldar nuestras deudas!.',
       url: 'https://por-los-animales-maldonado.vercel.app/donaciones',
       images: [
         {
-          url: 'hthttps://por-los-animales-maldonado.vercel.app/og/cachorritos.jpg',
+          url: 'https://por-los-animales-maldonado.vercel.app/og/cachorritos.jpg',
           width: 1200,
           height: 630,
           alt: 'imagen de cachorritos',
