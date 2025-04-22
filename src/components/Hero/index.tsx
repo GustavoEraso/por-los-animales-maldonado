@@ -16,7 +16,7 @@ export default function Hero({ imgURL, imgAlt, title }: Props) {
 
     return (
        
-        <section className="flex justify-center  w-full h-[40svh]  overflow-hidden relative font-barlow">
+        <section className="flex justify-center  w-full h-[60svh]  overflow-hidden relative font-barlow">
             <Image
                 src={imageSrc}
                 alt={imageAlt}
