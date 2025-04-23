@@ -17,53 +17,54 @@ type ItemsProps = {
 };
 
 export default function Banner() {
-  const imagenesProvisorias: ItemsProps[] = [
+  const itemsListS: ItemsProps[] = [
     {
       image:{
-        src: 'https://purina.com.uy/sites/default/files/2024-04/razas-pequenas-de-perros-corriendo-hn.jpg',
-        alt: 'Imagen 1',
+        src: '/manada-peluda.jpg',
+        alt: 'manada de perritos peludos',
       },
-      title: 'Imagen 1',
-      description: 'Descripcion de la imagen 1',
-      buttonText: 'Boton Imagen 1',
-      buttonUrl: 'https://purina.com.uy/sites/default/files/2024-04/razas-pequenas-de-perros-corriendo-hn.jpg',
+      title: 'ADOPTÁ',
+      description: 'Al pensar en adoptar, es crucial tener en cuenta diversos factores para garantizar una convivencia armoniosa.',
+      buttonText: 'más información',
+      buttonUrl: '/adopta',
     },
 
     {
       image:{
-        src: 'https://www.respetmascotas.com/posts/asset_upload_file2488_674610.jpg',
-        alt: 'Imagen 2',
+        src: '/perrito-negro-respaldo.jpg',
+        alt: 'perrito apollado en respaldo de auto',
       },
-      title: 'Imagen 2',
-      description: 'Descripcion de la imagen 2',
-      buttonText: 'Boton Imagen 2',
-      buttonUrl: 'https://www.respetmascotas.com/posts/asset_upload_file2488_674610.jpg',
+      title: 'traslados',
+      description: 'Te gustaria ayudarnos con algun traslado?',
+      buttonText: 'más información',
+      buttonUrl: '/involucrate#traslados',
     },
     {
       image:{
-        src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOIhY3N-1L4cr2f97uOoZTI7InVzzXJ7Gdw&s',
-        alt: 'Imagen 3',
+        src: '/perrito-dormido.jpg',
+        alt: 'imagen de un perrito negro durmiendo',
       },
-      title: 'Imagen 3',
-      description: 'Descripcion de la imagen 3',
-      buttonText: 'Boton Imagen 3',
-      buttonUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOIhY3N-1L4cr2f97uOoZTI7InVzzXJ7Gdw&s',
+      title: 'TRANSITORIOS',
+      description: 'No puedes adoptar, pero puedes hacerle un lugarcito temporal mientras se le encuetra una familia?',
+      buttonText: 'si puedo!',
+      buttonUrl: '/involucrate#transitorio',
+    },
+    {
+      image:{
+        src: '/perra-con-panuelo-masticando.jpg',
+        alt: 'imagen de una perra masticando una botella',
+      },
+      title: 'DONACIONES',
+      description: 'Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados. ',
+      buttonText: 'ver opciones',
+      buttonUrl: '/donaciones',
     },
 
-    {
-      image:{
-        src: 'https://petys.com/wp-content/uploads/2024/10/Las_mejores_razas_de_perros_para_los_ni__os_1920x490pxok.webp',
-        alt: 'Imagen 4',
-      },
-      title: 'Imagen 4',
-      description: 'Descripcion de la imagen 4',
-      buttonText: 'Boton Imagen 4',
-      buttonUrl: 'https://petys.com/wp-content/uploads/2024/10/Las_mejores_razas_de_perros_para_los_ni__os_1920x490pxok.webp',
-    },
+    
   ];
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [items] = useState<ItemsProps[]>(imagenesProvisorias);
+  const [items] = useState<ItemsProps[]>(itemsListS);
   const carrouselRef = useRef<HTMLDivElement>(null);
   const intervalIdRef = useRef<number | null>(null);
   const initialXRef = useRef<number | null>(null);
