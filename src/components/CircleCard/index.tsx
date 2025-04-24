@@ -20,7 +20,7 @@ export default function CircleCard({ imgUrl, imgAlt, linkUrl, linkText, invert }
             </div>
             <Link href={linkUrl} 
             className={`absolute bottom-0 uppercase text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white
-            ${!invert ?'  hover:text-dark-text bg-red-heart hover:bg-green-olive':'text-white  hover:bg-red-heart bg-brown-chocolate'} `}>
+            ${!invert ?'  hover:text-black bg-caramel-deep hover:bg-amber-sunset':'text-white  hover:bg-caramel-deep bg-green-dark'} `}>
                 {linkText}
             </Link>
 

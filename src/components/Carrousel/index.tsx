@@ -156,7 +156,7 @@ export default function Banner() {
   }, [handleImg]);
 
   return (
-    <div ref={carrouselRef} className="relative w-full font-[family-name:var(--font-barlow)] text-[#3c3c3c]">
+    <div ref={carrouselRef} className="relative w-full ">
       {/* Carousel wrapper */}
       <div className="relative overflow-hidden rounded-lg h-[80svh]  w-full">
         {items.map((item, index) => (
@@ -174,14 +174,14 @@ export default function Banner() {
             />
 
 
-            <section className={`${index == currentIndex && 'animate-wiggle'} w-full h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-[#3c3c3c] bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}>
+            <section className={`${index == currentIndex && 'animate-wiggle'} w-full h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-black bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}>
 
-              <section className='flex flex-col gap-4 w-full h-2/3 justify-center max-w-4xl xl:pr-60 '>
+              <section className='flex flex-col gap-4 w-full h-2/3 justify-center max-w-4xl xl:pr-60 text-green-dark '>
 
                 <h3 className='text-5xl font-extrabold self-start uppercase '>{item.title}</h3>
                 <p className='text-2xl text-left font-bold'>{item.description}</p>
 
-                <Link href={item.buttonUrl} className="self-start z-10 text-2xl uppercase bg-red-heart text-white px-8 py-2 rounded-full hover:bg-[#d6336c]/80 transition-colors duration-300">
+                <Link href={item.buttonUrl} className="self-start z-10 text-2xl uppercase bg-caramel-deep text-white px-8 py-2 rounded-full hover:bg-caramel-deep/80 transition-colors duration-300">
                   {item.buttonText}
                 </Link>
 
@@ -198,7 +198,7 @@ export default function Banner() {
             key={`indicator-${index}`}
             type="button"
             onClick={() => setCurrentIndex(index)}
-            className={`w-4 h-4  rounded-full ${currentIndex === index ? 'bg-red-heart' : 'bg-white border border-red-heart hover:bg-red-heart/30'
+            className={`w-4 h-4  rounded-full ${currentIndex === index ? 'bg-caramel-deep' : 'bg-white border border-caramel-deep hover:bg-caramel-deep/30'
               }`}
             aria-current={currentIndex === index}
             aria-label={`Slide ${index + 1}`}
@@ -212,8 +212,8 @@ export default function Banner() {
         type="button"
         className="absolute top-0 left-0 flex items-center justify-center h-full px-4 z-20"
       >
-        <span className="w-10 h-10 rounded-full bg-red-heart/30 hover:bg-white/50 flex items-center justify-center">
-          <svg className="w-4 h-4 text-red-heart" viewBox="0 0 6 10" fill="none">
+        <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
+          <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
             <path d="M5 1 1 5l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
@@ -223,8 +223,8 @@ export default function Banner() {
         type="button"
         className="absolute top-0 right-0 flex items-center justify-center h-full px-4 z-20"
       >
-        <span className="w-10 h-10 rounded-full bg-red-heart/30 hover:bg-white/50 flex items-center justify-center">
-          <svg className="w-4 h-4 text-red-heart" viewBox="0 0 6 10" fill="none">
+        <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
+          <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
             <path d="m1 9 4-4-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>

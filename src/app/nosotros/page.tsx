@@ -22,7 +22,7 @@ export default function Nosotros() {
 
         
       </section>
-      <h3 className="uppercase text-center text-balance text-2xl lg:text-4xl font-bold font-barlow text-dark-text px-4 ">¿Cómo desarrollamos nuestras actividades?</h3>
+      <h3 className="uppercase text-center text-balance text-2xl lg:text-4xl font-bold font-barlow text-black px-4 ">¿Cómo desarrollamos nuestras actividades?</h3>
       <section>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 px-9 py-4 w-full">

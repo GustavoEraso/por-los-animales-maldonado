@@ -1,7 +1,7 @@
 'use client'
 export default function ShareButton() {
     return (<button
-        className="animate-bounce w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-red-heart hover:bg-green-olive uppercase"
+        className="animate-bounce w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
         onClick={() => {
           if (navigator.share) {
             navigator.share({
