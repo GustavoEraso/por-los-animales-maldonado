@@ -89,7 +89,7 @@ import CircleCard from "@/components/CircleCard";
 // ]
 export default function Home() {
   return (
-    <div className="flex flex-col items-center min-h-screen font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col items-center min-h-screen  ">
       <Carrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
@@ -102,7 +102,7 @@ export default function Home() {
 
               <img className="w-9/12" src="/logo300.png" alt="logo" />
             </div>
-            <div className="flex flex-col gap-4 font-barlow text-start text-black px-2">
+            <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl">CONOCENOS</h3>
               <p>Somos un equipo de personas impulsadas por la empatía hacia los animales, reconociéndolos como nuestros semejantes debido a su capacidad para experimentar placer, alegría, dolor y sufrimiento.</p>
               <Link href="/nosotros" className="w-fit text-2xl rounded-full px-8 py-4 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset">
@@ -124,7 +124,7 @@ export default function Home() {
 
               <CircleCard imgAlt="imagen madre cn sus cachorros" imgUrl="/madre-con-cachorros.jpg" linkUrl="/adopta" linkText="quiero adoptar" />
             </div>
-            <div className="flex flex-col gap-4 font-barlow text-start text-black px-2">
+            <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl uppercase">adoptá</h3>
               <p>Al pensar en adoptar, es crucial tener en cuenta diversos factores para garantizar una convivencia armoniosa. Evalúa el espacio disponible en tu hogar, el tiempo que puedes dedicar al juego y paseo, así como los costos asociados con la alimentación, atención veterinaria y cuidado durante las vacaciones. Asegúrate de que tu elección de mascota se ajuste a tu estilo de vida y a la cantidad de tiempo que puedes comprometer.</p>
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
@@ -173,7 +173,7 @@ export default function Home() {
                 <img className="w-9/12" src="/logo300.png" alt="logo" />
               </div>
             </div>
-            <div className="flex flex-col gap-4 font-barlow text-start text-black px-2">
+            <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl uppercase">involucrate</h3>
               <p>Hay muchas formas de ayudar a los animales más allá de adoptar. Podés colaborar ayudando con traslados, ofreciendo un espacio para guardar donaciones, difundiendo casos en redes o incluso denunciando situaciones de maltrato animal. También recibimos donaciones de insumos, alimentos, mantas o cualquier elemento útil. Cada granito de arena cuenta y suma al bienestar de quienes más nos necesitan. ¡Tu compromiso puede hacer una gran diferencia!</p>
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
@@ -190,7 +190,7 @@ export default function Home() {
 
 
         <section className="flex flex-col items-center justify-center w-full bg-white px-6 py-12">
-          <div className="flex flex-col gap-4 font-barlow text-start text-black px-2">
+          <div className="flex flex-col gap-4   text-start text-black px-2">
             <h3 className="font-bold text-4xl uppercase text-center text-balance">siguenos en nuestras redes:</h3>
             <section className="flex flex-col md:flex-row gap-6 items-center justify-center " >
 

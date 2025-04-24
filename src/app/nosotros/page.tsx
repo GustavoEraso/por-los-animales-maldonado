@@ -10,7 +10,7 @@ export default function Nosotros() {
       <section className="flex flex-col lg:flex-row gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
         <section className=" w-full ">
 
-          <p className="mt-4 text-lg font-barlow">
+          <p className="mt-4 text-lg  ">
             <strong>Por los animales Maldonado</strong> Somos un grupo de particulares que ayuda a animales en situación de calle, brindándoles atención veterinaria mientras se recuperan en hogares transitorios (fundamentales para poder rescatar) para que finalmente encuentren un hogar. Nuestro grupo se hace cargo de todo en el proceso.
           </p>
           
@@ -19,7 +19,7 @@ export default function Nosotros() {
 
 
       </section>
-      <h3 className="uppercase text-center text-balance text-2xl lg:text-4xl font-bold font-barlow text-black px-4 ">¿Cómo desarrollamos nuestras actividades?</h3>
+      <h3 className="uppercase text-center text-balance text-2xl lg:text-4xl font-bold   text-black px-4 ">¿Cómo desarrollamos nuestras actividades?</h3>
       <section>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 px-9 py-4 w-full">

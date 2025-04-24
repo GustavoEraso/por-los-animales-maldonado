@@ -31,7 +31,7 @@ export default function Donaciones() {
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
 
       <Hero />
-      <section className="flex flex-col items-center justify-center p-8 w-full font-barlow text-black text-lg">
+      <section className="flex flex-col items-center justify-center p-8 w-full   text-black text-lg">
         <p className="max-w-7xl">Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados.</p>
       </section>
       <section className=" w-full flex flex-col items-center justify-center  bg-cream-light">
@@ -40,7 +40,7 @@ export default function Donaciones() {
           {/* Mercado Pago */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10">
             <Image src='/Mercado-Pago-Logo-300x80.png' alt='logo mercado pago' width={300} height={80} />
-            <p className="text-xl text-black font-barlow font-bold">Links para donar</p>
+            <p className="text-xl text-black   font-bold">Links para donar</p>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
               <Link target="_blank" href="https://mpago.la/1wGBy73" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                 DONÁ $50
@@ -72,7 +72,7 @@ export default function Donaciones() {
 
           {/* MiDinero */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10">
-            <h3 className="font-barlow font-bold text-black text-2xl text-center text-balance">TRANSEFERENCIAS MIDINERO</h3>
+            <h3 className="  font-bold text-black text-2xl text-center text-balance">TRANSEFERENCIAS MIDINERO</h3>
             <Image src='/midinero-mastercard-logo-blue.svg' alt='logo Mi Dinero' width={300} height={80} />
 
             <section className="animate-wiggle relative min-h-70 w-full flex flex-col items-center justify-center gap-4">
@@ -81,7 +81,7 @@ export default function Donaciones() {
 
             </section>
 
-            <section className="font-barlow text-black text-xl ">
+            <section className="  text-black text-xl ">
               <p><strong>Numero de cuenta:</strong>679131</p>
             </section>
 
@@ -89,7 +89,7 @@ export default function Donaciones() {
 
           {/* Lopez quintana */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
-            <h3 className="font-barlow font-bold text-black text-xl text-center text-balance">DONAR DIRECAMENTE EN LA VETERNARIA</h3>
+            <h3 className="  font-bold text-black text-xl text-center text-balance">DONAR DIRECAMENTE EN LA VETERNARIA</h3>
             <Image className="rounded-xl" src='/lopezquintana-logo.jpg' alt='logo Mi Dinero' width={300} height={80} />
             <section>
               <p><strong>telefonos: </strong>
@@ -103,7 +103,7 @@ export default function Donaciones() {
             </section>
 
 
-            <section className="font-barlow text-black text-xl flex flex-wrap justify-center items-center ">
+            <section className="  text-black text-xl flex flex-wrap justify-center items-center ">
               <span className="font-bold">correo electronico:</span><a href="mailto:porlosanimalesmaldo@gmail.com">porlosanimalesmaldo@gmail.com</a>
             </section>
 
@@ -111,7 +111,7 @@ export default function Donaciones() {
 
           {/* Raciones la coronilla */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
-            <h3 className="font-barlow font-bold text-black text-xl text-center text-balance">DONAR RACIÓN</h3>
+            <h3 className="  font-bold text-black text-xl text-center text-balance">DONAR RACIÓN</h3>
             <Image className="rounded-xl" src='/raciones-la-coronilla.jpg' alt='logo Mi Dinero' width={300} height={80} />
             <section>
               <p><strong>telefono: </strong>
@@ -126,7 +126,7 @@ export default function Donaciones() {
 
 
         </section>
-        <section className="flex flex-col items-center justify-center p-8 gap-8 w-full font-semibold text-black text-lg font-barlow">
+        <section className="flex flex-col items-center justify-center p-8 gap-8 w-full font-semibold text-black text-lg  ">
           <h3 className="text-3xl font-bold">Tu ayuda cambia vidas 🐾</h3>
           <p>Gracias a tu ayuda, podemos alimentar, cuidar y encontrar un hogar para cientos de animales en situación de calle.
             Cada donación, por pequeña que sea, hace una gran diferencia.</p>
