@@ -30,12 +30,13 @@ export default function Donaciones() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
 
-      <Hero />
+      <Hero imgURL="/perra-con-panuelo.jpg" imgAlt="una perra mordiendo una botella"/>
       <section className="flex flex-col items-center justify-center p-8 w-full   text-black text-lg">
         <p className="max-w-7xl">Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados.</p>
       </section>
-      <section className=" w-full flex flex-col items-center justify-center  bg-cream-light">
-
+      <section className=" w-full flex flex-col items-center justify-center  bg-cream-light py-6">
+        {/* APORTES ECONOMICOS */}
+        <h3 id="aportes-economicos" className="text-3xl font-bold text-green-dark text-center" >APORTES ECONOMICOS</h3>
         <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4">
           {/* Mercado Pago */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10">
@@ -54,9 +55,6 @@ export default function Donaciones() {
               <Link target="_blank" href="https://mpago.la/1NDdWeX" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                 DONÁ $500
               </Link>
-
-            </section>
-            <section className="flex flex-col items-center justify-center gap-4">
               <Link target="_blank" href="https://mpago.la/16nU73n" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                 DONÁ $1000
               </Link>
@@ -66,6 +64,15 @@ export default function Donaciones() {
               <Link target="_blank" href="https://mpago.la/31eZYyd" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                 DONÁ $2000
               </Link>
+
+            </section>
+            <section className="flex flex-col items-center justify-center gap-4 px-4 text-lg text-black font-semibold text-center text-balance">
+              <p>Si preferís, podés suscribirte y hacer una donación automática todos los meses, por el monto que vos elijas.</p>
+              <p>¡Es una forma súper simple de ayudar!</p>
+              <Link target="_blank" href="https://www.mercadopago.com.uy/subscriptions/checkout?preapproval_plan_id=2c9380848dc7c6e8018dd0ac13f8052e" className="animate-bounce w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
+                SUSCRIPCIÓN MENSUAL
+              </Link>
+
             </section>
 
           </article>
@@ -87,7 +94,7 @@ export default function Donaciones() {
 
           </article>
 
-          {/* Lopez quintana */}
+          {/* Lopez quintana dinero */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
             <h3 className="  font-bold text-black text-xl text-center text-balance">DONAR DIRECAMENTE EN LA VETERNARIA</h3>
             <Image className="rounded-xl" src='/lopezquintana-logo.jpg' alt='logo Mi Dinero' width={300} height={80} />
@@ -109,6 +116,33 @@ export default function Donaciones() {
 
           </article>
 
+
+
+        </section>
+
+        <h3 id="donacion-de-insumos" className="text-3xl font-bold text-green-dark text-center" >DONACIÓN DE INSUMOS</h3>
+
+
+        {/* DONACION DE INSUMOS */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4">
+
+          {/* Lopez quintana dinero */}
+          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
+            <h3 className="  font-bold text-black text-xl text-center text-balance">DONACION DE INSUMOS</h3>
+            <Image className="rounded-xl" src='/lopezquintana-logo.jpg' alt='logo Mi Dinero' width={300} height={80} />
+            <section>
+              <p><strong>telefonos: </strong>
+                <a href="tel:+59842223864">42223864</a> -
+                <a href="tel:+59899811905">099811905</a>
+              </p>
+              <p><strong>dirección: </strong>25 de mayo 890 - Maldonado</p>
+            </section>
+            <section className="flex flex-col items-center justify-center gap-4 p-8 text-xl text-black font-bold text-center">
+              <p>Si querés ayudar, podés donar medicamentos e insumos y dejarlos en la veterinaria a nuestro nombre.</p>
+              <p>Algunas ideas: podés donar pipetas, collares antipulgas o pastillas. ¡Todo suma!</p>
+            </section>
+          </article>
+
           {/* Raciones la coronilla */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
             <h3 className="  font-bold text-black text-xl text-center text-balance">DONAR RACIÓN</h3>
@@ -126,7 +160,52 @@ export default function Donaciones() {
 
 
         </section>
-        <section className="flex flex-col items-center justify-center p-8 gap-8 w-full font-semibold text-black text-lg  ">
+
+
+        {/* OTRAS FORMAS DE APORTAR */}
+        <h3 id="donacion-de-insumos" className="text-3xl font-bold text-green-dark text-center" >OTRAS FORMAS DE APORTAR</h3>
+
+        <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4">
+
+          {/* TRANSITORIO */}
+          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
+            <h3 className="  font-bold text-black text-xl text-center text-balance">SIENDO HOGAR TRANSITORIO</h3>
+            <Image className="rounded-xl" src='/perrito-dormido.jpg' alt='logo Mi Dinero' width={300} height={80} />
+            <section className="flex flex-col items-center justify-center gap-4 p-8 text-xl text-black font-bold text-center">
+              <p>También podés ayudar siendo hogar de tránsito: prestás un espacio para que el animal esté seguro, mientras nosotros nos encargamos de todo, alimento, atención veterinaria y la búsqueda de un hogar definitivo. 🙌</p>
+            </section>
+            <Link href="/involucrate#transitorio" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
+              más info
+            </Link>
+          </article>
+
+          {/* TRASLADOS SOLIDARIOS */}
+          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 px-4 gap-10">
+            <h3 className="  font-bold text-black text-xl text-center text-balance">TRASLADOS SOLIDARIOS</h3>
+            <Image className="rounded-xl" src='/perrito-negro-respaldo.jpg' alt='logo Mi Dinero' width={300} height={80} />
+            <section className="flex flex-col items-center justify-center gap-4 p-8 text-xl text-black font-bold text-center">
+              <p>¿Tenés auto y un rato libre? Podés ayudarnos con traslados solidarios, llevando a los animalitos a la veterinaria o a su hogar de tránsito. ¡Es una gran forma de sumar!</p>
+            </section>
+            <Link href="/involucrate#transitorio" className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
+              más info
+            </Link>
+          </article>
+        </section>
+
+        <section className="flex flex-col items-center justify-center w-full max-w-7xl  px-3 gap-4">
+          <article className=" flex flex-col items-center justify-between bg-green-forest/15 rounded-lg  w-full py-8 px-4 ">
+            <h3 className="  font-bold text-green-dark text-4xl text-center text-balance">Todo ayuda, todo suma</h3>
+            {/* <Image className="rounded-xl" src='/perrito-negro-respaldo.jpg' alt='logo Mi Dinero' width={300} height={80} /> */}
+            <section className="flex flex-col items-center justify-center gap-4 p-8 text-xl text-black font-bold text-center">
+              <p>Si querés colaborar con otro tipo de donaciones, como mantas, cuchas u otros elementos útiles, no dudes en escribirnos por correo. ¡Gracias por tu ayuda!</p>
+            </section>
+            <section className="  text-black text-xl flex flex-wrap justify-center items-center ">
+              <span className="font-bold">correo electronico:</span><a href="mailto:porlosanimalesmaldo@gmail.com">porlosanimalesmaldo@gmail.com</a>
+            </section>
+          </article>
+        </section>
+
+        <section className="flex flex-col items-center justify-center p-8 gap-8 w-full max-w-7xl font-semibold text-black text-lg  ">
           <h3 className="text-3xl font-bold">Tu ayuda cambia vidas 🐾</h3>
           <p>Gracias a tu ayuda, podemos alimentar, cuidar y encontrar un hogar para cientos de animales en situación de calle.
             Cada donación, por pequeña que sea, hace una gran diferencia.</p>
@@ -134,7 +213,7 @@ export default function Donaciones() {
           <p>
             ¡Entre todos hacemos posible el cambio!
           </p>
-        <ShareButton />
+          <ShareButton />
 
 
         </section>

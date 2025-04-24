@@ -31,6 +31,7 @@ export const navLinks: Links[] = [
         id: 'LINKSINVOLUCRATE', name: 'INVOLUCRATE', url: '/involucrate', childs: [
             { id: 'LINKSINVOLUCRATETRANSITORIO', name: 'TRANSITORIO', url: '/involucrate#transitorio' },
             { id: 'LINKSINVOLUCRATECASTRACIONES', name: 'CASTRACIONES', url: '/involucrate#castraciones' },
+            { id: 'LINKSINVOLUCRATETRASLADOS', name: 'TRASLADOS SOLIDARIOS', url: '/involucrate#traslados-solidarios' },
             { id: 'LINKSINVOLUCRATEOTRASFORMASDECOLABORAR', name: 'OTRAS FORMAS DE COLABORAR', url: '/involucrate#otras-formas-de-colaborar' },
             { id: 'LINKSINVOLUCRATEDIFUSION', name: 'DIFUSION', url: '/involucrate#difusion' },
             { id: 'LINKSINVOLUCRATEDENUNCIA', name: 'DENUNCIA MALTRATO', url: '/involucrate#denuncia-maltrato' },
