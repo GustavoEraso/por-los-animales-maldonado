@@ -30,7 +30,7 @@ export default function Donaciones() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
 
-      <Hero />
+      <Hero imgURL="/perra-con-panuelo.jpg" imgAlt="una perra mordiendo una botella"/>
       <section className="flex flex-col items-center justify-center p-8 w-full   text-black text-lg">
         <p className="max-w-7xl">Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados.</p>
       </section>
