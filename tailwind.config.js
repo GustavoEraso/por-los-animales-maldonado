@@ -8,7 +8,11 @@ module.exports = {
 
     ],
     theme: {
-      extend: {},
+      extend: {
+        // fontFamily: {
+        //   sans: [ "Helvetica","var(--font-roboto)", "Arial", "sans-serif"],
+        // },
+      },
     },
     plugins: [],
   }

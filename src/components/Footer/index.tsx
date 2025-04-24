@@ -7,7 +7,7 @@ export default function Footer() {
 
 
     return (
-        <footer className="bg-red-heart text-white pt-8 flex flex-col gap-8">
+        <footer className="bg-caramel-deep text-white pt-8 flex flex-col gap-8">
             <section className="  flex flex-col  items-center justify-center md:flex-row md:justify-around gap-4">
                 <div className='  flex flex-col items-center justify-center'>
                     <Link href="/" >
@@ -81,7 +81,7 @@ export default function Footer() {
                                     )}
                                 </a>
                                 {link.childs && (
-                                    <ul className="absolute hidden  md:group-hover:flex flex-col left-0 -translate-x-full  z-10 bg-white text-red-heart">
+                                    <ul className="absolute hidden  md:group-hover:flex flex-col left-0 -translate-x-full  z-10 bg-white text-caramel-deep">
                                         {link.childs.map((child) => (
                                             <li key={child.id + 'desktop'}>
                                                 <a

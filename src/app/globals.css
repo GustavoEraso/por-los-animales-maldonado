@@ -12,17 +12,20 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
-  --color-green-soft: #d4e0b5;        /* Verde claro suave - Fondo del logo */
-  --color-green-olive: #a7b86a;       /* Verde oliva - Banner inferior */
-  --color-red-heart: #d6336c;         /* Rojo corazón - Pañuelo y acentos emocionales */
-  --color-brown-chocolate: #4e3a2e;   /* Marrón chocolate - Color del perrito */
-  --color-beige-light: #f3e6c1;       /* Beige claro - Cuerpo del perrito */
-  --color-white: #f8f7f3;             /* Crema - Fondos suaves y legibilidad */
-  --color-dark-text: #3c3c3c;         /* Negro suave / gris oscuro - Texto principal */
+  /* --color-green-soft: #d4e0b5;        Verde claro suave - Fondo del logo */
+  /* --color-amber-sunset: #a7b86a;       Verde oliva - Banner inferior */
+  /* --color-caramel-deep: #d6336c;         Rojo corazón - Pañuelo y acentos emocionales */
+  /* --color-green-dark: #4e3a2e;   Marrón chocolate - Color del perrito */
+  /* --color-cream-light: #f3e6c1;       Beige claro - Cuerpo del perrito */
+  /* --color-white: #f8f7f3;             Crema - Fondos suaves y legibilidad */
+  /* --color-green-dark: #3c3c3c;         Negro suave / gris oscuro - Texto principal */
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-barlow: var(--font-barlow);
+  --color-green-forest: #606c38;      /* Verde bosque profundo - Conexión con la naturaleza */
+  --color-green-dark: #283618;        /* Verde oliva oscuro - Fuerza y estabilidad */
+  --color-cream-light: #fefae0;       /* Crema cálido - Fondo suave y acogedor */
+  --color-amber-sunset: #dda15e;      /* Ámbar suave - Detalles cálidos */
+  --color-caramel-deep: #bc6c25;      /* Caramelo intenso - Acentos energéticos */
+
 
   --animate-wiggle: wiggle 2s ease-in-out forwards;
 
@@ -48,7 +51,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Helvetica, var(--font-roboto),sans-serif;
 }
 
 
