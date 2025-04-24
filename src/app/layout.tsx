@@ -26,7 +26,7 @@ const barlow = Barlow({
 
 export const metadata: Metadata = {
   title: "Por Los Animales Maldonado",
-  description: "Pagina web de la organización Por Los Animales Maldonado",
+  description: "Somos un grupo de particulares que ayuda a animales en situación de calle.",
 };
 
 export default function RootLayout({

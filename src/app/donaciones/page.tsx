@@ -32,7 +32,7 @@ export default function Donaciones() {
 
       <Hero />
       <section className="flex flex-col items-center justify-center p-8 w-full font-barlow text-black text-lg">
-        <p className="max-w-7xl">Los aportes económicos son importantes para pagar tratamientos, estudios médicos y honorarios veterinarios, comprar insumos y alimento, financiar campañas de castración en zonas carenciadas, imprimir material de difusión entre otros.</p>
+        <p className="max-w-7xl">Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados.</p>
       </section>
       <section className=" w-full flex flex-col items-center justify-center  bg-cream-light">
 
