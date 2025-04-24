@@ -28,7 +28,7 @@ export default function Hero({ imgURL, imgAlt, title }: Props) {
 
                 <section className='flex flex-col gap-4 w-full h-2/3 justify-end max-w-4xl xl:pr-60 '>
 
-                    <h3 className='text-5xl lg:text-8xl font-extrabold text-black self-start uppercase '>{displayTitle}</h3>
+                    <h3 className='text-5xl lg:text-8xl font-extrabold text-green-dark self-start uppercase '>{displayTitle}</h3>
                                     
 
                 </section>
