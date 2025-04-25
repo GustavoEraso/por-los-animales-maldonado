@@ -174,9 +174,9 @@ export default function Banner() {
             />
 
 
-            <section className={`${index == currentIndex && 'animate-wiggle'} w-full h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-black bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}>
+            <section className={`${index == currentIndex && 'animate-wiggle'} w-full h-full md:h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-black bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}>
 
-              <section className='flex flex-col gap-4 w-full h-2/3 justify-center max-w-4xl xl:pr-60 text-green-dark '>
+              <section className='flex flex-col gap-4 w-full h-2/3 justify-end pb-10 max-w-4xl xl:pr-60 text-green-dark '>
 
                 <h3 className='text-5xl font-extrabold self-start uppercase '>{item.title}</h3>
                 <p className='text-2xl text-left font-bold'>{item.description}</p>
