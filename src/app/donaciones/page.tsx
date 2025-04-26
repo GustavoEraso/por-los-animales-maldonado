@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 
 import type { Metadata } from 'next'
 import ShareButton from "@/elements/ShareButton";
+import PayPalButton from "@/elements/PayPalButton";
 
 export const generateMetadata = (): Metadata => {
   return {
@@ -27,6 +28,7 @@ export const generateMetadata = (): Metadata => {
 
 
 export default function Donaciones() {
+  
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
 
@@ -38,6 +40,42 @@ export default function Donaciones() {
         {/* APORTES ECONOMICOS */}
         <h3 id="aportes-economicos" className="text-3xl font-bold text-green-dark text-center" >APORTES ECONOMICOS</h3>
         <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4">
+          
+          {/* PayPal donacion */}
+          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10 ">
+            <Image src='/pp-logo-200px.png' alt='logo mercado pago' width={300} height={80} />
+            
+            <p className="text-xl text-black   font-bold">Para donar por única vez</p>
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
+              <PayPalButton amount="5" />
+              <PayPalButton amount="10" />
+              <PayPalButton amount="15"  />
+              <PayPalButton amount="25" />
+              <PayPalButton amount="50" />
+              <PayPalButton amount="100" />
+             
+              
+            </section>
+            
+
+          </article>
+          {/* PayPal suscribirse */}
+          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10 ">
+            <Image src='/pp-logo-200px.png' alt='logo mercado pago' width={300} height={80} />
+            
+            <p className="text-xl text-black   font-bold">Planes de suscripción mensual</p>
+            
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
+              <PayPalButton amount="5" subscriptionPlanId="1" />
+              <PayPalButton amount="10" subscriptionPlanId="1"  />
+              <PayPalButton amount="15" subscriptionPlanId="1"  />
+              <PayPalButton amount="25" subscriptionPlanId="1" />
+              <PayPalButton amount="50" subscriptionPlanId="1" />
+              <PayPalButton amount="100" subscriptionPlanId="1" />
+              
+            </section>          
+
+          </article>
           {/* Mercado Pago */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10">
             <Image src='/Mercado-Pago-Logo-300x80.png' alt='logo mercado pago' width={300} height={80} />
@@ -72,7 +110,6 @@ export default function Donaciones() {
               <Link target="_blank" href="https://www.mercadopago.com.uy/subscriptions/checkout?preapproval_plan_id=2c9380848dc7c6e8018dd0ac13f8052e" className="animate-bounce w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                 SUSCRIPCIÓN MENSUAL
               </Link>
-
             </section>
 
           </article>

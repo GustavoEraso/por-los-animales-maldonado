@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import {  Roboto } from "next/font/google";
 import "./globals.css";
 
+import ClientProviders from "@/components/ClientProviders"; // componente cliente que incluye el PayPalScriptProvider
+
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -31,10 +33,12 @@ export default function RootLayout({
       <body
         className={` antialiased  ${roboto.variable}`}
       >
+        <ClientProviders>
         <Header/>
         {children}
         <Analytics />
         <Footer />
+        </ClientProviders>
       </body>
     </html>
   );
