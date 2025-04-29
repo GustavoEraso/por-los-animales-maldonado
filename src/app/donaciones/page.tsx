@@ -1,11 +1,14 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import Hero from "@/components/Hero";
 
 import type { Metadata } from 'next'
 import ShareButton from "@/elements/ShareButton";
-import PayPalButton from "@/elements/PayPalButton";
+import PayPalDonationButton from "@/elements/PayPalDonationButton";
+
+import PayPalProvider from "@/components/PaypalProvider";
+
+
 
 export const generateMetadata = (): Metadata => {
   return {
@@ -28,11 +31,10 @@ export const generateMetadata = (): Metadata => {
 
 
 export default function Donaciones() {
-  
+
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
-
-      <Hero imgURL="/perra-con-panuelo.jpg" imgAlt="una perra mordiendo una botella"/>
+      <Hero imgURL="/perra-con-panuelo.jpg" imgAlt="una perra mordiendo una botella" />
       <section className="flex flex-col items-center justify-center p-8 w-full   text-black text-lg">
         <p className="max-w-7xl">Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados.</p>
       </section>
@@ -40,42 +42,42 @@ export default function Donaciones() {
         {/* APORTES ECONOMICOS */}
         <h3 id="aportes-economicos" className="text-3xl font-bold text-green-dark text-center" >APORTES ECONOMICOS</h3>
         <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4">
-          
+
           {/* PayPal donacion */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10 ">
             <Image src='/pp-logo-200px.png' alt='logo mercado pago' width={300} height={80} />
-            
+
             <p className="text-xl text-black   font-bold">Para donar por única vez</p>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
-              <PayPalButton amount="5" />
-              <PayPalButton amount="10" />
-              <PayPalButton amount="15"  />
-              <PayPalButton amount="25" />
-              <PayPalButton amount="50" />
-              <PayPalButton amount="100" />
-             
-              
+              <PayPalProvider type="capture">
+
+                <PayPalDonationButton amount={5} />
+                <PayPalDonationButton amount={10} />
+                <PayPalDonationButton amount={15} />
+                <PayPalDonationButton amount={25} />
+                <PayPalDonationButton amount={40} />
+                <PayPalDonationButton amount={50} />
+                <PayPalDonationButton amount={75} />
+                <PayPalDonationButton amount={100} />
+
+              </PayPalProvider>
+
             </section>
             
 
-          </article>
-          {/* PayPal suscribirse */}
-          <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10 ">
-            <Image src='/pp-logo-200px.png' alt='logo mercado pago' width={300} height={80} />
-            
-            <p className="text-xl text-black   font-bold">Planes de suscripción mensual</p>
-            
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
-              <PayPalButton amount="5" subscriptionPlanId="1" />
-              <PayPalButton amount="10" subscriptionPlanId="1"  />
-              <PayPalButton amount="15" subscriptionPlanId="1"  />
-              <PayPalButton amount="25" subscriptionPlanId="1" />
-              <PayPalButton amount="50" subscriptionPlanId="1" />
-              <PayPalButton amount="100" subscriptionPlanId="1" />
-              
-            </section>          
+            <section className="flex flex-col items-center justify-center gap-4 px-4 text-lg text-black font-semibold text-center text-balance">
+              <p>Si preferís, podés suscribirte y hacer una donación automática todos los meses, por el monto que vos elijas.</p>
+              <p>¡Es una forma súper simple de ayudar!</p>
+              <Link  href="/donaciones/paypalsuscripciones" 
+              className="inline-block bg-[#0070ba] hover:bg-[#005ea6] text-white font-semibold text-base py-3 px-6 rounded-md text-center transition-colors duration-300">
+                VER PLANES DE SUSCRIPCIÓN MENSUAL
+              </Link>
+            </section>
+
+
 
           </article>
+
           {/* Mercado Pago */}
           <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10">
             <Image src='/Mercado-Pago-Logo-300x80.png' alt='logo mercado pago' width={300} height={80} />
