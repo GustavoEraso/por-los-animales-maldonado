@@ -65,7 +65,7 @@ export default function Header() {
             </nav>
 
             <div>
-                <Link href="/donar" ><span className=' block text-lg  text-white leading-tight p-2 bg-cyan-900 hover:bg-emerald-500 uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>Doná ahora</span></Link>
+                <Link href="/donaciones" ><span className=' block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>Doná ahora</span></Link>
             </div>
 
             {/* Boton de menu */}
