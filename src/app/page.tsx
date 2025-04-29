@@ -175,7 +175,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl uppercase">involucrate</h3>
-              <p>Hay muchas formas de ayudar a los animales más allá de adoptar. Podés colaborar ayudando con traslados, ofreciendo un espacio para guardar donaciones, difundiendo casos en redes o incluso denunciando situaciones de maltrato animal. También recibimos donaciones de insumos, alimentos, mantas o cualquier elemento útil. Cada granito de arena cuenta y suma al bienestar de quienes más nos necesitan. ¡Tu compromiso puede hacer una gran diferencia!</p>
+              <p>Hay muchas formas de ayudar a los animales más allá de adoptar. Podés colaborar ayudando con traslados, siendo hogar transitorio, ofreciendo un espacio para guardar donaciones, difundiendo casos en redes o incluso denunciando situaciones de maltrato animal. También recibimos donaciones de insumos, alimentos, mantas o cualquier elemento útil. Cada granito de arena cuenta y suma al bienestar de quienes más nos necesitan. ¡Tu compromiso puede hacer una gran diferencia!</p>
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
                 <Link href="/involucrate" className="w-fit text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase">
                   ver más
