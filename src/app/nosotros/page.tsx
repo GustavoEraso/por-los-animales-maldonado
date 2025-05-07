@@ -6,7 +6,7 @@ export default function Nosotros() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
 
-      <Hero imgURL="/madre-con-cachorros.jpg" imgAlt="cachorros jugando mientras su madre mira desde atras" />
+      <Hero imgURL="/madre-con-cachorros.webp" imgAlt="cachorros jugando mientras su madre mira desde atras" />
       <section className="flex flex-col lg:flex-row gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
         <section className=" w-full ">
 
@@ -15,7 +15,7 @@ export default function Nosotros() {
           </p>
           
         </section>
-        <Image src={"/heroImg.jpg"} alt="Hero image" width={300} height={400} className="w-full lg:w-1/2 h-auto object-cover rounded-lg " />
+        <Image src={"/heroImg.webp"} alt="Hero image" width={300} height={400} className="w-full lg:w-1/2 h-auto object-cover rounded-lg " />
 
 
       </section>
@@ -23,11 +23,11 @@ export default function Nosotros() {
       <section>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 px-9 py-4 w-full">
-          <IconCard icon="/logo300.png" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
-          <IconCard icon="/logo300.png" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
-          <IconCard icon="/logo300.png" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam  nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
-          <IconCard icon="/logo300.png" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
-          <IconCard icon="/logo300.png" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
+          <IconCard icon="/logo300.webp" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
+          <IconCard icon="/logo300.webp" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
+          <IconCard icon="/logo300.webp" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam  nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
+          <IconCard icon="/logo300.webp" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
+          <IconCard icon="/logo300.webp" title="el titulo" description="Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero doloremque, eos nam repellendus harum unde ducimus possimus minima. Porro tempore nesciunt vero a aliquid soluta assumenda velit id! Animi, eum!" />
 
 
         </section>

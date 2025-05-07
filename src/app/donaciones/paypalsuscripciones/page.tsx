@@ -25,7 +25,7 @@ export default function PaypalSuscripciones() {
       <PayPalProvider type="subscription">
         {/* PayPal suscribirse */}
         <article className=" flex flex-col items-center justify-between bg-white rounded-lg  w-full py-8 gap-10 ">
-          <Image src='/pp-logo-200px.png' alt='logo mercado pago' width={300} height={80} />
+          <Image src='/paypal-3.svg' alt='logo paypal' width={300} height={80} />
 
           <p className="text-xl text-black   font-bold">Planes de suscripción mensual</p>
 

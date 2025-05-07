@@ -5,7 +5,7 @@ import Hero from "@/components/Hero";
 export default function Nosotros() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white ">
-      <Hero imgURL="/perrito-negro-respaldo.jpg" />
+      <Hero imgURL="/perrito-negro-respaldo.webp" />
       {/* DENUNCIA EL MALTRATO SECTION */}
       <section id="denuncia-maltrato" className="w-full flex flex-col items-center justify-center ">
         <section className="flex flex-col lg:flex-row gap-4  py-4 w-full   justify-center items-center">
@@ -32,24 +32,23 @@ export default function Nosotros() {
                 Hablar en buenos términos con los dueños, ofrecer ayuda (puede ser con medicación, cucha para resguardo, llevarlo a castrar, cadena más larga). Desde este espacio se pueden hacer pedidos de colaboración para ayudar a ese animal que necesita ser salvado cuanto antes.
               </li>
               <li className=" text-green-dark text-xl font-bold text-balance">
-                Si no hay cambio, no acceden o es imposible hacerlo: hacer la denuncia ante INBA a través del siguiente <a
-                  className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "
+                Si no hay cambio, no acceden o es imposible hacerlo: hacer la denuncia ante INBA a través del siguiente<a
+                  className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 "
                   href="https://www.mgap.gub.uy/bienestaranimal/formulariodenunciante.aspx"
                   target="_blank"
                   rel="noopener noreferrer"
-                >
-                  Formulario
+                >Formulario
                 </a>, adjuntando pruebas (fotos, videos, audio, denuncia policial si la hay).
               </li>
             </ul>
             <div className="flex flex-col gap-4 text-start p-8 bg-white w-full max-w-4xl rounded-lg ">
               <p className=" text-green-dark text-lg font-bold text-balance">Se recomienda hacer previamente la denuncia policial para luego adjuntarla al formulario de INBA. Se hace en cualquier seccional, sí o sí deben tomarla.</p>
-              <p className=" text-green-dark text-lg font-bold text-balance">Luego ampliar todo al mail  <a href="mailto:denunciasinba@mgap.gub.uy" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out ">denunciasinba@mgap.gub.uy</a>.</p>
+              <p className=" text-green-dark text-lg font-bold text-balance">Luego ampliar todo al mail<a href="mailto:denunciasinba@mgap.gub.uy" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">denunciasinba@mgap.gub.uy</a>.</p>
               <div className=" text-green-dark text-lg font-bold text-balance">
                 <h4 className="text-xl">Teléfonos nacionales para asesoramiento:</h4>
-                <a href="tel:+59829081169" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "> 2908 1169</a> |
-                <a href="tel:+59829081271" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "> 2908 1271</a> |
-                <a href="tel:+59829087931" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "> 2908 7931</a> int 133-138 para todos | <a href="tel:+59894747542" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "> 094 747 542</a>.</div>
+                <a href="tel:+59829081169" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">2908 1169</a>|
+                <a href="tel:+59829081271" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">2908 1271</a>|
+                <a href="tel:+59829087931" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">2908 7931</a>int 133-138 para todos|<a href="tel:+59894747542" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">094 747 542</a>.</div>
             </div>
           </section>
         </section>
@@ -78,20 +77,105 @@ export default function Nosotros() {
 
               <ul className="display flex flex-col gap-8 list-disc pl-4  text-green-dark  w-fit">
                 <li className=" text-green-dark text-xl font-bold text-balance">
-                  <strong>CANINAS</strong> a cargo de la Intendencia en conjunto con INBA, pueden ver requisitos, calendario y agenda en este 
+                  <strong>CANINAS</strong> a cargo de la Intendencia en conjunto con INBA, pueden ver requisitos, calendario y agenda en este
                   <a
-                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "
+                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 "
                     href="https://www.gub.uy/tramites/castraciones-caninas-gratuitas-maldonado"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     link
-                  </a>.
+                  </a>, También pueden agendarse a los siguientes contactos:
+
+                  <ul className="display flex flex-col  list-disc pl-4  text-green-dark  w-fit">
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Refugio Departamental
+                      <a
+                        href="tel:+59842244897"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4224 4897
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Maldonado
+                      <a
+                        href="tel:+59842233887"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4223 3887
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de San Carlos
+                      <a
+                        href="tel:+59842669222"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4266 9222
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Pan de Azúcar
+                      <a
+                        href="tel:+59844346283"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4434 6283
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Aiguá
+                      <a
+                        href="tel:+59844462027"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4446 2027
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Punta del Este
+                      <a
+                        href="tel:+59842446162"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4244 6162
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Garzón
+                      <a
+                        href="tel:+59844806004"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4480 6004
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Piriápolis
+                      <a
+                        href="tel:+59844323374"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4432 3374
+                      </a>
+                    </li>
+                    <li className=" text-green-dark text-xl font-bold text-balance">
+                      Municipio de Solís
+                      <a
+                        href="tel:+59844390039"
+                        className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2"
+                      >
+                        4439 0039
+                      </a>
+                    </li>
+                  </ul>
+
                 </li>
                 <li className=" text-green-dark text-xl font-bold text-balance">
-                  <strong>FELINAS</strong>  a cargo de la Intendencia. Consultar información al 
+                  <strong>FELINAS</strong>  a cargo de la Intendencia. Consultar información al
                   <a
-                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "
+                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 "
                     href="tel:+59899542753"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -100,9 +184,9 @@ export default function Nosotros() {
                   </a>.
                 </li>
                 <li className=" text-green-dark text-xl font-bold text-balance">
-                  <strong>FELINAS Y CANINAS</strong>  a cargo de SO.CO.BIO.MA en conjunto con INBA. Consultar información al 
+                  <strong>FELINAS Y CANINAS</strong>  a cargo de SO.CO.BIO.MA en conjunto con INBA. Consultar información al
                   <a
-                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out "
+                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 "
                     href="tel:+59894811510"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -182,17 +266,17 @@ export default function Nosotros() {
               <p className=" text-green-dark text-2xl font-bold text-balance">Cuando el animal es esterilizado se le coloca un chip de identificación con los datos del animal y su tenedor.
               </p>
               <p className=" text-green-dark text-2xl font-bold text-balance">En caso de haber llevado un animal de un tercero, puedes acceder al cambio de titular haciendo la solicitud por mail a
-                  
-                 <a
-                    className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out ml-2 "
-                    href="mailto:renac@mgap.gub.uy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    renac@mgap.gub.uy
-                  </a>.
-                 
-                 adjuntando: número de cédula del animal, cédula del titular, teléfono y domicilio.
+
+                <a
+                  className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ml-2 "
+                  href="mailto:renac@mgap.gub.uy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  renac@mgap.gub.uy
+                </a>.
+
+                adjuntando: número de cédula del animal, cédula del titular, teléfono y domicilio.
 
               </p>
             </div>
@@ -200,14 +284,14 @@ export default function Nosotros() {
           </section>
           <section className="flex flex-col  gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
             <p className=" text-green-dark text-2xl font-bold ">
-            También existe un formulario de INBA en el que el titular autoriza al tercero a llevar a castrar su animal.
+              También existe un formulario de INBA en el que el titular autoriza al tercero a llevar a castrar su animal.
             </p>
-            <div className="flex flex-wrap gap-4 items-center justify-center"> 
-            <a href="/Decreto_Ley_castraciones.pdf" download className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"> Descargar decreto de Ley</a>
-            <a href="/formulario_INBA.jpg" download className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"> Descargar formulario INBA</a>
+            <div className="flex flex-wrap gap-4 items-center justify-center">
+              <a href="/Decreto_Ley_castraciones.pdf" download className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Descargar decreto de Ley castraciones</a>
+              <a href="/formulario_INBA.jpg" download className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Descargar formulario INBA</a>
             </div>
 
-            
+
           </section>
 
         </section>

@@ -16,7 +16,7 @@ import CircleCard from "@/components/CircleCard";
 //     species: 'perro',
 //     images: [
 //       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.jpg',
+//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
 //         imgAlt: 'el alt',
 //         imgId: 'jkbf',
 //       }
@@ -35,7 +35,7 @@ import CircleCard from "@/components/CircleCard";
 //     species: 'perro',
 //     images: [
 //       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.jpg',
+//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
 //         imgAlt: 'el alt',
 //         imgId: 'jkbf',
 //       }
@@ -54,7 +54,7 @@ import CircleCard from "@/components/CircleCard";
 //     species: 'perro',
 //     images: [
 //       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.jpg',
+//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
 //         imgAlt: 'el alt',
 //         imgId: 'jkbf',
 //       }
@@ -73,7 +73,7 @@ import CircleCard from "@/components/CircleCard";
 //     species: 'perro',
 //     images: [
 //       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.jpg',
+//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
 //         imgAlt: 'el alt',
 //         imgId: 'jkbf',
 //       }
@@ -100,7 +100,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="bg-cream-light rounded-full w-full max-w-lg aspect-square flex items-center justify-center">
 
-              <img className="w-9/12" src="/logo300.png" alt="logo" />
+              <img className="w-9/12" src="/logo300.webp" alt="logo" />
             </div>
             <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl">CONOCENOS</h3>
@@ -122,7 +122,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="w-full min-w-1/3 flex items-center justify-center">
 
-              <CircleCard imgAlt="imagen madre cn sus cachorros" imgUrl="/madre-con-cachorros.jpg" linkUrl="/adopta" linkText="quiero adoptar" />
+              <CircleCard imgAlt="imagen madre cn sus cachorros" imgUrl="/madre-con-cachorros.webp" linkUrl="/adopta" linkText="quiero adoptar" />
             </div>
             <div className="flex flex-col gap-4   text-start text-black px-2">
               <h3 className="font-bold text-4xl uppercase">adoptá</h3>
@@ -146,14 +146,14 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2  gap-8 w-full max-w-6xl p-4 py-16">
 
             <CircleCard              
-              imgUrl={'/perro-amarillo-feliz.jpg'}
+              imgUrl={'/perro-amarillo-feliz.webp'}
               imgAlt={'imagen perro amarillo feliz'}
               linkUrl={'/donaciones#aportes-economicos'}
               linkText='doná ahora'
               invert={true}
             />
             <CircleCard              
-              imgUrl='/perro-pelado.jpg'
+              imgUrl='/perro-pelado.webp'
               imgAlt={'imagen perro blanco que necesita atencion medica'}
               linkUrl={'/donaciones#donacion-de-insumos'}
               linkText='doná insumos'
@@ -170,7 +170,7 @@ export default function Home() {
 
               <div className="bg-cream-light rounded-full w-full max-w-lg aspect-square flex items-center justify-center">
 
-                <img className="w-9/12" src="/logo300.png" alt="logo" />
+                <img className="w-9/12" src="/logo300.webp" alt="logo" />
               </div>
             </div>
             <div className="flex flex-col gap-4   text-start text-black px-2">

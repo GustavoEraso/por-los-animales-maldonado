@@ -20,7 +20,7 @@ export default function Banner() {
   const itemsListS: ItemsProps[] = [
     {
       image:{
-        src: '/manada-peluda.jpg',
+        src: '/manada-peluda.webp',
         alt: 'manada de perritos peludos',
       },
       title: 'ADOPTÁ',
@@ -31,7 +31,7 @@ export default function Banner() {
 
     {
       image:{
-        src: '/perrito-negro-respaldo.jpg',
+        src: '/perrito-negro-respaldo.webp',
         alt: 'perrito apollado en respaldo de auto',
       },
       title: 'traslados',
@@ -41,7 +41,7 @@ export default function Banner() {
     },
     {
       image:{
-        src: '/perrito-dormido.jpg',
+        src: '/perrito-negro-dormido.webp',
         alt: 'imagen de un perrito negro durmiendo',
       },
       title: 'TRANSITORIOS',
@@ -51,7 +51,7 @@ export default function Banner() {
     },
     {
       image:{
-        src: '/perra-con-panuelo-masticando.jpg',
+        src: '/perra-con-panuelo-masticando.webp',
         alt: 'imagen de una perra masticando una botella',
       },
       title: 'DONACIONES',

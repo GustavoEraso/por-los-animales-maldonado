@@ -10,7 +10,7 @@ interface Props {
 export default function Hero({ imgURL, imgAlt, title }: Props) {
     const pathName = usePathname().split("/").filter(Boolean).pop();
 
-    const imageSrc = imgURL ?? "/heroImg.jpg";
+    const imageSrc = imgURL ?? "/heroImg.webp";
     const imageAlt = imgAlt ?? "Hero image";
     const displayTitle = title ?? pathName;
 

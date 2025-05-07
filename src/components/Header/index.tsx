@@ -15,7 +15,7 @@ export default function Header() {
     return (
         <header className='flex justify-between w-full items-center relative z-50 bg-white shadow-md p-4'>
             <div className='w-32 h-32 flex-shrink-0' >
-                <Link href="/"><img className='block w-32 h-32  object-contain' src="/logo300.png" alt="logo de por los animales maldonado" /></Link>
+                <Link href="/"><img className='block w-32 h-32  object-contain' src="/logo300.webp" alt="logo de por los animales maldonado" /></Link>
             </div>
             <nav className='hidden md:block'>
                 <ul className="flex space-x-4 text-md flex-wrap justify-center bg-white">

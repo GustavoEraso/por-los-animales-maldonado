@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   /* config options here */
   images: {
     unoptimized: true,
-    domains:['www.marthadebayle.com']
   }
 };
 
