@@ -11,7 +11,7 @@ export default function Footer() {
             <section className="  flex flex-col  items-center justify-center md:flex-row md:justify-around gap-4">
                 <div className='  flex flex-col items-center justify-center'>
                     <Link href="/" >
-                        <img className='w-64 h-64 object-contain' src="/logo300.png" alt="logo de por los animales maldonado" />
+                        <img className='w-64 h-64 object-contain' src="/logo300.webp" alt="logo de por los animales maldonado" />
                     </Link>
                     <section className="flex gap-4 " >
                         
