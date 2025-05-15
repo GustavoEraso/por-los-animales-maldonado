@@ -9,6 +9,7 @@
     width: 100vw;
     height: 100vh;
     backdrop-filter: blur(5px);
+    overflow: hidden;
    
 }
 
@@ -37,11 +38,12 @@
 .interno {
     display: grid;
     grid-template-rows: auto 1fr;
-    position: fixed;
+    position: absolute;
+    top: 0;
     z-index: 999;
     width: 100svw;
     height: 100svh;
-    margin: 200px;
+    /* margin: 200px; */
     padding: 5px;
     border-radius: 5px;
     outline: 1px solid white;
@@ -69,5 +71,6 @@
         max-width: 620px;
         height: 90vh;
         max-height: 700px;
+        top: auto;
     }
 }
