@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Hero from "@/components/Hero";
+import { Modal } from "@/components/Modal";
 
 
 export default function Nosotros() {
   return (
-    <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white ">
+    <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white overflow-hidden">
       <Hero imgURL="/perrito-negro-respaldo.webp" />
       {/* DENUNCIA EL MALTRATO SECTION */}
       <section id="denuncia-maltrato" className="w-full flex flex-col items-center justify-center ">
@@ -43,7 +44,7 @@ export default function Nosotros() {
             </ul>
             <div className="flex flex-col gap-4 text-start p-8 bg-white w-full max-w-4xl rounded-lg ">
               <p className=" text-green-dark text-lg font-bold text-balance">Se recomienda hacer previamente la denuncia policial para luego adjuntarla al formulario de INBA. Se hace en cualquier seccional, sí o sí deben tomarla.</p>
-              <p className=" text-green-dark text-lg font-bold text-balance">Luego ampliar todo al mail<a href="mailto:denunciasinba@mgap.gub.uy" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">denunciasinba@mgap.gub.uy</a>.</p>
+              <p className=" text-green-dark text-lg font-bold text-balance">Luego ampliar todo al mail <a href="mailto:denunciasinba@mgap.gub.uy" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">denunciasinba@mgap.gub.uy</a>.</p>
               <div className=" text-green-dark text-lg font-bold text-balance">
                 <h4 className="text-xl">Teléfonos nacionales para asesoramiento:</h4>
                 <a href="tel:+59829081169" className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 ">2908 1169</a>|
@@ -294,6 +295,59 @@ export default function Nosotros() {
 
           </section>
 
+        </section>
+      </section>
+
+      {/* HOGAR TRANSITORIO */}
+      <section id="transitorio" className="w-full flex flex-col items-center justify-center ">
+        <section className="flex flex-col lg:flex-row gap-4  py-4 w-full   justify-center items-center">
+          <section className="flex flex-col md:flex-row-reverse gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
+            <div className="flex flex-col gap-4   text-start text-black px-2">
+              <h3 className="font-extrabold text-4xl  text-green-dark">SE HOGAR TRANSITORIO</h3>
+              {/* <p className=" text-green-dark text-2xl font-bold text-balance">Pueden haber diversas formas de maltrato: </p> */}
+              <ul className="list-disc pl-4  text-green-dark">
+                <li className="text-xl font-semibold">Ofrecé tu casa como hogar temporal.</li>
+                <li className="text-xl font-semibold">No tenemos refugio, ¡te necesitamos!</li>
+                <li className="text-xl font-semibold">Cubrimos comida, vet y casita.</li>
+                <li className="text-xl font-semibold">Vos das amor y un lugar seguro.</li>
+                <li className="text-xl font-semibold">Mientras buscamos su familia para siempre.</li>
+              </ul>
+            </div>
+            <Image src={"/perrito-negro-dormido.webp"} alt="perro en malas condiciones" width={300} height={400} className="w-full md:w-1/3 h-auto aspect-video md:aspect-square object-cover rounded-lg " />
+          </section>
+        </section>
+        <section className="flex flex-col lg:flex-row gap-4  py-12 w-full   justify-center items-center bg-cream-light">
+          <section className="flex flex-col  gap-8 px-9 py-4 w-full  max-w-7xl justify-center items-center">
+            <p className=" text-green-dark text-2xl font-bold ">
+              Dado que no somos refugio ni tenemos espacio físico, para poder rescatar y ayudar es fundamental contar con hogares transitorios. Sin estos nuestra tarea se hace imposible.
+            </p>
+            <h4 className="font-extrabold text-4xl  text-green-dark"> ¿Cómo funciona?</h4>
+            <p className=" text-green-dark text-2xl font-bold ">
+              Muy fácil! Vos prestás un espacio en tu hogar mientras nosotros nos hacemos cargo de todos los gastos del animalito (alimento, atención veterinaria, proporcionamos casita, etc.) y de encontrarle una familia definitiva
+            </p>
+            <h4 className="font-extrabold text-4xl  text-green-dark"> Sumate como hogar transitorio</h4>
+            <p className=" text-green-dark text-2xl font-bold ">
+              Si tienés el tiempo, el espacio y las ganas de cambiarle la vida a un animal rescatado, ¡te necesitamos!
+              Unite al grupo de WhatsApp solo si estás realmente comprometido y disponible para ser hogar transitorio en algún momento.
+            </p>
+            <p className=" text-green-dark text-2xl font-bold ">
+              No es necesario que estés listo ya mismo, pero sí que tengas la intención real de ayudar cuando se necesite.
+            </p>
+            <Modal buttonText="quiero ser hogar transitorio">
+              <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 text-center text-balance">
+                <h4 className="font-extrabold text-4xl  text-green-dark">ACEPTO Y ME COMPROMETO</h4>
+                <p className=" text-green-dark text-2xl font-bold ">
+                 Al unirme al grupo confirmo que tengo disponibilidad para ser hogar transitorio por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me necesite.
+                </p>
+                <a href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi" target="_blank"
+                  rel="noopener noreferrer" 
+                  className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Unirme al grupo de transitorios</a>
+
+              </section>
+
+            </Modal>
+
+          </section>
         </section>
       </section>
 
