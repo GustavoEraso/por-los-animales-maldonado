@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Hero from "@/components/Hero";
+import { Modal } from "@/components/Modal";
 
 
 export default function Nosotros() {
@@ -332,8 +333,20 @@ export default function Nosotros() {
             <p className=" text-green-dark text-2xl font-bold ">
               No es necesario que estés listo ya mismo, pero sí que tengas la intención real de ayudar cuando se necesite.
             </p>
-            <a href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi" target="_blank"
-                  rel="noopener noreferrer" className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Unirme al grupo de transitorios</a>
+            <Modal buttonText="quiero ser hogar transitorio">
+              <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 text-center text-balance">
+                <h4 className="font-extrabold text-4xl  text-green-dark">ACEPTO Y ME COMPROMETO</h4>
+                <p className=" text-green-dark text-2xl font-bold ">
+                 Al unirme al grupo confirmo que tengo disponibilidad para ser hogar transitorio por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me necesite.
+                </p>
+                <a href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi" target="_blank"
+                  rel="noopener noreferrer" 
+                  className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Unirme al grupo de transitorios</a>
+
+              </section>
+
+            </Modal>
+
           </section>
         </section>
       </section>
