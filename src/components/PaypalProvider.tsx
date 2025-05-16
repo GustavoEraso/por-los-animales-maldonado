@@ -1,5 +1,5 @@
 'use client';
-import { PayPalScriptProvider, usePayPalScriptReducer } from "@paypal/react-paypal-js";
+import { PayPalScriptProvider, usePayPalScriptReducer, DISPATCH_ACTION } from "@paypal/react-paypal-js";
 import { ReactNode, useEffect } from "react";
 
 interface PayPalProviderProps {
@@ -29,17 +29,17 @@ function PayPalProviderInner({ children, type }: { children: ReactNode; type: "c
   const [{ isResolved }, dispatch] = usePayPalScriptReducer();
 
   useEffect(() => {
-    dispatch({
-      type: "resetOptions",
-      value: {
-        clientId: "AdP4t3FVaSKsMtWIPJp-k7yfBKf5Ql9YU3fOSd90wvFSVdD5XXOsEMfqZMm3QsJ3NULXMLZcmIdceD0V",
-        components: "buttons",
-        currency: "USD",
-        intent: type,
-        ...(type === "subscription" && { vault: true }),
-      },
-    } as unknown as import("@paypal/react-paypal-js").ScriptReducerAction);
-  }, [type, dispatch]);
+  dispatch({
+    type: DISPATCH_ACTION.RESET_OPTIONS,
+    value: {
+      clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+      components: "buttons",
+      currency: "USD",
+      intent: type,
+      ...(type === "subscription" && { vault: true }),
+    },
+  });
+}, [type, dispatch]);
 
   if (!isResolved) {
     return <div>Cargando PayPal...</div>; // pequeño loading mientras carga
