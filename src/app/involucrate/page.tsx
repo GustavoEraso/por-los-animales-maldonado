@@ -337,10 +337,10 @@ export default function Nosotros() {
               <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 text-center text-balance">
                 <h4 className="font-extrabold text-4xl  text-green-dark">ACEPTO Y ME COMPROMETO</h4>
                 <p className=" text-green-dark text-2xl font-bold ">
-                 Al unirme al grupo confirmo que tengo disponibilidad para ser hogar transitorio por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me necesite.
+                  Al unirme al grupo confirmo que tengo disponibilidad para ser hogar transitorio por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me necesite.
                 </p>
                 <a href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi" target="_blank"
-                  rel="noopener noreferrer" 
+                  rel="noopener noreferrer"
                   className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Unirme al grupo de transitorios</a>
 
               </section>
@@ -350,6 +350,33 @@ export default function Nosotros() {
           </section>
         </section>
       </section>
+      {/* TRASLADOS SOLIDARIOS */}
+      <section id="traslados-solidarios" className="w-full flex flex-col items-center justify-center ">
+        <section className="flex flex-col lg:flex-row gap-4  py-4 w-full   justify-center items-center">
+          <section className="flex flex-col lg:flex-row gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
+            <div className="flex flex-col gap-4   text-start text-black px-2">
+              <h3 className="font-extrabold text-4xl  text-green-dark">HAS TRASLADOS SOLIDARIOS</h3>
+              <p className=" text-green-dark text-2xl font-bold ">
+                Nuestra tarea es a diario y acompaña la vida normal de cada uno de nosotros, vidas como las de todos ustedes. </p>
+              <p className=" text-green-dark text-2xl font-bold ">
+                 Muchas veces nos encontramos en horario laboral o con otras responsabilidades que no nos permiten abarcar todo. </p>
+              <p className=" text-green-dark text-2xl font-bold ">
+                Los traslados se necesitan permanentemente: </p>
+                <ul className="list-disc pl-4 self-center  text-green-dark">
+                <li className="text-xl font-semibold">para llevar un animal a la veterinaria,</li>
+                <li className="text-xl font-semibold">para llevarlo a su transitorio </li>
+                <li className="text-xl font-semibold">o muchas veces, hasta su hogar definitivo.</li>
+              </ul>
+              <p className=" text-green-dark text-3xl text-center font-bold ">
+                Sumate a ser traslado solidario!</p>
+            </div>
+            <Image src={"/perrito-negro-respaldo.webp"} alt="perro en malas condiciones" width={300} height={400} className="w-full lg:w-1/3 h-auto aspect-video lg:aspect-square object-cover rounded-lg " />
+          </section>
+        </section>
+       
+      </section>
+
+
 
     </div>
   );
