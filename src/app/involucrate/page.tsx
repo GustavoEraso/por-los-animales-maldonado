@@ -3,7 +3,7 @@ import Hero from "@/components/Hero";
 import { Modal } from "@/components/Modal";
 
 
-export default function Nosotros() {
+export default function INVOLUCRATE() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white overflow-hidden">
       <Hero imgURL="/perrito-negro-respaldo.webp" />
