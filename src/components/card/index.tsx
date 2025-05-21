@@ -1,22 +1,22 @@
 import Link from "next/link";
 import { Animal } from "@/types"
-import styles from './styles.module.css'
+import { LazyImage } from "@/elements/LazyImage";
 
-export default function Card({props}:{props:Animal}){
-    
-    const{name,gender,lifeSatge,status,images,id}=props;
-    const img= images[0];
-    const {imgUrl,imgAlt}= img;
+export default function Card({ props }: { props: Animal }) {
 
-    return( 
-        <article className={styles.card}>
+    const { name, gender, lifeSatge, status, images, id } = props;
+    const img = images[0];
+    const { imgUrl, imgAlt } = img;
+
+    return (
+        <article className="grid grid-rows-[1.5fr_1fr] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
             <div>
-            <img className={styles.img} src={imgUrl} alt={imgAlt} />
+                <LazyImage className="w-full h-full object-cover" src={imgUrl} alt={imgAlt}/>
             </div>
-            <div className={styles.dataContainer}>
-            <h3 className={styles.name}>{name}</h3> 
-            <p className={styles.p}>{`${gender} | ${lifeSatge} | ${status}`}</p>
-            <Link className={styles.button} href={`/info/${id}`}>Ver más info</Link>        
+            <div className="flex flex-col items-center justify-between gap-1 p-2">
+                <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
+                <p className="text-center">{`${gender} | ${lifeSatge} | ${status}`}</p>
+                <Link className="w-fit text-xl rounded-full px-2 py-1 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset" href={`/adopta/${id}`}>Ver más info</Link>
             </div>
 
         </article>

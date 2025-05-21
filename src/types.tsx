@@ -15,5 +15,5 @@ export interface Animal {
     size: 'pequeño' | 'mediano' | 'grande',
     status: 'disponible' | 'adoptado',
     location: 'calle' | 'protectora' | 'transitorio',
-    waitingSince: Date,
+    waitingSince: number,
 }

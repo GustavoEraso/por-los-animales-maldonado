@@ -1,101 +1,16 @@
 import Link from "next/link";
-
-// import CardContainer from "@/Containers/CardContainer";
-// import Hero from "@/components/Hero";
-import Carrousel from "@/components/Carrousel";
-// import { Animal } from "@/types";
+import HeroCarrousel from "@/components/HeroCarrousel";
 import CircleCard from "@/components/CircleCard";
 
 
 
-// const provisoria: Animal[] = [
-//   {
-//     id: 'kagd',
-//     name: 'el firulais',
-//     gender: 'macho',
-//     species: 'perro',
-//     images: [
-//       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
-//         imgAlt: 'el alt',
-//         imgId: 'jkbf',
-//       }
-//     ],
-//     description: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Nihil, iste modi? Tempora ipsum magnam laborum dolorem. Atque accusantium ullam cumque beatae esse repudiandae, voluptates minima aspernatur deleniti. Odit, perferendis labore.',
-//     lifeSatge: 'cachorro',
-//     size: 'pequeño',
-//     status: 'disponible',
-//     location: 'protectora',
-//     waitingSince: new Date('2013,08,12'),
-//   },
-//   {
-//     id: 'kagdwdqdw',
-//     name: 'el firulais',
-//     gender: 'macho',
-//     species: 'perro',
-//     images: [
-//       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
-//         imgAlt: 'el alt',
-//         imgId: 'jkbf',
-//       }
-//     ],
-//     description: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Nihil, iste modi? Tempora ipsum magnam laborum dolorem. Atque accusantium ullam cumque beatae esse repudiandae, voluptates minima aspernatur deleniti. Odit, perferendis labore.',
-//     lifeSatge: 'cachorro',
-//     size: 'pequeño',
-//     status: 'disponible',
-//     location: 'protectora',
-//     waitingSince: new Date('2013,08,12'),
-//   },
-//   {
-//     id: 'kagdqwf',
-//     name: 'el firulais',
-//     gender: 'macho',
-//     species: 'perro',
-//     images: [
-//       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
-//         imgAlt: 'el alt',
-//         imgId: 'jkbf',
-//       }
-//     ],
-//     description: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Nihil, iste modi? Tempora ipsum magnam laborum dolorem. Atque accusantium ullam cumque beatae esse repudiandae, voluptates minima aspernatur deleniti. Odit, perferendis labore.',
-//     lifeSatge: 'cachorro',
-//     size: 'pequeño',
-//     status: 'disponible',
-//     location: 'protectora',
-//     waitingSince: new Date('2013,08,12'),
-//   },
-//   {
-//     id: 'kagddwwd',
-//     name: 'el firulais',
-//     gender: 'macho',
-//     species: 'perro',
-//     images: [
-//       {
-//         imgUrl: 'https://www.marthadebayle.com/wp-content/uploads/2024/04/pais-sin-perros-callejeros.webp',
-//         imgAlt: 'el alt',
-//         imgId: 'jkbf',
-//       }
-//     ],
-//     description: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Nihil, iste modi? Tempora ipsum magnam laborum dolorem. Atque accusantium ullam cumque beatae esse repudiandae, voluptates minima aspernatur deleniti. Odit, perferendis labore.',
-//     lifeSatge: 'cachorro',
-//     size: 'pequeño',
-//     status: 'disponible',
-//     location: 'protectora',
-//     waitingSince: new Date('2013,08,12'),
-//   },
 
-// ]
 export default function Home() {
   return (
     <div className="flex flex-col items-center min-h-screen  ">
-      <Carrousel />
+      <HeroCarrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
-        {/* <CardContainer animalsList={provisoria} /> */}
-
-
         <section className="flex flex-col items-center justify-center w-full bg-white px-6">
           <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="bg-cream-light rounded-full w-full max-w-lg aspect-square flex items-center justify-center">
@@ -109,8 +24,6 @@ export default function Home() {
                 Ver más
               </Link>
             </div>
-
-
           </div>
 
 
