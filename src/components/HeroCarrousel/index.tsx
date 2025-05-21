@@ -16,7 +16,7 @@ type ItemsProps = {
   };
 };
 
-export default function Banner() {
+export default function HeroCarrousel() {
   const itemsListS: ItemsProps[] = [
     {
       image:{
