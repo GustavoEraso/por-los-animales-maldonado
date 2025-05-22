@@ -373,6 +373,7 @@ export default function INVOLUCRATE() {
             </div>
             <Image src={"/perrito-negro-respaldo.webp"} alt="perro en malas condiciones" width={300} height={400} className="w-full lg:w-1/3 h-auto aspect-video lg:aspect-square object-cover rounded-lg " />
           </section>
+        </section>
           <Modal buttonText="unirme al grupo de traslados">
               <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 text-center text-balance">
                 <h4 className="font-extrabold text-4xl  text-green-dark">ACEPTO Y ME COMPROMETO</h4>
@@ -386,7 +387,6 @@ export default function INVOLUCRATE() {
               </section>
 
             </Modal>
-        </section>
        
       </section>
       {/* DIFUSION */}
