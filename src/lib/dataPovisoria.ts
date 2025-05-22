@@ -21,6 +21,11 @@ export const provisoria: Animal[] = [
         imgUrl: 'https://zooasis.org/wp-content/uploads/2025/01/Carton-768x512.webp',
         imgAlt: 'Perra tímida y dulce',
         imgId: 'img022',
+      },
+      {
+        imgUrl: 'https://images.unsplash.com/photo-1510771463146-e89e6e86560e?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGZvbmRvJTIwZGUlMjBwYW50YWxsYSUyMGRlJTIwcGVycm98ZW58MHx8MHx8fDA%3D',
+        imgAlt: 'Perra tímida y dulce',
+        imgId: 'img0223',
       }
     ],
     description: 'Tango fue encontrado en una villa donde vivía entre autos abandonados. A pesar de las condiciones, siempre se mostraba feliz de ver personas. Hoy busca una familia que le dé el amor y la seguridad que nunca tuvo. Es muy juguetón, disfruta de los paseos largos y no tiene problemas con otros perros. Tiene una energía media y se adapta fácilmente a diferentes hogares.',
