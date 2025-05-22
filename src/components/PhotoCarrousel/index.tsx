@@ -2,20 +2,30 @@
 
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SVGProps } from 'react';
 
-interface ItemsProps  {  
-    imgUrl: string;
-    imgAlt: string;  
-    imgId?: string,
+function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="black" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+interface ItemsProps {
+  imgUrl: string;
+  imgAlt: string;
+  imgId?: string,
 };
 
-export default function PhotoCarrousel({images}: {images: ItemsProps[]}) {
-  
+export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
+
+  const [carrouselFullSize, setCarrouselFullSize] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [items] = useState<ItemsProps[]>(images);
   const carrouselRef = useRef<HTMLDivElement>(null);
-  const intervalIdRef = useRef<number | null>(null);
   const initialXRef = useRef<number | null>(null);
+
 
   const handleImg = useCallback(
     (direction: 'next' | 'prev') => {
@@ -31,42 +41,9 @@ export default function PhotoCarrousel({images}: {images: ItemsProps[]}) {
     [items],
   );
 
-  // Interval helpers
-  const clearIntervalIfNeeded = () => {
-    if (intervalIdRef.current !== null) {
-      clearInterval(intervalIdRef.current);
-      intervalIdRef.current = null;
-    }
-  };
 
-  const startInterval = () => {
-    clearIntervalIfNeeded();
-    intervalIdRef.current = window.setInterval(() => {
-      handleImg('next');
-    }, 10000);
-  };
 
-  // Auto slide + mouse hover pause/resume
-  useEffect(() => {
-    startInterval();
 
-    const carrouselElement = carrouselRef.current;
-    const handleMouseEnter = () => clearIntervalIfNeeded();
-    const handleMouseLeave = () => startInterval();
-
-    if (carrouselElement) {
-      carrouselElement.addEventListener('mouseenter', handleMouseEnter);
-      carrouselElement.addEventListener('mouseleave', handleMouseLeave);
-    }
-
-    return () => {
-      clearIntervalIfNeeded();
-      if (carrouselElement) {
-        carrouselElement.removeEventListener('mouseenter', handleMouseEnter);
-        carrouselElement.removeEventListener('mouseleave', handleMouseLeave);
-      }
-    };
-  }, [handleImg]);
 
   // Swipe gestures
   useEffect(() => {
@@ -74,7 +51,7 @@ export default function PhotoCarrousel({images}: {images: ItemsProps[]}) {
 
     const handleTouchStart = (event: TouchEvent) => {
       initialXRef.current = event.touches[0].clientX;
-      clearIntervalIfNeeded();
+
     };
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -104,9 +81,13 @@ export default function PhotoCarrousel({images}: {images: ItemsProps[]}) {
   }, [handleImg]);
 
   return (
-    <div ref={carrouselRef} className="relative w-full ">
+    <div ref={carrouselRef} className={`${carrouselFullSize ? 'fixed z-50 top-0 bottom-0 left-0 right-0 bg-cream-light flex felx-col items-center justify-center' : 'w-full relative'}  `}>
+      {/* Close button */}
+      {carrouselFullSize && <button onClick={() => setCarrouselFullSize(false)} className=" absolute top-2 right-2 z-50 bg-white/60 rounded-full text-black">
+        <XCircleIcon className="h-12 w-12 text-black" />
+      </button>}
       {/* Carousel wrapper */}
-      <div className="relative overflow-hidden rounded-lg aspect-video  w-full">
+      <div className={`${carrouselFullSize ? 'h-full' : 'aspect-video'} relative overflow-hidden rounded-lg   w-full`}>
         {items.map((item, index) => (
           <div
             key={`${item.imgUrl}-image-${index}`}
@@ -116,9 +97,10 @@ export default function PhotoCarrousel({images}: {images: ItemsProps[]}) {
             <Image
               width={700}
               height={400}
+              onClick={() => setCarrouselFullSize(true)}
               src={item.imgUrl}
               alt={item.imgAlt}
-              className="absolute w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+              className={` ${carrouselFullSize ? 'object-contain' : 'object-cover'} absolute w-full h-full  -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2`}
             />
 
           </div>
