@@ -62,7 +62,7 @@ export default function DonationButton({ amount }: { amount: number }) {
             const capturedCurrency = captureInfo?.amount?.currency_code ?? "";
     
             router.push(
-              `/donaciones/gracias?` +
+              `/gracias?` +
               `type=donate` +
               `&name=${encodeURIComponent(givenName)}` +
               `&amount=${encodeURIComponent(capturedValue)}` +

@@ -12,7 +12,7 @@ export default function SubscriptionButton({ label, planId }: { label: string, p
       <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md">
       <h4 className="text-center text-balance" >Suscribite por USD {label}</h4>
 
-        {isPending && <div>Loading Subscription Button...</div>}
+        {isPending && <div>Cargando boton de suscripción...</div>}
         <PayPalButtons
           createSubscription={(data, actions) => {
             return actions.subscription.create({
@@ -29,7 +29,7 @@ export default function SubscriptionButton({ label, planId }: { label: string, p
           onApprove={async () => {            
     
             router.push(
-              `/donaciones/gracias?type=suscripcion&amount=${encodeURIComponent(label)} `
+              `/gracias?type=suscription&amount=${encodeURIComponent(label)} `
             );
           }}
         />
