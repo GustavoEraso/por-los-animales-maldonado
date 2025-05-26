@@ -339,7 +339,7 @@ export default function INVOLUCRATE() {
                 <p className=" text-green-dark text-2xl font-bold ">
                   Al unirme al grupo confirmo que tengo disponibilidad para ser hogar transitorio por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me necesite.
                 </p>
-                <a href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi" target="_blank"
+                <a href="https://chat.whatsapp.com/I1ooVnuS1xaEOkHNDt66bX" target="_blank"
                   rel="noopener noreferrer"
                   className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Unirme al grupo de transitorios</a>
 
