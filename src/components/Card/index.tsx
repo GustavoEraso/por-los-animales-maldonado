@@ -11,7 +11,9 @@ export default function Card({ props }: { props: Animal }) {
     return (
         <article className="grid grid-rows-[1.5fr_1fr] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
             <div>
-                <Image className="w-full h-full object-cover" src={imgUrl} alt={imgAlt} width={300} height={300}/>
+                <Link className="w-full h-full" href={`/adopta/${id}`}>
+                    <Image className="w-full h-full object-cover" src={imgUrl} alt={imgAlt} width={300} height={300} />
+                </Link>
             </div>
             <div className="flex flex-col items-center justify-between gap-1 p-2">
                 <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
