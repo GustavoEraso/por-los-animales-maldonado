@@ -6,8 +6,13 @@ import { Modal } from "@/components/Modal";
 
 import { formatDateMMYYYY, tiempoTranscurrido } from "@/lib/dateUtils";
 
-export default async function AnimalPage({ params }: { params: { id: string } }) {
-  const [animal] = await fetchAnimals({ id: params.id });
+type PageProps = {
+  params: Promise<{ id: string }>
+};
+
+export default async function AnimalPage({ params }: PageProps) {
+  const { id } = await params
+  const [animal] = await fetchAnimals({ id});
 
   if (!animal) {
     return (
