@@ -34,6 +34,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'calle',
     waitingSince: 1743446400000,
+    aproxBirthDate: 1743446400000,
   },
   {
     id: 'b8e91a4d',
@@ -53,6 +54,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'transitorio',
     waitingSince: 1707868800000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'c72a934e',
@@ -72,6 +74,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'protectora',
     waitingSince: 1660003200000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'd9bf5fa1',
@@ -91,6 +94,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'protectora',
     waitingSince: 1699660800000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'e6adf019',
@@ -110,6 +114,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'transitorio',
     waitingSince: 1717545600000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'f14c3bfa',
@@ -129,6 +134,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'calle',
     waitingSince: 1695168000000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'g7ec8c22',
@@ -148,6 +154,7 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'protectora',
     waitingSince: 1646265600000,
+     aproxBirthDate: 1743446400000,
   },
   {
     id: 'h92d8ffe',
@@ -167,5 +174,6 @@ export const provisoria: Animal[] = [
     status: 'disponible',
     location: 'protectora',
     waitingSince: 1682121600000,
+     aproxBirthDate: 1743446400000,
   },
 ];
