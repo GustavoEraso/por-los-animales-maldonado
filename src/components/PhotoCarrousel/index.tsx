@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {  useCallback, useEffect, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 
 function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
@@ -22,9 +22,13 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
 
   const [carrouselFullSize, setCarrouselFullSize] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [items] = useState<ItemsProps[]>(images);
+  const [items,setItems] = useState<ItemsProps[]>(images);
   const carrouselRef = useRef<HTMLDivElement>(null);
   const initialXRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setItems(images);
+  }, [images]);
 
 
   const handleImg = useCallback(

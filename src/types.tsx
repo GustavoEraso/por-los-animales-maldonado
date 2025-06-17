@@ -1,42 +1,47 @@
-interface img{
-    imgId:string,
-    imgUrl:string,
-    imgAlt:string,
+export interface Img {
+  imgId: string,
+  imgUrl: string,
+  imgAlt: string,
 }
 
 export interface Animal {
-    id: string,
-    name: string,
-    gender:'macho'| 'hembra'
-    species:'perro'|'gato'|'otros'
-    images: img[],
-    description: string,
-    aproxBirthDate: number;
-    lifeSatge: 'cachorro'|'adulto'|'mayor',
-    size: 'pequeño' | 'mediano' | 'grande',
-    status: 'disponible' | 'adoptado',
-    location: 'calle' | 'protectora' | 'transitorio',
-    waitingSince: number,
-    statusInfo?: StatusInfo;
+  id: string,
+  name: string,
+  gender: 'macho' | 'hembra'
+  species: 'perro' | 'gato' | 'otros'
+  images: Img[],
+  description: string,
+  aproxBirthDate: number;
+  lifeStage: 'cachorro' | 'adulto' | 'mayor',
+  size: 'pequeño' | 'mediano' | 'grande',
+  isAvalible: boolean,
+  location: 'calle' | 'protectora' | 'transitorio' | 'adoptado',
+  waitingSince: number,
 }
 
-type StatusInfo =
-  | {
-      type: 'adoptado';
-      adoptedAt: number;
-      adopterName: string;
-      contact?: string;
-      notes?: string;
-    }
-  | {
-      type: 'transitorio';
-      contact: string;
-      startedAt: number;
-      notes?: string;
-    }
-  | {
-      type: 'protectora';
-      shelterName: string;
-      responsible: string;
-      since: number;
-    };
+interface ContactType {
+  type: 'celular' | 'email' | 'other';
+  value: string | number;
+}
+
+export interface PrivateInfo {
+    isAvalible: boolean,   
+    location: 'calle' | 'adoptado'|'transitorio'|'protectora';
+    since: number;
+    contactName: string;
+    contacts?: ContactType[];
+    notes?: string;
+    date: number;
+    modifiedBy: string;
+  }
+  
+
+  export interface UserType{
+    id: string,
+    name: string,
+    role: string
+  }
+
+  export interface CollectionsType{
+    currentColection: 'animals'| 'authorizedEmails'| 'privateInfo'
+  }

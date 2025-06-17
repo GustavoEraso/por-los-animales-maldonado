@@ -20,11 +20,7 @@ export async function POST(req: NextRequest) {
       ? "http://localhost:3000"
       : "https://porlosanimalesmaldonado.com";
   try {
-     const token = req.headers.get("x-internal-token");
-
-  if (token !== process.env.INTERNAL_API_SECRET) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
+ 
     const {
       sortBy,
       sortOrder = "asc",
@@ -82,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     if (
       sortBy &&
-      ["name", "waitingSince", "aproxBirthDate","status", "gender", "species", "size"].includes(sortBy)
+      ["name", "waitingSince", "aproxBirthDate","isAvalible", "gender", "species", "size"].includes(sortBy)
     ) {
         if(!filtered) return NextResponse.json([]);
       finalResults = [...filtered].sort((a, b) => {

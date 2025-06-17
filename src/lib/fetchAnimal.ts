@@ -7,12 +7,12 @@ type Filters = Partial<{
   gender: Animal["gender"];
   species: Animal["species"];
   aproxBirthDate: Animal["aproxBirthDate"];
-  lifeSatge: Animal["lifeSatge"];
+  lifeStage: Animal["lifeStage"];
   size: Animal["size"];
-  status: Animal["status"];
+  isAvalible: Animal["isAvalible"];
   location: Animal["location"];
   minWaitingSince: number;
-  sortBy: keyof Pick<Animal, "name" | "waitingSince" | "status" | "aproxBirthDate" | "gender" | "species" | "size">;
+  sortBy: keyof Pick<Animal, "name" | "waitingSince" | "isAvalible" | "aproxBirthDate" | "gender" | "species" | "size">;
   sortOrder: "asc" | "desc";
 }>;
 
@@ -26,7 +26,6 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[]> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-internal-token": process.env.INTERNAL_API_SECRET!,
     },
     body: JSON.stringify(filters),
     next: { revalidate: 60 },

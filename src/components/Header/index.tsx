@@ -1,16 +1,45 @@
 'use client'
-import React, { useState } from 'react';
+
 import Link from 'next/link';
 import { navLinks } from '@/lib/navLinks';
+import styles from './styles.module.css';
 
-import styles from './styles.module.css'
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/firebase';
 
 
 
 export default function Header() {
-    const [visible, setVisibe] = useState<boolean>(false);
+    const router = useRouter();
 
- 
+    const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
+
+    const handleLogout = () => {
+        signOut(auth)
+            .then(() => {
+                // Logout exitoso, podés redirigir
+                window.location.href = "/";
+            })
+            .catch((error) => {
+                console.error("Error al cerrar sesión:", error);
+            });
+    };
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                setIsUserLoggedIn(false);
+            } else {
+                setIsUserLoggedIn(true);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [router]);
+
+    const [visible, setVisibe] = useState<boolean>(false);
 
     return (
         <header className='flex justify-between w-full items-center relative z-50 bg-white shadow-md p-4'>
@@ -64,9 +93,22 @@ export default function Header() {
 
             </nav>
 
-            <div>
-                <Link href="/donaciones" ><span className=' block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>Doná ahora</span></Link>
+            {isUserLoggedIn ? <div className='hidden md:flex justify-center items-center gap-4'>
+                <Link
+                    className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`}
+                    href={'/plam-admin'}
+                    aria-label={'Enlace al panel de administración'}
+                >
+                    Dashboard
+                </Link>
+
+                <button onClick={handleLogout} className=' block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>logout</button>
             </div>
+
+                : <div>
+                    <Link href="/donaciones" ><span className=' block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>Doná ahora</span></Link>
+                </div>
+            }
 
             {/* Boton de menu */}
             <div className='bg-gray-200 p-2 rounded-md block md:hidden w-10 h-10'>
@@ -82,6 +124,18 @@ export default function Header() {
                     </svg>
                 </button>
                 <ul className="flex flex-col w-full gap-4 px-4 text-lg">
+                    {isUserLoggedIn && <div className='flex flex-col-reverse justify-center items-center gap-4'>
+                        <a
+                            className={`block text-center p-2 whitespace-nowrap text-2xl font-semibold ${styles.outline_bottom}`}
+                            href={'/plam-admin'}
+                            aria-label={'Enlace al panel de administración'}
+                        >
+                            Dashboard
+                        </a>
+
+                        <button onClick={handleLogout} className=' block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full'>logout</button>
+                    </div>}
+
                     {navLinks.map((link) => (
                         <li key={link.id + 'mobile'} className="w-full rounded-2xl overflow-hidden">
                             {link.childs ? (

@@ -1,0 +1,426 @@
+'use client';
+
+
+
+// VER QUE NO MANDO LA FECHA DEL NUEVO ESTADO SI LA FECHA AUTOMATICA PEOR NO LA QUE CARHGA EL USUARIO, VALIDAR CAMPOS ANTES DE ENVIAR
+
+import { useEffect, useState } from 'react';
+import { Animal, Img, PrivateInfo } from '@/types';
+import UploadImages from '@/elements/UploadImage';
+// import PhotoCarrousel from '@/components/PhotoCarrousel';
+import { deleteImage } from '@/lib/deleteIgame';
+import { postAnimal } from '@/lib/firebase/postAnimal';
+import { postAnimalPrivateInfo } from '@/lib/firebase/postAnimalPrivateInfo';
+import { useRouter } from 'next/navigation';
+import { generateAnimalId } from '@/lib/generateAnimalId';
+import { auth } from '@/firebase';
+
+
+const initialAnimal: Animal = {
+  id: '',
+  name: '',
+  gender: 'macho',
+  species: 'perro',
+  images: [],
+  description: '',
+  aproxBirthDate: Date.now(),
+  lifeStage: 'cachorro',
+  size: 'mediano',
+  isAvalible: false,
+  location: 'calle',
+  waitingSince: Date.now(),
+};
+
+const initialPrivateInfo: PrivateInfo = {
+  isAvalible: false,
+  location: 'transitorio',
+  since: Date.now(),
+  contactName: '',
+  date: Date.now(),
+  modifiedBy: '',
+}
+
+export default function AnimalForm() {
+  const router = useRouter();
+  const [animal, setAnimal] = useState<Animal>(initialAnimal);
+  const [privateInfo, setPrivateInfo] = useState<PrivateInfo>(initialPrivateInfo);
+
+  const [images, setImages] = useState<Img[]>([]);
+
+  const [contacts, setContacts] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }[]>([]);
+  const [newContact, setNewContact] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }>({ type: 'celular', value: '' });
+  const [showContactForm, setShowContactForm] = useState(false);
+
+  const [isAvalible, setIsAvalible] = useState(true);
+
+  useEffect(() => {
+    setPrivateInfo((prev) => ({
+      ...prev,
+      contacts
+    }));
+  }, [contacts])
+
+
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setAnimal((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const handlePrivateInfoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setPrivateInfo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+
+
+
+  const [formErrors, setFormErrors] = useState({
+    name: false,
+    images: false,
+    description: false,
+    contactName: false,
+    contacts: false,
+  })
+
+  const fieldErrorMessagesRecord = {
+    name: "Debes ingresar el nombre del animal.",
+    images: "No subiste ninguna imagen.",
+    description: "Falta una descripción.",
+    contactName: "Falta el nombre de contacto.",
+    contacts: "Faltan medios de contacto.",
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const id = await generateAnimalId(animal.name);
+      const newAnimal: Animal = {
+        ...animal,
+        id: id,
+        images: images,
+        isAvalible: isAvalible,
+      }
+
+
+      const newPrivateInfo: PrivateInfo =
+      {
+        ...privateInfo,
+        isAvalible: isAvalible,
+        location: animal.location,
+        date: Date.now(),
+        modifiedBy: auth.currentUser?.email || '',
+      }
+      const errors = {
+        name: newAnimal.name === '',
+        images: !images.length,
+        description: newAnimal.description === '',
+        contactName: newPrivateInfo.contactName === '',
+        contacts: !privateInfo?.contacts?.length,
+      };
+
+      setFormErrors(errors);
+
+      if (Object.values(errors).some(Boolean)) {
+        return;
+      }
+
+      await postAnimal({ data: newAnimal, id })
+      await postAnimalPrivateInfo({ data: newPrivateInfo, id })
+
+      router.replace('/plam-admin/animales')
+
+    } catch (error) {
+      console.error('Error al guardar el animal:', error);
+      alert('algo salio mal')
+
+    }
+  };
+
+  const handleImageDelete = async (imgId: string) => {
+    await deleteImage(imgId)
+    const filteredImages = images.filter((img) => img.imgId !== imgId);
+    setImages(filteredImages);
+  };
+
+  return (
+    <section className='flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full'>
+      <h1 className="text-4xl font-bold">Crear Animal</h1>
+      <p>Aquí puedes crear un nuevo animal para la base de datos.</p>
+      <form action="#" onSubmit={(e) => { e.preventDefault() }} autoComplete='off' className="flex flex-col gap-4 max-w-xl w-full">
+
+        <label className='flex flex-col font-bold gap-1'>
+          Nombre:
+          {formErrors.name && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.name}</div>}             
+          <input className='outline-2 outline-gray-200 rounded p-2' type='text' name="name" value={animal.name} onChange={handleChange} required />
+        </label>
+
+        <label className='flex flex-col font-bold gap-1'>
+          Descripción:
+          {formErrors.description && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.description}</div>}
+          <textarea className='outline-2 outline-gray-200 rounded p-2' name="description" value={animal.description} onChange={handleChange} />
+        </label>
+
+        <label className='flex flex-col font-bold'>
+          Género:
+          <select className='outline-2 outline-gray-200 rounded p-2' name="gender" value={animal.gender} onChange={handleChange}>
+            <option value="macho">Macho</option>
+            <option value="hembra">Hembra</option>
+          </select>
+        </label>
+
+        <label className='flex flex-col font-bold'>
+          Especie:
+          <select className='outline-2 outline-gray-200 rounded p-2' name="species" value={animal.species} onChange={handleChange}>
+            <option value="perro">Perro</option>
+            <option value="gato">Gato</option>
+            <option value="otros">Otros</option>
+          </select>
+        </label>
+
+        <label className='flex flex-col font-bold'>
+          Etapa de vida:
+          <select className='outline-2 outline-gray-200 rounded p-2' name="lifeStage" value={animal.lifeStage} onChange={handleChange}>
+            <option value="cachorro">Cachorro</option>
+            <option value="adulto">Adulto</option>
+            <option value="mayor">Mayor</option>
+          </select>
+        </label>
+
+        <label className='flex flex-col font-bold'>
+          Tamaño:
+          <select className='outline-2 outline-gray-200 rounded p-2' name="size" value={animal.size} onChange={handleChange}>
+            <option value="pequeño">Pequeño</option>
+            <option value="mediano">Mediano</option>
+            <option value="grande">Grande</option>
+          </select>
+        </label>
+
+
+        <label className='flex flex-col font-bold'>
+          Fecha de nacimiento aproximada:
+          <input
+            className='outline-2 outline-gray-200 rounded p-2'
+            type="date"
+            name="aproxBirthDate"
+            value={animal.aproxBirthDate ? new Date(animal.aproxBirthDate).toLocaleDateString('sv-SE') : ''}
+            onChange={(e) =>
+              setAnimal((prev) => ({
+                ...prev,
+                aproxBirthDate: e.target.value ? new Date(e.target.value).getTime() : 0,
+              }))
+            }
+          />
+        </label>
+
+        <label className='flex flex-col font-bold'>
+          Esperando desde:
+          <input
+            className='outline-2 outline-gray-200 rounded p-2'
+            type="date"
+            name="waitingSince"
+            value={animal.waitingSince ? new Date(animal.waitingSince).toLocaleDateString('sv-SE') : ''}
+            onChange={(e) =>
+              setAnimal((prev) => ({
+                ...prev,
+                waitingSince: e.target.value ? new Date(e.target.value).getTime() : 0,
+              }))
+            }
+          />
+        </label>
+
+
+
+
+        <label className='flex flex-col font-bold'>
+          Ubicación:
+          <select className='outline-2 outline-gray-200 rounded p-2' name="location" value={animal.location} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }}>
+            <option value="adoptado">Adoptado</option>
+            <option value="calle">Calle</option>
+            <option value="protectora">Protectora</option>
+            <option value="transitorio">Transitorio</option>
+          </select>
+        </label>
+
+        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+          <span>Disponible para adoptar:</span>
+          <input type="checkbox"
+            className="sr-only peer"
+            defaultChecked={animal.isAvalible}
+            name="isAvalible"
+            onChange={(e) =>
+              setIsAvalible(e.target.checked)
+            } />
+          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+        </label>
+
+
+        {animal.location && (
+          <section className='bg-gray-100 p-2 rounded-lg'>
+            <h3 className='font-semibold text-center' >Datos privados del Animal</h3>
+            <label className='flex flex-col font-bold gap-1'>
+              Nombre del contacto:
+              {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>}
+              <input
+                className='outline-2 outline-gray-200 rounded p-2'
+                type="text"
+                name="contactName"
+                onChange={handlePrivateInfoChange}
+              />
+            </label>
+            <section className='flex flex-col gap-4'>
+              <h2 className='text-lg font-bold'>Contactos:</h2>
+              {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>}
+
+              {contacts.length > 0 && contacts.map((contact, index) => (
+                <div key={`${contact.value}-${index}`} className='flex gap-2 flex-wrap'>
+                  <span className='font-bold'>{contact.type}:</span>
+                  <span>{contact.value}</span>
+                  <button
+                    className='bg-red-500 text-white px-2 rounded'
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setContacts((prev) => prev.filter((_, i) => i !== index));
+                    }}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+
+              <button
+                className={`${!showContactForm ? 'bg-green-400' : 'bg-red-400'} text-white px-4 py-2 rounded`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowContactForm((prev) => !prev);
+                }}
+              >
+                {`${!showContactForm ? 'Agregar contacto' : 'Cerrar'} `}
+              </button>
+              {showContactForm && <section className='flex flex-col gap-1 bg-cream-light w-full h-full px-2'>
+                <h3 className='text-lg font-semibold'>Agregar Contacto</h3>
+                <label className='flex flex-col font-bold'>
+                  Tipo de contacto:
+                  <select
+                    className='outline-2 outline-gray-200 rounded p-2'
+                    name="contactType"
+                    onChange={(e) =>
+                      setNewContact((prev) => ({
+                        ...prev,
+                        type: e.target.value as 'celular' | 'email' | 'other',
+                      }))
+                    }
+                  >
+                    <option value="celular">Celular</option>
+                    <option value="email">Email</option>
+                    <option value="other">Otro</option>
+                  </select>
+                </label>
+                <label className='flex flex-col font-bold'>
+                  Valor del contacto:
+                  <input
+                    className='outline-2 outline-gray-200 rounded p-2'
+                    type="text"
+                    name="contactValue"
+                    onChange={(e) =>
+                      setNewContact((prev) => ({
+                        ...prev,
+                        value: e.target.value,
+                      }))
+                    }
+
+                  />
+                </label>
+                <button
+                  className='bg-green-500 text-white px-4 py-2 rounded'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (newContact.value) {
+                      setContacts((prev) => [...prev, newContact]);
+                      setNewContact({ type: 'email', value: '' });
+                      setShowContactForm((prev) => !prev);
+                    }
+                  }}
+                >
+                  Agregar contacto
+                </button>
+              </section>
+              }
+
+            </section>
+
+            <label className='flex flex-col font-bold'>
+              <span>Fecha de inicio:</span>
+              <p className='font-normal text-xs text-balance'>(Esta es la fecha en la que cambio el estado. Por ejemplo si estaba en transitorio y es adoptado, aca va la fecha de adopción) </p>
+              <input
+                className='outline-2 outline-gray-200 rounded p-2'
+                type="date"
+                name="since"
+                defaultValue={new Date().toLocaleDateString('sv-SE')}
+                onChange={(e) =>
+                  setPrivateInfo((prev) => ({
+                    ...prev,
+                    since: e.target.value ? new Date(e.target.value).getTime() : 0,
+                  }))
+                }
+              />
+            </label>
+            <label className='flex flex-col font-bold'>
+              Notas:
+              <textarea className='outline-2 outline-gray-200 rounded p-2' name="notes" onChange={handlePrivateInfoChange} />
+            </label>
+
+
+          </section>
+        )}
+
+
+
+        <section className='flex flex-wrap gap-4 items-center justify-center'>
+
+          {images.length > 0 &&
+            // <PhotoCarrousel images={images}/>
+            images.map((img) => (
+              <div key={img.imgId} className="relative flex flex-col items-center">
+                <button onClick={(e) => { e.preventDefault(); handleImageDelete(img.imgId) }} className='bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow'>X</button>
+                <img src={img.imgUrl} alt={img.imgAlt} className="w-40 h-40 object-cover rounded mb-2" />
+                <span className="text-sm text-gray-500">{img.imgId}</span>
+              </div>
+            ))
+          }
+        </section>
+        {formErrors.images && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.images}</div>}
+        {images.length < 5 &&
+          <UploadImages onImagesAdd={(newImages) => {
+            setImages(prev => [...prev, ...newImages]);
+          }} />
+        }
+
+        {Object.values(formErrors).some(Boolean) && (
+          <div className="bg-red-500 text-white p-3 rounded">
+            <p>Faltan Datos:</p>
+            <ul className="list-disc ml-5">
+              {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
+              {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
+              {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
+              {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>}
+              {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>}
+            </ul>
+          </div>
+        )}
+        <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
+          Guardar animal
+        </button>
+      </form>
+    </section>
+  );
+}
