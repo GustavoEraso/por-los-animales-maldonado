@@ -189,7 +189,7 @@ export default function AnimalForm() {
 
         <label className='flex flex-col font-bold'>
           Etapa de vida:
-          <select className='outline-2 outline-gray-200 rounded p-2' name="lifeSatge" value={animal.lifeStage} onChange={handleChange}>
+          <select className='outline-2 outline-gray-200 rounded p-2' name="lifeStage" value={animal.lifeStage} onChange={handleChange}>
             <option value="cachorro">Cachorro</option>
             <option value="adulto">Adulto</option>
             <option value="mayor">Mayor</option>

@@ -7,12 +7,12 @@ type Filters = Partial<{
   gender: Animal["gender"];
   species: Animal["species"];
   aproxBirthDate: Animal["aproxBirthDate"];
-  lifeSatge: Animal["lifeSatge"];
+  lifeStage: Animal["lifeStage"];
   size: Animal["size"];
-  status: Animal["status"];
+  status: Animal["isAvalible"];
   location: Animal["location"];
   minWaitingSince: number;
-  sortBy: keyof Pick<Animal, "name" | "waitingSince" | "status" | "aproxBirthDate" | "gender" | "species" | "size">;
+  sortBy: keyof Pick<Animal, "name" | "waitingSince" | "isAvalible" | "aproxBirthDate" | "gender" | "species" | "size">;
   sortOrder: "asc" | "desc";
 }>;
 

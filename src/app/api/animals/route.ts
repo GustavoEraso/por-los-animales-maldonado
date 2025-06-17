@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     if (
       sortBy &&
-      ["name", "waitingSince", "aproxBirthDate","status", "gender", "species", "size"].includes(sortBy)
+      ["name", "waitingSince", "aproxBirthDate","isAvalible", "gender", "species", "size"].includes(sortBy)
     ) {
         if(!filtered) return NextResponse.json([]);
       finalResults = [...filtered].sort((a, b) => {

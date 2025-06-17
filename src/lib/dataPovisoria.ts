@@ -29,7 +29,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Tango fue encontrado en una villa donde vivía entre autos abandonados. A pesar de las condiciones, siempre se mostraba feliz de ver personas. Hoy busca una familia que le dé el amor y la seguridad que nunca tuvo. Es muy juguetón, disfruta de los paseos largos y no tiene problemas con otros perros. Tiene una energía media y se adapta fácilmente a diferentes hogares.',
-    lifeSatge: 'adulto',
+    lifeStage: 'adulto',
     size: 'mediano',
     status: 'disponible',
     location: 'calle',
@@ -49,7 +49,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Brisa fue abandonada en un descampado junto a sus dos hermanitos. Fue la única que sobrevivió al frío y la desnutrición. Es una perrita sensible que necesita un entorno tranquilo y paciente. Le gusta estar en compañía, pero aún se asusta con ruidos fuertes. Una familia que le brinde confianza será ideal para que pueda florecer y ser feliz nuevamente.',
-    lifeSatge: 'cachorro',
+    lifeStage: 'cachorro',
     size: 'pequeño',
     status: 'disponible',
     location: 'transitorio',
@@ -69,7 +69,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Rocco fue hallado cuidando a una camada entera de cachorros, aunque él mismo era apenas un joven. Tiene un espíritu noble y un corazón enorme. Es ideal para una familia activa, ya que le encanta correr, explorar y jugar. También es obediente y leal. Con algo de entrenamiento, se convertiría en un compañero inseparable que siempre está atento y dispuesto.',
-    lifeSatge: 'adulto',
+    lifeStage: 'adulto',
     size: 'grande',
     status: 'disponible',
     location: 'protectora',
@@ -89,7 +89,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Mila vivió toda su vida en un hogar, pero fue llevada a la protectora cuando sus dueños fallecieron. Está muy acostumbrada a la vida de casa y es extremadamente educada. Aunque mayor, todavía disfruta de las caminatas suaves y dormir al sol. Busca un hogar tranquilo donde pueda descansar y recibir el cariño que merece en esta etapa de su vida.',
-    lifeSatge: 'mayor',
+    lifeStage: 'mayor',
     size: 'mediano',
     status: 'disponible',
     location: 'protectora',
@@ -109,7 +109,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Simón es un cachorro activo que fue hallado jugando solo con una pelota de trapo en plena avenida. A pesar de haber nacido en la calle, es muy sociable y cariñoso con humanos y otros perros. Necesita un hogar donde pueda canalizar su energía de forma positiva. Es perfecto para familias jóvenes o personas con tiempo para jugar y entrenar.',
-    lifeSatge: 'cachorro',
+    lifeStage: 'cachorro',
     size: 'mediano',
     status: 'disponible',
     location: 'transitorio',
@@ -129,7 +129,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Lola fue encontrada rondando por un mercado donde buscaba comida entre los restos. Es muy juguetona y activa, ideal para una familia con niños. Ama los peluches, las caminatas y los abrazos. Si bien es enérgica, también disfruta de las siestas largas. Está aprendiendo a caminar con correa y responde bien a los límites. ¡Una perrita con mucho potencial!',
-    lifeSatge: 'cachorro',
+    lifeStage: 'cachorro',
     size: 'pequeño',
     status: 'disponible',
     location: 'calle',
@@ -149,7 +149,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Thor fue encontrado defendiendo una caja de cartón como su único refugio. Es un perro fuerte, con presencia imponente, pero con un corazón de oro. Está acostumbrado a cuidar lo suyo y por eso sería ideal para personas con experiencia en manejo de perros grandes. Con guía adecuada, se convierte en un compañero noble, protector y leal para toda la vida.',
-    lifeSatge: 'adulto',
+    lifeStage: 'adulto',
     size: 'grande',
     status: 'disponible',
     location: 'protectora',
@@ -169,7 +169,7 @@ export const provisoria: Animal[] = [
       }
     ],
     description: 'Duna fue encontrada junto a sus cachorros en una zanja durante una tormenta. Fue una madre ejemplar y aún hoy se muestra protectora con otros animales. Es tranquila, muy noble y disfruta de los mimos. No necesita demasiado ejercicio y se adapta a cualquier hogar. Lo único que pide es un rincón seguro donde sentirse amada y protegida.',
-    lifeSatge: 'mayor',
+    lifeStage: 'mayor',
     size: 'mediano',
     status: 'disponible',
     location: 'protectora',
