@@ -25,7 +25,7 @@ export default async function AnimalPage({ params }: PageProps) {
     );
   }
 
-  const { name, description, status, images, gender, lifeSatge, location, size, species, waitingSince } = animal;
+  const { name, description, isAvalible , images, gender, lifeStage, location, size, species, waitingSince } = animal;
   const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
@@ -36,12 +36,12 @@ export default async function AnimalPage({ params }: PageProps) {
           <div className="flex flex-col gap-4 text-start text-black px-2">
             <p className="text-green-dark text-lg font-bold">{description}</p>
             <ul className="list-disc pl-4 text-green-dark">
-              <li className="text-xl font-semibold">Estado: <span className="font-normal">{status}</span></li>
+              <li className="text-xl font-semibold">Estado: <span className="font-normal">{`${isAvalible ? 'Disonible': 'De momento no se puede adoptar'}`}</span></li>
               <li className="text-xl font-semibold">Género: <span className="font-normal">{gender}</span></li>
               <li className="text-xl font-semibold">Especie: <span className="font-normal">{species}</span></li>
               <li className="text-xl font-semibold">Tamaño: <span className="font-normal">{size}</span></li>
               <li className="text-xl font-semibold">Lugar: <span className="font-normal">{location}</span></li>
-              <li className="text-xl font-semibold">Edad: <span className="font-normal">{lifeSatge}</span></li>
+              <li className="text-xl font-semibold">Edad: <span className="font-normal">{lifeStage}</span></li>
               <li className="text-xl font-semibold">
                 Esperándote desde: <span className="font-normal">{`${formatDateMMYYYY(waitingSince)} (hace ${tiempoTranscurrido(waitingSince)})`}</span>
               </li>
