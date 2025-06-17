@@ -42,7 +42,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </Link>
                             </li>
 
-                            <li className="hover:bg-cream-light hover:text-green-dark px-2 py-1 rounded">Usuarios</li>
+                            <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                                <Link className="w-full px-2 py-1 " href={'/plam-admin/animales'}>
+                                    <span >Usuarios</span>
+                                </Link>
+                            </li>
 
                         </ul>
                     </div>

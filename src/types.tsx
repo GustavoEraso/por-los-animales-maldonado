@@ -24,7 +24,7 @@ interface ContactType {
   value: string | number;
 }
 
-export type PrivateInfo ={
+export interface PrivateInfo {
     isAvalible: boolean,   
     location: 'calle' | 'adoptado'|'transitorio'|'protectora';
     since: number;
@@ -35,3 +35,13 @@ export type PrivateInfo ={
     modifiedBy: string;
   }
   
+
+  export interface UserType{
+    id: string,
+    name: string,
+    role: string
+  }
+
+  export interface CollectionsType{
+    currentColection: 'animals'| 'authorizedEmails'| 'privateInfo'
+  }
