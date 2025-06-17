@@ -26,10 +26,10 @@ export default async function AnimalPage({ params }: PageProps) {
   }
 
   const { name, description, status, images, gender, lifeSatge, location, size, species, waitingSince } = animal;
-
+  const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
-      <Hero imgURL={images[0].imgUrl} title={name} imgAlt={images[0].imgAlt} />
+      <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
 
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
         <div className="flex flex-col md:flex-row gap-4 px-9 py-4 max-w-7xl">
@@ -47,13 +47,13 @@ export default async function AnimalPage({ params }: PageProps) {
               </li>
             </ul>
           </div>
-          <img src={images[0].imgUrl} alt={images[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" />
+          <img src={img[0].imgUrl} alt={img[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" />
         </div>
       </section>
 
       <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl items-center">
         <h3 className="font-extrabold text-4xl text-green-dark">Más imágenes</h3>
-        <PhotoCarrousel images={images} />
+        <PhotoCarrousel images={img} />
       </section>
 
       <Modal buttonText="Postularme para adopción">
