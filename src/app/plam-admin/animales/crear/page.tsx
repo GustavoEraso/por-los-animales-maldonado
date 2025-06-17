@@ -51,7 +51,7 @@ export default function AnimalForm() {
   const [newContact, setNewContact] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }>({ type: 'celular', value: '' });
   const [showContactForm, setShowContactForm] = useState(false);
 
-  const [isAvalible, setIsAvalible] = useState(false);
+  const [isAvalible, setIsAvalible] = useState(true);
 
   useEffect(() => {
     setPrivateInfo((prev) => ({

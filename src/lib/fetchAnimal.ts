@@ -9,7 +9,7 @@ type Filters = Partial<{
   aproxBirthDate: Animal["aproxBirthDate"];
   lifeStage: Animal["lifeStage"];
   size: Animal["size"];
-  status: Animal["isAvalible"];
+  isAvalible: Animal["isAvalible"];
   location: Animal["location"];
   minWaitingSince: number;
   sortBy: keyof Pick<Animal, "name" | "waitingSince" | "isAvalible" | "aproxBirthDate" | "gender" | "species" | "size">;
