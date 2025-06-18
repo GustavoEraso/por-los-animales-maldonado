@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://porlosanimalesmaldonado.com";
+      : "https://www.porlosanimalesmaldonado.com";
   try {
  
     const {
