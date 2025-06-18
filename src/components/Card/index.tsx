@@ -8,8 +8,8 @@ export default function Card({ props }: { props: Animal }) {
     const img = images[0] || { imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' };
     const { imgUrl, imgAlt } = img;
     return (
-        <article className="grid grid-rows-[1.5fr_1fr] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
-            <div>
+        <article className="grid grid-rows-[1.8fr_1fr] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light ">
+            <div className="aspect-square">
                 <Link className="w-full h-full" href={`/adopta/${id}`}>
                     <Image className="w-full h-full object-cover bg-white" src={imgUrl} alt={imgAlt} width={300} height={300} />
                 </Link>
