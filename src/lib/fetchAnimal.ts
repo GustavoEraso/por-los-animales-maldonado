@@ -20,7 +20,7 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[]> {
    const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://porlosanimalesmaldonado.com";
+      : "https://www.porlosanimalesmaldonado.com";
 
   const res = await fetch(`${baseUrl}/api/animals`, {
     method: "POST",
