@@ -16,7 +16,7 @@ export default function Card({ props }: { props: Animal }) {
             </div>
             <div className="flex flex-col items-center justify-between gap-1 p-2">
                 <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
-                <p className="text-center">{`${gender} | ${lifeStage} | ${isAvalible ? 'disponible':''}`}</p>
+                <p className="text-center">{`${gender} | ${lifeStage} | ${isAvalible ? 'disponible':'no disponible'}`}</p>
                 <Link className="w-fit text-xl rounded-full px-2 py-1 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset" href={`/adopta/${id}`}>Ver más info</Link>
             </div>
 
