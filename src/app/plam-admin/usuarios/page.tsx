@@ -12,7 +12,6 @@ export default function PlamAdmin() {
         const getData = async () => {
             const res = await getFirestoreData({ currentCollection: 'authorizedEmails' })
             setUsers(res)
-            console.log(res)
         }
         getData()
     }, [])
