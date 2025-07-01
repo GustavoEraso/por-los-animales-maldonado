@@ -20,7 +20,7 @@ export default function Header() {
         signOut(auth)
             .then(() => {
                 // Logout exitoso, podés redirigir
-                window.location.href = "/";
+                router.replace("/");
             })
             .catch((error) => {
                 console.error("Error al cerrar sesión:", error);

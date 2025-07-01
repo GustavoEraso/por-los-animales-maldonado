@@ -18,9 +18,10 @@ function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
 interface ModalProps {
   buttonText: string
   children: React.ReactNode;
+  buttonStyles?: string;
 }
 
-function Modal({ children, buttonText }: ModalProps): React.ReactNode {
+function Modal({ children, buttonText, buttonStyles }: ModalProps): React.ReactNode {
   const [isOpen, setModalOpen] = useState(false);
 
   const openModal = () => setModalOpen(true);
@@ -33,9 +34,9 @@ function Modal({ children, buttonText }: ModalProps): React.ReactNode {
 
   return (
     <div>
-      <button onClick={openModal} className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer">
+      <button onClick={openModal} className={`${buttonStyles ? buttonStyles : "w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer"}`}>
         {buttonText}
-        </button>
+      </button>
 
       {isOpen &&
         (<div className={`${styles.modal} ${isOpen ? styles.open : ''}`}>

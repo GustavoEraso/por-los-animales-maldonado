@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { UserType } from "@/types";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 
-export default function PlamAdmin() {
+export default function PlamAdminUsers() {
 
     const [users, setUsers] = useState<UserType[]>([])
 

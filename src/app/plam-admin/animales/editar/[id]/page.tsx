@@ -5,9 +5,10 @@ import UploadImages from '@/elements/UploadImage';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postAnimal } from '@/lib/firebase/postAnimal';
 import { postAnimalPrivateInfo } from '@/lib/firebase/postAnimalPrivateInfo';
-import { useRouter } from 'next/navigation';
-import { generateAnimalId } from '@/lib/generateAnimalId';
+import { useRouter, useParams } from 'next/navigation';
 import { auth } from '@/firebase';
+import { getFirestoreAnimalById } from '@/lib/firebase/getFirestoreAnimalById';
+import { getFirestorePrivateInfoById } from '@/lib/firebase/getFirestorePrivateInfoById ';
 
 
 const initialAnimal: Animal = {
@@ -22,7 +23,6 @@ const initialAnimal: Animal = {
   size: 'mediano',
   isAvalible: false,
   isVisible: false,
-  isDeleted: false,
   status: 'calle',
   waitingSince: Date.now(),
 };
@@ -30,7 +30,6 @@ const initialAnimal: Animal = {
 const initialPrivateInfo: PrivateInfo = {
   isAvalible: false,
   isVisible: false,
-  isDeleted: false,
   status: 'transitorio',
   since: Date.now(),
   contactName: '',
@@ -38,11 +37,16 @@ const initialPrivateInfo: PrivateInfo = {
   modifiedBy: '',
 }
 
-export default function CreateAnimalForm() {
+export default function EditAnimalForm() {
   const router = useRouter();
+  const params = useParams();
+  const currentId = params.id as string;
+
+  const [isLoading, setIsLoading] = useState(true);
+
+
   const [animal, setAnimal] = useState<Animal>(initialAnimal);
   const [privateInfo, setPrivateInfo] = useState<PrivateInfo>(initialPrivateInfo);
-
   const [images, setImages] = useState<Img[]>([]);
 
   const [contacts, setContacts] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }[]>([]);
@@ -52,14 +56,66 @@ export default function CreateAnimalForm() {
   const [isAvalible, setIsAvalible] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
 
-   function formatMillisForInputDate(millis: number): string {
-  const date = new Date(millis);
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
-  const day = String(date.getUTCDate()).padStart(2, '0');
+  useEffect(() => {
+    console.log('isAvalible:', isAvalible, 'isVisible:', isVisible);
+  },[isAvalible, isVisible])
 
-  return `${year}-${month}-${day}`;
-}
+  function formatMillisForInputDate(millis: number): string {
+    const date = new Date(millis);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+    const day = String(date.getUTCDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+
+  useEffect(() => {
+    const fetchAnimalData = async () => {
+      try {
+        if (!currentId) return null;
+        const animal = await getFirestoreAnimalById(currentId);
+        if (!animal) {
+          console.error('Animal not found');
+          return;
+        }
+        const currentPrivateInfo = await getFirestorePrivateInfoById(currentId);
+        if (!currentPrivateInfo) {
+          console.error('Private info not found for this animal');
+          return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...onlyData } = currentPrivateInfo;
+        const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
+          return data.date > latest[1].date ? [key, data] : latest;
+        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [dateKey, latestData] = latestEntry;
+
+        if (!latestData) {
+          console.error('No valid private info data found');
+          return;
+        }
+        const currentData = latestData as unknown as PrivateInfo
+
+        setAnimal(animal)
+        setPrivateInfo(currentData);
+
+        setImages(animal.images || []);
+        setContacts(currentData.contacts || []);
+
+
+      } catch (error) {
+        console.error('Error fetching animal data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAnimalData();
+
+  }, [currentId]);
+
+
 
   useEffect(() => {
     setPrivateInfo((prev) => ({
@@ -67,6 +123,30 @@ export default function CreateAnimalForm() {
       contacts
     }));
   }, [contacts])
+
+  useEffect(() => {
+    setAnimal((prev) => ({
+      ...prev,
+      isAvalible: isAvalible,
+    }));
+    setPrivateInfo((prev) => ({
+      ...prev,
+      isAvalible: isAvalible,
+    }));
+  }, [isAvalible]);
+
+  useEffect(() => {
+    setAnimal((prev) => ({
+      ...prev,
+      isVisible: isVisible,
+    }));
+    setPrivateInfo((prev) => ({
+      ...prev,
+      isVisible: isVisible,
+    }));
+  }, [isVisible]);
+
+
 
 
 
@@ -111,10 +191,8 @@ export default function CreateAnimalForm() {
     e.preventDefault();
 
     try {
-      const id = await generateAnimalId(animal.name);
       const newAnimal: Animal = {
         ...animal,
-        id: id,
         images: images,
         isAvalible: isAvalible,
         isVisible: isVisible,
@@ -144,8 +222,8 @@ export default function CreateAnimalForm() {
         return;
       }
 
-      await postAnimal({ data: newAnimal, id })
-      await postAnimalPrivateInfo({ data: newPrivateInfo, id })
+      await postAnimal({ data: newAnimal, id:animal.id  })
+      await postAnimalPrivateInfo({ data: newPrivateInfo,id:animal.id})
 
       router.replace('/plam-admin/animales')
 
@@ -162,15 +240,23 @@ export default function CreateAnimalForm() {
     setImages(filteredImages);
   };
 
+  if (isLoading) {
+  return (
+    <section className='flex justify-center items-center w-full h-screen'>
+      <p className='text-2xl font-bold'>Cargando animal...</p>
+    </section>
+  );
+}
+
   return (
     <section className='flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full'>
-      <h1 className="text-4xl font-bold">Crear Animal</h1>
-      <p>Aquí puedes crear un nuevo animal para la base de datos.</p>
+      <h1 className="text-4xl font-bold">Editar Animal</h1>
+      <p>actualiza los datos del animal.</p>
       <form action="#" onSubmit={(e) => { e.preventDefault() }} autoComplete='off' className="flex flex-col gap-4 max-w-xl w-full">
 
         <label className='flex flex-col font-bold gap-1'>
           Nombre:
-          {formErrors.name && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.name}</div>}             
+          {formErrors.name && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.name}</div>}
           <input className='outline-2 outline-gray-200 rounded p-2' type='text' name="name" value={animal.name} onChange={handleChange} required />
         </label>
 
@@ -222,7 +308,7 @@ export default function CreateAnimalForm() {
             className='outline-2 outline-gray-200 rounded p-2'
             type="date"
             name="aproxBirthDate"
-            value={animal.aproxBirthDate ? formatMillisForInputDate(animal.aproxBirthDate) : ''}
+            value={formatMillisForInputDate( animal.aproxBirthDate)}
             onChange={(e) =>
               setAnimal((prev) => ({
                 ...prev,
@@ -238,7 +324,7 @@ export default function CreateAnimalForm() {
             className='outline-2 outline-gray-200 rounded p-2'
             type="date"
             name="waitingSince"
-            value={animal.waitingSince ? formatMillisForInputDate(animal.waitingSince) : ''}
+            value={formatMillisForInputDate(animal.waitingSince) }
             onChange={(e) =>
               setAnimal((prev) => ({
                 ...prev,
@@ -253,7 +339,7 @@ export default function CreateAnimalForm() {
 
         <label className='flex flex-col font-bold'>
           Situación actual:
-          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }}>
+          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }} > 
             <option value="adoptado">Adoptado</option>
             <option value="calle">Calle</option>
             <option value="protectora">Protectora</option>
@@ -273,10 +359,10 @@ export default function CreateAnimalForm() {
           <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
         </label>
         <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Mostar:</span>
+          <span>Mostrar:</span>
           <input type="checkbox"
             className="sr-only peer"
-            defaultChecked={animal.isAvalible}
+            defaultChecked={animal.isVisible}
             name="isVisible"
             onChange={(e) =>
               setIsVisible(e.target.checked)
@@ -295,6 +381,7 @@ export default function CreateAnimalForm() {
                 className='outline-2 outline-gray-200 rounded p-2'
                 type="text"
                 name="contactName"
+                defaultValue={privateInfo.contactName}
                 onChange={handlePrivateInfoChange}
               />
             </label>
@@ -386,7 +473,7 @@ export default function CreateAnimalForm() {
                 className='outline-2 outline-gray-200 rounded p-2'
                 type="date"
                 name="since"
-                defaultValue={formatMillisForInputDate(Date.now())}
+                defaultValue={formatMillisForInputDate(privateInfo.since)}
                 onChange={(e) =>
                   setPrivateInfo((prev) => ({
                     ...prev,
@@ -397,14 +484,11 @@ export default function CreateAnimalForm() {
             </label>
             <label className='flex flex-col font-bold'>
               Notas:
-              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" onChange={handlePrivateInfoChange} />
+              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" defaultValue={privateInfo.notes} onChange={handlePrivateInfoChange} />
             </label>
-
 
           </section>
         )}
-
-
 
         <section className='flex flex-wrap gap-4 items-center justify-center'>
 

@@ -10,7 +10,9 @@ type Filters = Partial<{
   lifeStage: Animal["lifeStage"];
   size: Animal["size"];
   isAvalible: Animal["isAvalible"];
-  location: Animal["location"];
+  isVisible: Animal["isVisible"];
+  isDeleted: Animal["isDeleted"];
+  status: Animal["status"];
   minWaitingSince: number;
   sortBy: keyof Pick<Animal, "name" | "waitingSince" | "isAvalible" | "aproxBirthDate" | "gender" | "species" | "size">;
   sortOrder: "asc" | "desc";

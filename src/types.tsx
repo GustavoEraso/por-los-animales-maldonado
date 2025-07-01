@@ -15,25 +15,34 @@ export interface Animal {
   lifeStage: 'cachorro' | 'adulto' | 'mayor',
   size: 'pequeño' | 'mediano' | 'grande',
   isAvalible: boolean,
-  location: 'calle' | 'protectora' | 'transitorio' | 'adoptado',
+   isVisible: boolean,
+  status: 'calle' | 'protectora' | 'transitorio' | 'adoptado',
   waitingSince: number,
+  isDeleted?: boolean,
 }
 
 interface ContactType {
   type: 'celular' | 'email' | 'other';
-  value: string | number;
+  value: string | number,
 }
 
 export interface PrivateInfo {
-    isAvalible: boolean,   
-    location: 'calle' | 'adoptado'|'transitorio'|'protectora';
-    since: number;
-    contactName: string;
-    contacts?: ContactType[];
-    notes?: string;
-    date: number;
-    modifiedBy: string;
+    isAvalible: boolean, 
+    isVisible: boolean,
+    status: 'calle' | 'adoptado'|'transitorio'|'protectora',
+    since: number,
+    contactName: string,
+    contacts?: ContactType[],
+    notes?: string,
+    date: number,
+    modifiedBy: string,
+    isDeleted?: boolean,
   }
+
+  export interface PrivateInfoDocType {
+  id: string;
+  data:Record<string, PrivateInfo>;
+}
   
 
   export interface UserType{
