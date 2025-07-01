@@ -5,6 +5,8 @@ import PhotoCarrousel from "@/components/PhotoCarrousel";
 import { Modal } from "@/components/Modal";
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from "@/lib/dateUtils";
+import ShareButton from "@/elements/ShareButton";
+import { unstable_ViewTransition as ViewTransition } from 'react';
 
 
 type PageProps = {
@@ -27,11 +29,13 @@ export default async function AnimalPage({ params }: PageProps) {
   }
 
   const { name, description, isAvalible , images, gender, aproxBirthDate, status, size, species, waitingSince } = animal;
-  const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
+  const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' ,imgId: 'default-image' }];
 
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
+       <ViewTransition name={`animal-${id}`}>
       <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
+      </ViewTransition>
 
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
         <div className="flex flex-col md:flex-row gap-4 px-9 py-4 max-w-7xl">
@@ -48,8 +52,12 @@ export default async function AnimalPage({ params }: PageProps) {
                 Esperándote desde: <span className="font-normal">{`${formatDateMMYYYY(waitingSince)} (hace ${yearsOrMonthsElapsed(waitingSince)})`}</span>
               </li>
             </ul>
+            <ShareButton/>
           </div>
+         
+
           <img src={img[0].imgUrl} alt={img[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" />
+          
         </div>
       </section>
 

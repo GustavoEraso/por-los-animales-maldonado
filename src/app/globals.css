@@ -3,6 +3,8 @@
 
 @config "../../tailwind.config.js";
 
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -48,11 +50,12 @@
 
 
 
+
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Helvetica, var(--font-roboto),sans-serif;
 }
-
 
 
