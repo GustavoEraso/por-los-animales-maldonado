@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     // Filtro principal
     const filtered = lastCache?.filter((animal) => {
+       if (animal.isDeleted) return false;
       const exactMatches = Object.entries(filters).every(([key, value]) => {
         if (["minWaitingSince", "nameIncludes"].includes(key)) return true;
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     if (
       sortBy &&
-      ["name", "waitingSince", "aproxBirthDate","isAvalible", "gender", "species", "size"].includes(sortBy)
+      ["name", "waitingSince", "aproxBirthDate","isAvalible","isVisible", "gender", "species", "size"].includes(sortBy)
     ) {
         if(!filtered) return NextResponse.json([]);
       finalResults = [...filtered].sort((a, b) => {

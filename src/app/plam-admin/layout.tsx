@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <section className=" relative flex w-full min-h-screen ">
-            <section className="absolute flex flex-col h-full bg-green-forest text-white  z-10">
+            <section className="absolute flex flex-col h-full bg-green-forest text-white  z-20">
                 <section className=" sticky top-32 z-10">
                     <div className={` transition-all duration-300 ${!showMenu ? 'w-0' : 'w-full px-2'} overflow-hidden pt-2`}>
                         <Link className="w-full px-2 py-1 text-xl  hover:bg-cream-light hover:text-green-dark " href={'/plam-admin/'}>
@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             </li>
 
                             <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
-                                <Link className="w-full px-2 py-1 " href={'/plam-admin/animales'}>
+                                <Link className="w-full px-2 py-1 " href={'/plam-admin/usuarios'}>
                                     <span >Usuarios</span>
                                 </Link>
                             </li>

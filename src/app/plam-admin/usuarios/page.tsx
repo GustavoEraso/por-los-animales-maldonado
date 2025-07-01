@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { UserType } from "@/types";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 
-export default function PlamAdmin() {
+export default function PlamAdminUsers() {
 
     const [users, setUsers] = useState<UserType[]>([])
 
@@ -12,7 +12,6 @@ export default function PlamAdmin() {
         const getData = async () => {
             const res = await getFirestoreData({ currentCollection: 'authorizedEmails' })
             setUsers(res)
-            console.log(res)
         }
         getData()
     }, [])

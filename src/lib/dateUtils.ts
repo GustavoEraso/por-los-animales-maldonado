@@ -6,27 +6,37 @@ export function formatDateMMYYYY(timestamp: number): string {
     return `${month}/${year}`;
 }
 
-export function tiempoTranscurrido(fromMs: number, toMs: number = Date.now()): string {
-    const fromDate = new Date(fromMs);
-    const toDate = new Date(toMs);
 
-    let years = toDate.getFullYear() - fromDate.getFullYear();
-    let months = toDate.getMonth() - fromDate.getMonth();
+export function yearsOrMonthsElapsed(millis: number): string {
+  
+  const then = new Date(millis);
+  const now  = new Date();
 
-    if (months < 0) {
-        years -= 1;
-        months += 12;
-    }
+  let years  = now.getFullYear() - then.getFullYear();
+  let months = now.getMonth()   - then.getMonth();
 
-    const añoTxt = years === 1 ? '1 año' : `${years} años`;
-    const mesTxt = months === 1 ? '1 mes' : `${months} meses`;
+  // Ajuste si el día del mes aún no llegó
+  if (now.getDate() < then.getDate()) months--;
 
-    if (years > 0 && months > 0) {
-        return `${añoTxt} y ${mesTxt}`;
-    } else if (years > 0) {
-        return añoTxt;
-    } else {
-        return mesTxt;
-    }
+  // Normaliza meses negativos sumando 12 y restando un año
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  // Con ≥ 1 año devolvemos "X años y Y meses" (Y puede ser 0)
+  if (years >= 1) {
+    const yearPart  = `${years} ${years === 1 ? 'año' : 'años'}`;
+    const monthPart = months > 0 ? ` y ${months} ${months === 1 ? 'mes' : 'meses'}` : '';
+    return yearPart + monthPart;
+  }
+
+  // Con < 1 año devolvemos solo meses o "menos de un mes"
+  if (months >= 1) return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+
+  return 'menos de un mes';
 }
+
+
+
 
