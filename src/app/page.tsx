@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeroCarrousel from "@/components/HeroCarrousel";
 import CircleCard from "@/components/CircleCard";
+import RevealSection from "@/components/RevealSection";
 
 
 
@@ -58,14 +59,14 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2  gap-8 w-full max-w-6xl p-4 py-16">
 
-            <CircleCard              
+            <CircleCard
               imgUrl={'/perro-amarillo-feliz.webp'}
               imgAlt={'imagen perro amarillo feliz'}
               linkUrl={'/donaciones#aportes-economicos'}
               linkText='doná ahora'
               invert={true}
             />
-            <CircleCard              
+            <CircleCard
               imgUrl='/perro-pelado.webp'
               imgAlt={'imagen perro blanco que necesita atencion medica'}
               linkUrl={'/donaciones#donacion-de-insumos'}
@@ -76,7 +77,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="flex flex-col items-center justify-center w-full bg-cream-light px-6">
+        {/* <section className="flex flex-col items-center justify-center w-full bg-cream-light px-6">
 
           <div className="flex flex-col md:flex-row-reverse gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="w-full min-w-1/3 flex items-center justify-center">
@@ -99,7 +100,16 @@ export default function Home() {
             </div>
           </div>
 
-        </section>
+        </section> */}
+
+        <RevealSection
+          imgSrc="/logo300.webp"
+          imgAlt="Logo"
+          title="Involucrate"
+          text="Hay muchas formas de ayudar a los animales más allá de adoptar. Podés colaborar ayudando con traslados, siendo hogar transitorio, ofreciendo un espacio para guardar donaciones, difundiendo casos en redes o incluso denunciando situaciones de maltrato animal. También recibimos donaciones de insumos, alimentos, mantas o cualquier elemento útil. Cada granito de arena cuenta y suma al bienestar de quienes más nos necesitan. ¡Tu compromiso puede hacer una gran diferencia!"
+          linkHref="/involucrate"
+          linkText="Ver más"
+        />
 
 
         <section className="flex flex-col items-center justify-center w-full bg-white px-6 py-12">
@@ -155,7 +165,7 @@ export default function Home() {
 
             </section>
             <h3 className="font-bold text-4xl uppercase text-center text-balance">nuestro correo electronico:</h3>
-           <a  className=" text-xl md:text-3xl text-center" href="mailto:porlosanimalesmaldo@gmail.com">porlosanimalesmaldo@gmail.com</a>
+            <a className=" text-xl md:text-3xl text-center" href="mailto:porlosanimalesmaldo@gmail.com">porlosanimalesmaldo@gmail.com</a>
           </div>
 
         </section>
