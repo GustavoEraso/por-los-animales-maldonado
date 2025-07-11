@@ -21,6 +21,22 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Por Los Animales Maldonado",
   description: "Somos un grupo de particulares que ayuda a animales en situación de calle.",
+  openGraph: {
+    title: "Por Los Animales Maldonado",
+    description: "Somos un grupo de particulares que ayuda a animales en situación de calle.",
+    url: "https://porlosanimalesmaldonado.com",
+    siteName: "Por Los Animales Maldonado",
+    images: [
+      {
+        url: "https://porlosanimalesmaldonado.com/logo300.webp",
+        width: 300,
+        height: 300,
+        alt: "Logo de Por Los Animales Maldonado",
+      },
+    ],
+    locale: "es_ES",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -29,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={` antialiased  ${roboto.variable}`}
       >
