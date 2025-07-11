@@ -5,8 +5,6 @@ import Link from 'next/link';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import SplitText from 'gsap/SplitText';
-
-/*  ⬇️  Importamos SOLO el tipo — no aumenta el bundle  */
 import type { SplitText as SplitTextInstance } from 'gsap/SplitText';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -34,57 +32,90 @@ export default function RevealSection({
     if (!root.current) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    /* ✅ Variable tipada: no más “implicit any” */
+    /* 1️⃣  Normaliza el scroll móvil una sola vez */
+    ScrollTrigger.normalizeScroll(true);
+
     let split: SplitTextInstance | null = null;
 
+    /* 2️⃣  Contenedor de media-queries */
+    const mm = gsap.matchMedia();
+
+    /* 3️⃣  Contexto GSAP, para limpiar fácilmente */
     const ctx = gsap.context(self => {
       const q = self.selector;
       if (!q) return;
 
-      /* Imagen desde la derecha */
-      gsap.from(q('.img'), {
-        xPercent: 100,
-        opacity: 0,
-        duration: 1,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: root.current, start: 'top 70%', once: true },
-      });
+      /* 4️⃣  Registro de queries */
+      mm.add(
+        {
+          isMobile: '(max-width: 767px)',
+          isDesktop: '(min-width: 768px)',
+        },
+        ({ conditions }) => {
+          const start = conditions?.isMobile ? 'center 90%' : 'top 70%';
+          const markerFlag =
+            process.env.NODE_ENV === 'development'
+              ? { markers: true }
+              : {};
 
-      /* Texto en líneas */
-      split = SplitText.create(q('.text'), {
-        type: 'lines',
-        aria: 'auto',
-      });
+          /* Imagen desde la derecha */
+          gsap.from(q('.img'), {
+            xPercent: 100,
+            opacity: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: root.current,
+              start,
+              once: true,
+              ...markerFlag,
+            },
+          });
 
-      gsap.from(split.lines, {
-        y: 24,
-        opacity: 0,
-        stagger: 0.2,
-        duration: 0.6,
-        rotate: 20,
-        yPercent: 500,
-        xPercent: -40,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: root.current, start: 'top 70%', once: true },
-      });
+          /* Texto en líneas con SplitText */
+          split = SplitText.create(q('.text'), { type: 'lines', aria: 'auto' });
 
-      /* Título + botón */
-      gsap.from(q(['.title', '.btn']), {
-        y: 40,
-        opacity: 0,
-        // stagger: 0.1,
-        duration: 0.6,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: root.current, start: 'top 70%', once: true },
-      });
+          gsap.from(split.lines, {
+            y: 24,
+            opacity: 0,
+            stagger: 0.08,
+            duration: 0.6,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: root.current,
+              start,
+              once: true,
+              ...markerFlag,
+            },
+          });
+
+          /* Título + botón */
+          gsap.from(q(['.title', '.btn']), {
+            y: 40,
+            opacity: 0,
+            stagger: 0.1,
+            duration: 0.6,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: root.current,
+              start,
+              once: true,
+              ...markerFlag,
+            },
+          });
+        }
+      );
     }, root);
 
+    /* 5️⃣  Limpieza */
     return () => {
-      ctx.revert();     // limpia tweens
-      split?.revert();  // recompone el párrafo
+      ctx.revert();   // tweens + estilos
+      mm.revert();    // media-queries y triggers
+      split?.revert();
     };
   }, []);
 
+  /* 6️⃣  JSX */
   return (
     <section
       ref={root}
@@ -99,7 +130,7 @@ export default function RevealSection({
         </div>
 
         {/* Texto + botón */}
-        <div className="flex flex-col gap-4 px-2 text-start text-black w-full">
+        <div className="flex w-full flex-col gap-4 px-2 text-start text-black">
           <h3 className="title text-4xl font-bold uppercase">{title}</h3>
 
           <p className="text">{text}</p>
