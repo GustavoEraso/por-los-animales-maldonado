@@ -8,7 +8,7 @@ import RevealSection from "@/components/RevealSection";
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center min-h-screen  ">
+    <div className="flex flex-col items-center min-h-screen overflow-x-hidden"> 
       <HeroCarrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
