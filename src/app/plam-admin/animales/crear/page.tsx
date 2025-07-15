@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Animal, Img, PrivateInfo } from '@/types';
 import UploadImages from '@/elements/UploadImage';
+import Loader from '@/components/Loader';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postAnimal } from '@/lib/firebase/postAnimal';
 import { postAnimalPrivateInfo } from '@/lib/firebase/postAnimalPrivateInfo';
@@ -40,6 +41,7 @@ const initialPrivateInfo: PrivateInfo = {
 
 export default function CreateAnimalForm() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [animal, setAnimal] = useState<Animal>(initialAnimal);
   const [privateInfo, setPrivateInfo] = useState<PrivateInfo>(initialPrivateInfo);
 
@@ -52,14 +54,14 @@ export default function CreateAnimalForm() {
   const [isAvalible, setIsAvalible] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
 
-   function formatMillisForInputDate(millis: number): string {
-  const date = new Date(millis);
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
-  const day = String(date.getUTCDate()).padStart(2, '0');
+  function formatMillisForInputDate(millis: number): string {
+    const date = new Date(millis);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
-}
+    return `${year}-${month}-${day}`;
+  }
 
   useEffect(() => {
     setPrivateInfo((prev) => ({
@@ -111,6 +113,10 @@ export default function CreateAnimalForm() {
     e.preventDefault();
 
     try {
+      const MIN_LOADING_TIME = 600;
+      const start = Date.now();
+
+      setLoading(true);
       const id = await generateAnimalId(animal.name);
       const newAnimal: Animal = {
         ...animal,
@@ -140,18 +146,42 @@ export default function CreateAnimalForm() {
 
       setFormErrors(errors);
 
+
       if (Object.values(errors).some(Boolean)) {
+        const elapsed = Date.now() - start;
+        const remaining = MIN_LOADING_TIME - elapsed;
+        if (remaining > 0) {
+          setTimeout(() => {
+            setLoading(false);
+          }, remaining);
+        } else {
+          setLoading(false);
+        }
         return;
       }
 
       await postAnimal({ data: newAnimal, id })
       await postAnimalPrivateInfo({ data: newPrivateInfo, id })
+      
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
 
-      router.replace('/plam-admin/animales')
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+          router.replace('/plam-admin/animales');
+        }, remaining);
+      } else {
+        setLoading(false);
+        router.replace('/plam-admin/animales');
+      }
+
+
 
     } catch (error) {
       console.error('Error al guardar el animal:', error);
       alert('algo salio mal')
+      setLoading(false);
 
     }
   };
@@ -170,7 +200,7 @@ export default function CreateAnimalForm() {
 
         <label className='flex flex-col font-bold gap-1'>
           Nombre:
-          {formErrors.name && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.name}</div>}             
+          {formErrors.name && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.name}</div>}
           <input className='outline-2 outline-gray-200 rounded p-2' type='text' name="name" value={animal.name} onChange={handleChange} required />
         </label>
 
@@ -441,6 +471,7 @@ export default function CreateAnimalForm() {
           Guardar animal
         </button>
       </form>
+      {loading && <Loader />}
     </section>
   );
 }

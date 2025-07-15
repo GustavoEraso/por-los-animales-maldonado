@@ -9,15 +9,12 @@ import { auth } from '@/firebase';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
-
+    
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (!user) {
                 router.replace('/login'); // 🔐 redirige si no hay sesión
-            } else {
-                setLoading(false);
-            }
+            } 
         });
 
         return () => unsubscribe();
@@ -25,7 +22,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const [showMenu, setShowMenu] = useState<boolean>(true)
 
-    if (loading) return <p className="p-8">Cargando...</p>;
 
     return (
         <section className=" relative flex w-full min-h-screen ">

@@ -1,49 +1,10 @@
-// 'use client';
-// import CardContainer from "@/containers/CardContainer";
-// import { fetchAnimals } from "@/lib/fetchAnimal";
-// import  FloatButton  from "@/elements/FloatButton";
-// import { useRouter } from "next/navigation";
-// import { Animal } from "@/types";
-// import { useEffect, useState, Suspense } from "react";
-
-
-// export default function AnimalesPage() {
-//     const router = useRouter();
-
-//     const [currentList, setCurrentList] = useState<Animal[]>([]);
-
-//     useEffect(() => {
-//         const fetchData = async () => { 
-//             const animals = await fetchAnimals();
-//             setCurrentList(animals);
-//         };
-//         fetchData()
-//     }, []); 
-
-//   return (
-//     <section className="p-8 lg:px-32">
-//       <h1 className="text-2xl font-bold mb-4">Animales</h1>
-//       <p>Aquí puedes gestionar los animales.</p>
-
-//       <Suspense fallback={<div>Cargando...</div>}>
-//        <CardContainer animalsList={currentList} />
-//       </Suspense>
-
-//        <FloatButton
-//           buttonStyle="add"
-//           action={() => {
-//             router.replace("/plam-admin/animales/crear");
-//           }} />
-//     </section>
-//   );
-// }
-
 'use client'
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link"
 import Image from "next/image";
+import Loader from "@/components/Loader";
 import { Animal, PrivateInfoDocType, PrivateInfo } from "@/types";
 
 import FloatButton from "@/elements/FloatButton"
@@ -64,7 +25,8 @@ export default function AnimalsPage() {
     window.scrollTo(0, 0)
   }, [])
 
-
+  const [loading, setLoading] = useState<boolean>(true)
+  const MIN_LOADING_TIME = 600;
 
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([])
   const [privateInfo, setPrivateInfo] = useState<PrivateInfoDocType[]>([])
@@ -79,8 +41,10 @@ export default function AnimalsPage() {
 
 
   useEffect(() => {
-    const fetchData = async () => {
 
+    const start = Date.now();
+
+    const fetchData = async () => {
       await getFirestoreData({ currentCollection: 'animals' }).then((data) => {
         setAnimalsToShow(data as Animal[]);
       }).catch((error) => {
@@ -92,9 +56,19 @@ export default function AnimalsPage() {
         console.error("Error fetching private info:", error);
       });
 
-      console.log('refrescamos')
+
     };
-    fetchData()
+    fetchData().finally(() => {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remaining);
+      } else {
+        setLoading(false);
+      }
+    });
   }, [refresh]);
 
 
@@ -201,13 +175,15 @@ export default function AnimalsPage() {
     }
   }
   const handleDelete = async (currentId: string) => {
+    const start = Date.now();
+    setLoading(true);
     try {
 
-      console.log('cambiando visibilidad de:', { currentId})
+      console.log('cambiando visibilidad de:', { currentId })
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
-      const updatedAnimal = { ...animal, isDeleted: true , isVisible: false , isAvalible: false};
+      const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
       const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
 
@@ -238,11 +214,29 @@ export default function AnimalsPage() {
         data: newData,
         id
       })
-    
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remaining);
+      } else {
+        setLoading(false);
+      }
 
-      console.log('logrado:', { id})
+
+      console.log('logrado:', { id })
       setRefresh(!refresh)
     } catch (error) {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remaining);
+      } else {
+        setLoading(false);
+      }
 
       console.error('Error al cambiar el estado del animal:', error);
 
@@ -254,6 +248,7 @@ export default function AnimalsPage() {
 
   return (
     <section className=" flex flex-col  items-center pb-28">
+      {loading && <Loader />}
       {/* <SearchBox data={allProducts} setData={setAnimalsToShow}/> */}
       <div className="relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
@@ -345,7 +340,7 @@ export default function AnimalsPage() {
                       </section>
                     </Modal>
 
-                  
+
                   </td>
                 </tr>
               ))
@@ -361,6 +356,8 @@ export default function AnimalsPage() {
             router.replace("/plam-admin/animales/crear");
           }} />
       </div>
+
+
 
     </section>)
 
