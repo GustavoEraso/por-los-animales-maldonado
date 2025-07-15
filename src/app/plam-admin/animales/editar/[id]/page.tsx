@@ -10,6 +10,8 @@ import { auth } from '@/firebase';
 import { getFirestoreAnimalById } from '@/lib/firebase/getFirestoreAnimalById';
 import { getFirestorePrivateInfoById } from '@/lib/firebase/getFirestorePrivateInfoById ';
 
+import Loader from '@/components/Loader';
+
 
 const initialAnimal: Animal = {
   id: '',
@@ -43,6 +45,7 @@ export default function EditAnimalForm() {
   const currentId = params.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
+  const MIN_LOADING_TIME = 600;
 
 
   const [animal, setAnimal] = useState<Animal>(initialAnimal);
@@ -56,9 +59,6 @@ export default function EditAnimalForm() {
   const [isAvalible, setIsAvalible] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
 
-  useEffect(() => {
-    console.log('isAvalible:', isAvalible, 'isVisible:', isVisible);
-  },[isAvalible, isVisible])
 
   function formatMillisForInputDate(millis: number): string {
     const date = new Date(millis);
@@ -71,6 +71,7 @@ export default function EditAnimalForm() {
 
 
   useEffect(() => {
+    const start = Date.now();
     const fetchAnimalData = async () => {
       try {
         if (!currentId) return null;
@@ -108,7 +109,15 @@ export default function EditAnimalForm() {
       } catch (error) {
         console.error('Error fetching animal data:', error);
       } finally {
+         const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
         setIsLoading(false);
+      }
       }
     }
     fetchAnimalData();
@@ -242,9 +251,7 @@ export default function EditAnimalForm() {
 
   if (isLoading) {
   return (
-    <section className='flex justify-center items-center w-full h-screen'>
-      <p className='text-2xl font-bold'>Cargando animal...</p>
-    </section>
+    <Loader />
   );
 }
 
