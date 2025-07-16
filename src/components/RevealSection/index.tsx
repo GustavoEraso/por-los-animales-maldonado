@@ -53,10 +53,7 @@ export default function RevealSection({
         },
         ({ conditions }) => {
           const start = conditions?.isMobile ? 'center 90%' : 'top 70%';
-          const markerFlag =
-            process.env.NODE_ENV === 'development'
-              ? { markers: true }
-              : {};
+         
 
           /* Imagen desde la derecha */
           gsap.from(q('.img'), {
@@ -68,7 +65,6 @@ export default function RevealSection({
               trigger: root.current,
               start,
               once: true,
-              ...markerFlag,
             },
           });
 
@@ -85,7 +81,7 @@ export default function RevealSection({
               trigger: root.current,
               start,
               once: true,
-              ...markerFlag,
+             
             },
           });
 
@@ -100,7 +96,7 @@ export default function RevealSection({
               trigger: root.current,
               start,
               once: true,
-              ...markerFlag,
+            
             },
           });
         }
