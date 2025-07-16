@@ -94,7 +94,7 @@ export default function Home() {
           linkText="Ver más"
         />
         <section className="flex flex-col items-center justify-center w-full  py-12">
-          <h3 className="font-bold text-4xl uppercase">Infintas gracias a ellos:</h3>
+          <h3 className="font-bold text-2xl text-center text-balance md:text-4xl uppercase">Infintas gracias a ellos:</h3>
 
         <LogoCarousel speed={50} logos={logos} />
         </section>

@@ -69,8 +69,8 @@ export default function LogoCarousel({
   const full = Array.from({ length: copies }, () => logos).flat();
 
   const imgClass = grayscale
-    ? 'h-24 w-auto grayscale opacity-60 transition duration-300 hover:grayscale-0 hover:opacity-100'
-    : 'h-24 w-auto';
+    ? 'h-12 md:h-24 w-auto grayscale opacity-60 transition duration-300 hover:grayscale-0 hover:opacity-100'
+    : 'h-12 md:h-24 w-auto';
 
   return (
     <div
