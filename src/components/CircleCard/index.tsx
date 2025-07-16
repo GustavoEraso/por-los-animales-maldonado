@@ -61,7 +61,6 @@ export default function CircleCard({
                 trigger: el,
                 start,
                 once: true,
-                markers: process.env.NODE_ENV === 'development',
               },
             }
           );

@@ -2,13 +2,21 @@ import Link from "next/link";
 import HeroCarrousel from "@/components/HeroCarrousel";
 import CircleCard from "@/components/CircleCard";
 import RevealSection from "@/components/RevealSection";
+import LogoCarousel from "@/components/LogoCaurosel";
 
 
 
 
 export default function Home() {
+
+  const logos = [
+    { src: '/raciones-la-coronilla.webp', alt: 'raciones la coronilla logo', href: 'https://www.instagram.com/racioneslacoronilla/?hl=es' },
+    { src: '/lopezquintana-logo.webp', alt: 'lopez quintana logo', href: 'https://www.instagram.com/alopezquintana/?hl=es' },
+    { src: '/arenadora_maldonado.webp', alt: 'arenadora maldonado logo', href: 'https://www.instagram.com/arenadora_maldonado/?hl=es' },
+  ];
+
   return (
-    <div className="flex flex-col items-center min-h-screen overflow-x-hidden"> 
+    <div className="flex flex-col items-center min-h-screen overflow-x-hidden">
       <HeroCarrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
@@ -85,6 +93,11 @@ export default function Home() {
           linkHref="/involucrate"
           linkText="Ver más"
         />
+        <section className="flex flex-col items-center justify-center w-full  py-12">
+          <h3 className="font-bold text-4xl uppercase">Infintas gracias a ellos:</h3>
+
+        <LogoCarousel speed={50} logos={logos} />
+        </section>
 
 
         <section className="flex flex-col items-center justify-center w-full bg-white px-6 py-12">
