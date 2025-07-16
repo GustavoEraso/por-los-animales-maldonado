@@ -2,8 +2,7 @@ import { Analytics } from "@vercel/analytics/react"
 import type { Metadata } from "next";
 import {  Roboto } from "next/font/google";
 import "./globals.css";
-
-// import ClientProviders from "@/components/ClientProviders"; // componente cliente que incluye el PayPalScriptProvider
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,6 +14,7 @@ const roboto = Roboto({
   display: "swap",
   weight: ["400", "500", "600", "700"],
 });
+
 
 
 
@@ -49,13 +49,14 @@ export default function RootLayout({
       <body
         className={` antialiased  ${roboto.variable}`}
       >
-        {/* <ClientProviders> */}
+     
         <Header/>
         {children}
         <Analytics />
         <Footer />
-        {/* </ClientProviders> */}
+       
       </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_ANALYTICS_ID ?? ''} />
     </html>
   );
 }
