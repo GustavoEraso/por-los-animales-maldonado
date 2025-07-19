@@ -8,6 +8,8 @@ import { formatDateMMYYYY, yearsOrMonthsElapsed } from "@/lib/dateUtils";
 import ShareButton from "@/elements/ShareButton";
 import { unstable_ViewTransition as ViewTransition } from 'react';
 
+import { buildFormUrl } from "@/lib/buildFormUrl";
+
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -28,7 +30,7 @@ export default async function AnimalPage({ params }: PageProps) {
     );
   }
 
-  const { name, description, isAvalible , images, gender, aproxBirthDate, status, size, species, waitingSince } = animal;
+  const { name, description, isAvalible , images, gender, aproxBirthDate, status, size, species, waitingSince , } = animal;
   const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' ,imgId: 'default-image' }];
 
   return (
@@ -80,7 +82,8 @@ export default async function AnimalPage({ params }: PageProps) {
             <p className=" text-green-dark text-md font-bold ">
                 Gracias por querer cambiar una vida. 🐾❤️
             </p>
-            <a href="https://docs.google.com/forms/d/1csJabjokYazcnd5CB4inEXJF27_m_9UjK854l1p_G3o/edit?ts=62f54023#" target="_blank"
+            {/* <a href="https://docs.google.com/forms/d/1csJabjokYazcnd5CB4inEXJF27_m_9UjK854l1p_G3o/edit?ts=62f54023#" target="_blank" */}
+            <a href={buildFormUrl({dogName:name,dogId:id})} target="_blank"
                 rel="noopener noreferrer"
                 className="w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance">Llenar formulario</a>
         </section>
