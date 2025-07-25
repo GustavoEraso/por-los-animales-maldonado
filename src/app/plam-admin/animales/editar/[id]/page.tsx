@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Animal, Img, PrivateInfo } from '@/types';
+import { Animal, Img, PrivateInfo, CompatibilityType } from '@/types';
 import UploadImages from '@/elements/UploadImage';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postAnimal } from '@/lib/firebase/postAnimal';
@@ -23,6 +23,12 @@ const initialAnimal: Animal = {
   aproxBirthDate: Date.now(),
   lifeStage: 'cachorro',
   size: 'mediano',
+  compatibility: {
+    dogs: 'no_se',
+    cats: 'no_se',
+    kids: 'no_se',
+  },
+  isSterilized: 'no_se',
   isAvalible: false,
   isVisible: false,
   status: 'calle',
@@ -59,11 +65,17 @@ export default function EditAnimalForm() {
   const [isAvalible, setIsAvalible] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
 
+  const [compatibility, setCompatibility] = useState<CompatibilityType>(initialAnimal.compatibility || {
+    dogs: 'no_se',
+    cats: 'no_se',
+    kids: 'no_se',
+  });
+
 
   function formatMillisForInputDate(millis: number): string {
     const date = new Date(millis);
     const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const day = String(date.getUTCDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
@@ -109,15 +121,15 @@ export default function EditAnimalForm() {
       } catch (error) {
         console.error('Error fetching animal data:', error);
       } finally {
-         const elapsed = Date.now() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
+        const elapsed = Date.now() - start;
+        const remaining = MIN_LOADING_TIME - elapsed;
+        if (remaining > 0) {
+          setTimeout(() => {
+            setIsLoading(false);
+          }, remaining);
+        } else {
           setIsLoading(false);
-        }, remaining);
-      } else {
-        setIsLoading(false);
-      }
+        }
       }
     }
     fetchAnimalData();
@@ -155,6 +167,13 @@ export default function EditAnimalForm() {
     }));
   }, [isVisible]);
 
+  useEffect(() => {
+    setAnimal((prev) => ({
+      ...prev,
+      compatibility: compatibility,
+    }));
+  }, [compatibility]);
+
 
 
 
@@ -166,6 +185,16 @@ export default function EditAnimalForm() {
     setAnimal((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleCompatibilityChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setCompatibility((prev) => ({
+      ...prev,
+      [name]: value as 'si' | 'no' | 'no_se',
     }));
   };
   const handlePrivateInfoChange = (
@@ -231,8 +260,8 @@ export default function EditAnimalForm() {
         return;
       }
 
-      await postAnimal({ data: newAnimal, id:animal.id  })
-      await postAnimalPrivateInfo({ data: newPrivateInfo,id:animal.id})
+      await postAnimal({ data: newAnimal, id: animal.id })
+      await postAnimalPrivateInfo({ data: newPrivateInfo, id: animal.id })
 
       router.replace('/plam-admin/animales')
 
@@ -250,10 +279,10 @@ export default function EditAnimalForm() {
   };
 
   if (isLoading) {
-  return (
-    <Loader />
-  );
-}
+    return (
+      <Loader />
+    );
+  }
 
   return (
     <section className='flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full'>
@@ -307,6 +336,43 @@ export default function EditAnimalForm() {
             <option value="grande">Grande</option>
           </select>
         </label>
+        <div className='flex flex-col gap-4'>
+          <h3 className='text-lg font-bold '>Compatibilidad:</h3>
+
+            <label className='flex gap-2 font-bold items-center ml-6'>
+              <span>Perros:</span>
+              <select className='outline-2 outline-gray-200 rounded p-2' name="dogs" value={animal.compatibility?.dogs || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+            <label className='flex gap-2 font-bold items-center ml-6'>
+              <span>Gatos:</span>
+              <select className='outline-2 outline-gray-200 rounded p-2' name="cats" value={animal.compatibility?.cats || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+            <label className='flex gap-2 font-bold items-center ml-6'>
+              <span>Niños:</span>
+              <select className='outline-2 outline-gray-200 rounded p-2' name="kids" value={animal.compatibility?.kids || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+          </div>
+    
+        <label className='flex gap-2 font-bold items-center'>
+          <span>¿Está esterilizado?</span>
+          <select className='outline-2 outline-gray-200 rounded p-2' name="isSterilized" value={animal.isSterilized || 'no_se'} onChange={(e) => handleChange(e)}>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+            <option value="no_se">No sé</option>
+          </select>
+        </label>
 
 
         <label className='flex flex-col font-bold'>
@@ -315,7 +381,7 @@ export default function EditAnimalForm() {
             className='outline-2 outline-gray-200 rounded p-2'
             type="date"
             name="aproxBirthDate"
-            value={formatMillisForInputDate( animal.aproxBirthDate)}
+            value={formatMillisForInputDate(animal.aproxBirthDate)}
             onChange={(e) =>
               setAnimal((prev) => ({
                 ...prev,
@@ -331,7 +397,7 @@ export default function EditAnimalForm() {
             className='outline-2 outline-gray-200 rounded p-2'
             type="date"
             name="waitingSince"
-            value={formatMillisForInputDate(animal.waitingSince) }
+            value={formatMillisForInputDate(animal.waitingSince)}
             onChange={(e) =>
               setAnimal((prev) => ({
                 ...prev,
@@ -346,7 +412,7 @@ export default function EditAnimalForm() {
 
         <label className='flex flex-col font-bold'>
           Situación actual:
-          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }} > 
+          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }} >
             <option value="adoptado">Adoptado</option>
             <option value="calle">Calle</option>
             <option value="protectora">Protectora</option>

@@ -90,7 +90,7 @@ export default function AnimalPage() {
   const handleDelete = async (currentId: string) => {
       try {
   
-        console.log('cambiando visibilidad de:', { currentId})
+     
         
         if (!animal) throw new Error(`Animal with id ${currentId} not found`);
   
@@ -115,7 +115,7 @@ export default function AnimalPage() {
         })
       
   
-        console.log('logrado:', { currentId})
+      
         router.push('/plam-admin/animales');
       } catch (error) {
   
@@ -135,7 +135,7 @@ export default function AnimalPage() {
     );
   }
 
-  const { name, description, isAvalible, images, gender, aproxBirthDate, status, size, species, waitingSince } = animal;
+  const { name, description, isAvalible, images, gender, aproxBirthDate, status, size, species, waitingSince, compatibility, isSterilized } = animal;
   const { contactName, contacts, notes, modifiedBy, date } = privateInfo;
   const img = images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   if (isLoading) {
@@ -146,6 +146,11 @@ export default function AnimalPage() {
     );
   }
 
+  const YesNoUnknownMap = {
+    si: 'Sí',
+    no: 'No',
+    no_se: 'No sabemos',
+  };
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
       <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
@@ -163,6 +168,15 @@ export default function AnimalPage() {
               <li className="text-xl font-semibold">Edad: <span className="font-normal">{yearsOrMonthsElapsed(aproxBirthDate)}</span></li>
               <li className="text-xl font-semibold">
                 Esperándo desde: <span className="font-normal">{`${formatDateMMYYYY(waitingSince)} (hace ${yearsOrMonthsElapsed(waitingSince)})`}</span>
+              </li>
+              <li className="text-xl font-semibold">Está esterilizado: <span className="font-normal">{YesNoUnknownMap[isSterilized]}</span></li>
+              <li>
+                <span className="text-xl font-semibold">Compatibilidad:</span>
+                <ul className="list-disc pl-4 ">
+                  <li> <span className="font-semibold">Con perros:</span> {YesNoUnknownMap[compatibility.dogs]}</li>
+                  <li><span className="font-semibold">Con gatos:</span> {YesNoUnknownMap[compatibility.cats]}</li>
+                  <li><span className="font-semibold">Con niños:</span> {YesNoUnknownMap[compatibility.kids]}</li>
+                </ul>
               </li>
 
             </ul>

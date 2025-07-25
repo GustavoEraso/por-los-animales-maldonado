@@ -30,8 +30,14 @@ export default async function AnimalPage({ params }: PageProps) {
     );
   }
 
-  const { name, description, isAvalible , images, gender, aproxBirthDate, status, size, species, waitingSince , } = animal;
+  const { name, description, isAvalible , images, gender, aproxBirthDate, status, size, species, waitingSince ,compatibility, isSterilized } = animal;
   const img = images.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' ,imgId: 'default-image' }];
+
+  const YesNoUnknownMap = {
+    si: 'Sí',
+    no: 'No',
+    no_se: 'No sabemos',
+  };
 
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
@@ -52,6 +58,15 @@ export default async function AnimalPage({ params }: PageProps) {
               <li className="text-xl font-semibold">Edad: <span className="font-normal">{yearsOrMonthsElapsed(aproxBirthDate)}</span></li>
               <li className="text-xl font-semibold">
                 Esperándote desde: <span className="font-normal">{`${formatDateMMYYYY(waitingSince)} (hace ${yearsOrMonthsElapsed(waitingSince)})`}</span>
+              </li>
+              <li className="text-xl font-semibold">Está esterilizado: <span className="font-normal">{YesNoUnknownMap[isSterilized]}</span></li>
+              <li>
+                <span className="text-xl font-semibold">Compatibilidad:</span>
+                <ul className="list-disc pl-4 ">
+                  <li> <span className="font-semibold">Con perros:</span> {YesNoUnknownMap[compatibility.dogs]}</li>
+                  <li><span className="font-semibold">Con gatos:</span> {YesNoUnknownMap[compatibility.cats]}</li>
+                  <li><span className="font-semibold">Con niños:</span> {YesNoUnknownMap[compatibility.kids]}</li>
+                </ul>
               </li>
             </ul>
             <ShareButton/>
