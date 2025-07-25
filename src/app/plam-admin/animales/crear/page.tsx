@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Animal, Img, PrivateInfo } from '@/types';
+import { Animal, Img, PrivateInfo, CompatibilityType } from '@/types';
 import UploadImages from '@/elements/UploadImage';
 import Loader from '@/components/Loader';
 import { deleteImage } from '@/lib/deleteIgame';
@@ -21,6 +21,12 @@ const initialAnimal: Animal = {
   aproxBirthDate: Date.now(),
   lifeStage: 'cachorro',
   size: 'mediano',
+  compatibility: {
+    dogs: 'no_se',
+    cats: 'no_se',
+    kids: 'no_se',
+  },
+  isSterilized: 'no_se',
   isAvalible: false,
   isVisible: false,
   isDeleted: false,
@@ -49,10 +55,25 @@ export default function CreateAnimalForm() {
 
   const [contacts, setContacts] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }[]>([]);
   const [newContact, setNewContact] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }>({ type: 'celular', value: '' });
-  const [showContactForm, setShowContactForm] = useState(false);
+  const [showContactForm, setShowContactForm] = useState<boolean>(false);
 
-  const [isAvalible, setIsAvalible] = useState(true);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isAvalible, setIsAvalible] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
+
+  const [compatibility, setCompatibility] = useState<CompatibilityType>({
+    dogs: 'no_se',
+    cats: 'no_se',
+    kids: 'no_se',
+  });
+  
+  useEffect(()=>{
+    setAnimal((prev) => ({
+      ...prev,
+      compatibility: compatibility,
+      }))
+    
+  },[compatibility])
+
 
   function formatMillisForInputDate(millis: number): string {
     const date = new Date(millis);
@@ -79,6 +100,16 @@ export default function CreateAnimalForm() {
     setAnimal((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleCompatibilityChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setCompatibility((prev) => ({
+      ...prev,
+      [name]: value as 'si' | 'no' | 'no_se',
     }));
   };
   const handlePrivateInfoChange = (
@@ -242,6 +273,42 @@ export default function CreateAnimalForm() {
             <option value="pequeño">Pequeño</option>
             <option value="mediano">Mediano</option>
             <option value="grande">Grande</option>
+          </select>
+        </label>
+        <div className='flex flex-col gap-4'>
+          <h3 className='text-lg font-bold'>Compatibilidad</h3>
+          <label className='flex gap-2 font-bold items-center'>
+            <span>Perros:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="dogs" value={animal.compatibility?.dogs || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+          <label className='flex gap-2 font-bold items-center ml-6'>
+            <span>Gatos:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="cats" value={animal.compatibility?.cats || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+          <label className='flex gap-2 font-bold items-center ml-6'>
+            <span>Niños:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="kids" value={animal.compatibility?.kids || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+        </div>
+
+        <label className='flex gap-2 font-bold items-center ml-6'>
+          <span>¿Está esterilizado?</span>
+          <select className='outline-2 outline-gray-200 rounded p-2' name="isSterilized" value={animal.isSterilized || 'no_se'} onChange={(e) => handleChange(e)}>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+            <option value="no_se">No sé</option>
           </select>
         </label>
 

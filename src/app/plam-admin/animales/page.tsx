@@ -132,7 +132,7 @@ export default function AnimalsPage() {
   const handleVisible = async ({ currentId, active }: { currentId: string, active: boolean }) => {
     try {
 
-      console.log('cambiando visibilidad de:', { currentId, active })
+     
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
@@ -166,7 +166,7 @@ export default function AnimalsPage() {
         id
       })
 
-      console.log('logrado:', { id, active })
+      
       setRefresh(!refresh)
     } catch (error) {
 
@@ -179,7 +179,7 @@ export default function AnimalsPage() {
     setLoading(true);
     try {
 
-      console.log('cambiando visibilidad de:', { currentId })
+      
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
@@ -225,7 +225,7 @@ export default function AnimalsPage() {
       }
 
 
-      console.log('logrado:', { id })
+     
       setRefresh(!refresh)
     } catch (error) {
       const elapsed = Date.now() - start;

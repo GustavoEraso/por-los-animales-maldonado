@@ -4,6 +4,13 @@ export interface Img {
   imgAlt: string,
 }
 
+type YesNoUnknown = 'si' | 'no' | 'no_se';
+
+export interface CompatibilityType {
+  dogs: YesNoUnknown;
+  cats: YesNoUnknown;
+  kids: YesNoUnknown;
+}
 export interface Animal {
   id: string,
   name: string,
@@ -14,8 +21,10 @@ export interface Animal {
   aproxBirthDate: number;
   lifeStage: 'cachorro' | 'adulto' | 'mayor',
   size: 'pequeño' | 'mediano' | 'grande',
+  compatibility: CompatibilityType
+  isSterilized: YesNoUnknown,
   isAvalible: boolean,
-   isVisible: boolean,
+  isVisible: boolean,
   status: 'calle' | 'protectora' | 'transitorio' | 'adoptado',
   waitingSince: number,
   isDeleted?: boolean,
@@ -27,30 +36,30 @@ interface ContactType {
 }
 
 export interface PrivateInfo {
-    isAvalible: boolean, 
-    isVisible: boolean,
-    status: 'calle' | 'adoptado'|'transitorio'|'protectora',
-    since: number,
-    contactName: string,
-    contacts?: ContactType[],
-    notes?: string,
-    date: number,
-    modifiedBy: string,
-    isDeleted?: boolean,
-  }
-
-  export interface PrivateInfoDocType {
-  id: string;
-  data:Record<string, PrivateInfo>;
+  isAvalible: boolean,
+  isVisible: boolean,
+  status: 'calle' | 'adoptado' | 'transitorio' | 'protectora',
+  since: number,
+  contactName: string,
+  contacts?: ContactType[],
+  notes?: string,
+  date: number,
+  modifiedBy: string,
+  isDeleted?: boolean,
 }
-  
 
-  export interface UserType{
-    id: string,
-    name: string,
-    role: string
-  }
+export interface PrivateInfoDocType {
+  id: string;
+  data: Record<string, PrivateInfo>;
+}
 
-  export interface CollectionsType{
-    currentColection: 'animals'| 'authorizedEmails'| 'privateInfo'
-  }
+
+export interface UserType {
+  id: string,
+  name: string,
+  role: string
+}
+
+export interface CollectionsType {
+  currentColection: 'animals' | 'authorizedEmails' | 'privateInfo'
+}
