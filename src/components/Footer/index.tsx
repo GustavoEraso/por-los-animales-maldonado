@@ -63,11 +63,11 @@ export default function Footer() {
 
                     </section>
                 </div>
-                <nav className='block'>
+                <nav className='block' aria-label="Enlaces del sitio">
                     <ul className="flex flex-col text-md  justify-around w-fit">
                         {navLinks.map((link) => (
                             <li className="group relative flex flex-col items-center" key={link.id + 'footer'}>
-                                <a
+                                <Link
                                     className={`inline-flex items-center gap-1 relative text-center p-2 `}
                                     href={link.url}
                                     aria-label={`Enlace a ${link.name}`}
@@ -88,18 +88,18 @@ export default function Footer() {
                                             <path d="M6 9l6 6 6-6"></path>
                                         </svg>
                                     )}
-                                </a>
+                                </Link>
                                 {link.childs && (
                                     <ul className="absolute hidden  md:group-hover:flex flex-col left-0 -translate-x-full  z-10 bg-white text-caramel-deep">
                                         {link.childs.map((child) => (
                                             <li key={child.id + 'desktop'}>
-                                                <a
+                                                <Link
                                                     className={`block text-center p-2 whitespace-nowrap `}
                                                     href={child.url}
                                                     aria-label={`Enlace a ${child.name}`}
                                                 >
                                                     {child.name}
-                                                </a>
+                                                </Link>
                                             </li>
                                         ))}
                                     </ul>
