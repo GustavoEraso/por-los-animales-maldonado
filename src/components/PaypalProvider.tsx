@@ -9,7 +9,7 @@ interface PayPalProviderProps {
 
 export default function PayPalProvider({ children, type }: PayPalProviderProps) {
   const initialOptions = {
-    clientId: "AdP4t3FVaSKsMtWIPJp-k7yfBKf5Ql9YU3fOSd90wvFSVdD5XXOsEMfqZMm3QsJ3NULXMLZcmIdceD0V", // <-- tu nuevo clientId
+    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '', 
     components: "buttons",
     currency: "USD",
     intent: type,
