@@ -5,16 +5,6 @@ import { useRouter } from "next/navigation";
 export default function DonationButton({ amount }: { amount: number }) {
   const router = useRouter();
 
-
-  // async function onApprove(data: { orderID: string }): Promise<void> {
-  //   await fetch("/api/paypal/capture-order", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ orderID: data.orderID }),
-  //   });
-  //   console.log({ orderID: data.orderID })
-  // }
-
   return (
     <>
       <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md">
