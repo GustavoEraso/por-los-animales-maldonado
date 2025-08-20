@@ -85,13 +85,13 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
   }, [handleImg]);
 
   return (
-    <div ref={carrouselRef} className={`${carrouselFullSize ? 'fixed z-50 top-0 bottom-0 left-0 right-0 bg-cream-light flex felx-col items-center justify-center' : 'w-full relative'}  `}>
+    <div ref={carrouselRef} className={`${carrouselFullSize ? 'fixed z-50 top-0 bottom-0 left-0 right-0 bg-cream-light flex felx-col items-center justify-center' : 'w-full h-full aspect-[3/4] relative'}  `}>
       {/* Close button */}
       {carrouselFullSize && <button onClick={() => setCarrouselFullSize(false)} className=" absolute top-2 right-2 z-50 bg-white/60 rounded-full text-black">
         <XCircleIcon className="h-12 w-12 text-black" />
       </button>}
       {/* Carousel wrapper */}
-      <div className={`${carrouselFullSize ? 'h-full' : 'aspect-video'} relative overflow-hidden rounded-lg   w-full`}>
+      <div className={` relative overflow-hidden rounded-lg  h-full w-full`}>
         {items.map((item, index) => (
           <div
             key={`${item.imgUrl}-image-${index}`}
