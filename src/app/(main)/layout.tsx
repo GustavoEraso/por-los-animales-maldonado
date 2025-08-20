@@ -22,7 +22,6 @@ export default function MainLayout({
     fetchData();
   }, []);
 
-  console.log("Contacts fetched:", contacts);
   return (
     <>
       {children}
