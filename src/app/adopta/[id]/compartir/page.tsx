@@ -13,7 +13,6 @@ import { formatPhone } from '@/lib/formatPhone';
 import { Animal, WpContactType } from '@/types';
 import AdjustableImage from '@/elements/AdjustableImage';
 import Loader from '@/components/Loader';
-import { info } from 'console';
 
 export interface ColorScheme {
     name: string;
