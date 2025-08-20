@@ -31,9 +31,9 @@ const colorSchemes: ColorScheme[] = [
 
 
 
-export type SimpleFormatKey = 'story' | 'square' | 'post';
+type SimpleFormatKey = 'story' | 'square' | 'post';
 
-export interface FormatPreset {
+interface FormatPreset {
     key: SimpleFormatKey;
     label: string;
     width: number;   // px
@@ -41,7 +41,7 @@ export interface FormatPreset {
 
 }
 
-export const formatPresets: FormatPreset[] = [
+const formatPresets: FormatPreset[] = [
     // { key: 'square', label: 'Cuadrado (1:1)', width: 324, height: 324, },
     { key: 'post', label: 'Post vertical (3:4)', width: 324, height: 432, },
     { key: 'story', label: 'Historia (9:16)', width: 324, height: 576, },
