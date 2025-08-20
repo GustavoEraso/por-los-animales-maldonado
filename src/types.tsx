@@ -60,6 +60,12 @@ export interface UserType {
   role: string
 }
 
+export interface WpContactType{
+  name: string,
+  phone: string,
+  countryCode: string,
+}
+
 export interface CollectionsType {
-  currentColection: 'animals' | 'authorizedEmails' | 'privateInfo'
+  currentColection: 'animals' | 'authorizedEmails' | 'privateInfo' | 'contacts';
 }

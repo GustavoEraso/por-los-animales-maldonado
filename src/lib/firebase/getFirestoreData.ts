@@ -21,12 +21,13 @@
 
 import { collection, query, where, orderBy, getDocs, type QueryConstraint } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { Animal, PrivateInfoDocType, UserType } from '@/types';
+import { Animal, WpContactType, PrivateInfoDocType, UserType } from '@/types';
 
 type CollectionsMap = {
   animals: Animal;
   animalPrivateInfo: PrivateInfoDocType;
   authorizedEmails: UserType;
+  contacts: WpContactType;
 };
 
 type Scalar = string | number | boolean;
