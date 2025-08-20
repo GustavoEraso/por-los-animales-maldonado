@@ -14,22 +14,61 @@ import { Animal, WpContactType } from '@/types';
 import AdjustableImage from '@/elements/AdjustableImage';
 import Loader from '@/components/Loader';
 
-export interface ColorScheme {
-    name: string;
-    primary: `#${string}`;
-    secondary: `#${string}`;
-    accent: `#${string}`;
+
+
+
+interface ColorScheme {
+  name: string;
+  primary: `#${string}`;
+  secondary: `#${string}`;
+  accent: `#${string}`;
+  primaryText: `#${string}`;   // Texto para usar sobre primary
+  secondaryText: `#${string}`; // Texto para usar sobre secondary
 }
 
+
 const colorSchemes: ColorScheme[] = [
-    { name: "Clásico", primary: "#dc2626", secondary: "#edd1a3", accent: "#374151" },
-    { name: "Océano", primary: "#0ea5e9", secondary: "#7ed0de", accent: "#1e293b" },
-    { name: "Bosque", primary: "#059669", secondary: "#d5fa9c", accent: "#374151" },
-    { name: "Atardecer", primary: "#ea580c", secondary: "#ffe1af", accent: "#7c2d12" },
-    { name: "Lavanda", primary: "#8b5cf6", secondary: "#d7b7f5", accent: "#4c1d95" },
-]
-
-
+  {
+    name: "Cielo de Paseo",
+    primary: "#7bb1df",          
+    secondary: "#fbf7ea",         
+    primaryText: "#fbf7ea",       
+    secondaryText: "#272727",     
+    accent: "#272727",          
+  },
+  {
+    name: "Campo Soleado",
+    primary: "#fbf7ea",          
+    secondary: "#7d9b76",       
+    primaryText: "#272727",      
+    secondaryText:"#ffffff",       
+    accent: "#272727",          
+  },
+  {
+    name: "Parque Natural",
+    primary: "#7d9b76",           
+    secondary: "#f6f6e9",        
+    primaryText: "#ffffff",       
+    secondaryText: "#7d9b76",     
+    accent: "#272727",         
+  },
+  {
+    name: "Bosque Otoñal",
+    primary: "#f78785",         
+    secondary: "#503530",        
+    primaryText: "#ede8ea",       
+    secondaryText: "#f78785",      
+    accent: "#503530",         
+  },
+  {
+    name: "Hogar Cálido",
+    primary: "#f2e9e1",
+    secondary: "#db9a8f",
+    primaryText: "#814256",
+    secondaryText: "#814256",
+    accent: "#814256",
+  }
+];
 
 type SimpleFormatKey = 'story' | 'square' | 'post';
 
@@ -549,16 +588,16 @@ export default function Compartir() {
                         <div
                             ref={areaRef}
                             style={{ height: selectedFormat.height, width: selectedFormat.width }}
-                            className="flex flex-col items-center  overflow-hidden select-none  "
+                            className="flex flex-col items-center  overflow-hidden select-none shadow-[0px_0px_15px_#000000] "
                         >
                             <section
-                                style={{ backgroundColor: selectedColorScheme.secondary, }}
+                                style={{ backgroundColor: selectedColorScheme.primary, color: selectedColorScheme.primaryText }}
                                 className='flex felx-col items-center justify-center w-full '>
                                 <h3
-                                    style={{ fontSize: `${titleSize}px` }}
-                                    className={` w-full text-green-dark text-center text-balance font-extrabold leading-none uppercase ${selectedFormat.key === 'story' ? ' py-4' : 'py-1'} `}>{selectedTitle}</h3>
+                                    style={{ fontSize: `${titleSize}px`}}
+                                    className={` w-full  text-center text-balance font-extrabold leading-none uppercase ${selectedFormat.key === 'story' ? ' py-4' : 'py-1'} `}>{selectedTitle}</h3>
                             </section>
-                            <section style={{ backgroundColor: selectedColorScheme.primary }} className='flex bg-green-forest text-cream-light w-full h-full overflow-y-hidden'>
+                            <section style={{ backgroundColor: selectedColorScheme.secondary , color: selectedColorScheme.secondaryText }} className='flex bg-green-forest text-cream-light w-full h-full overflow-y-hidden'>
                                 {/* Seccion izquierda */}
                                 <div className={`w-3/7 flex flex-col items-stretch justify-around  p-1 relative ${selectedFormat.key === 'story' ? 'py-8' : ''}`}>
                                     {animalDataToShow.name && <h3 className={`break-words font-bold uppercase  text-center leading-none `} style={{ fontSize: `${nameSize}px` }}>
@@ -597,7 +636,9 @@ export default function Compartir() {
                             </section>
 
                             <footer style={{ backgroundColor: selectedColorScheme.accent }} className=' relative flex flex-col w-full pb-1 '>
-                                <div className='relative w-full flex items-center justify-around p-1 '>
+                                <div 
+                                style={{backgroundColor:selectedColorScheme.primary, color: selectedColorScheme.primaryText}}
+                                className='relative w-full flex items-center justify-around p-1 '>
                                     <NextImage
                                         src="/logo300.webp"
                                         alt="Logo de Adopta"
@@ -605,8 +646,9 @@ export default function Compartir() {
                                         height={85}
                                         className=" object-contain"
                                     />
-                                    {selectedContacts.length > 0 && (<div className='flex flex-col gap-0.5 items-center justify-around'>
-                                        
+                                    {selectedContacts.length > 0 && (<div className='flex flex-col gap-0.5 items-center justify-around'> 
+                                        <p className=' text-sm text-center font-bold '>Contacto{`${selectedContacts.length > 1 ? 's:':':'}`}</p>
+                                                                              
                                         {
                                             selectedContacts.map((contactIndex) => {
                                                 const contact = contacts[contactIndex];
