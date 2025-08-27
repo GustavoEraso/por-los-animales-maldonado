@@ -129,8 +129,8 @@ export default function CreateAnimalForm() {
     name: false,
     images: false,
     description: false,
-    contactName: false,
-    contacts: false,
+    // contactName: false,
+    // contacts: false,
   })
 
   const fieldErrorMessagesRecord = {
@@ -171,8 +171,8 @@ export default function CreateAnimalForm() {
         name: newAnimal.name === '',
         images: !images.length,
         description: newAnimal.description === '',
-        contactName: newPrivateInfo.contactName === '',
-        contacts: !privateInfo?.contacts?.length,
+        // contactName: newPrivateInfo.contactName === '',
+        // contacts: !privateInfo?.contacts?.length,
       };
 
       setFormErrors(errors);
@@ -387,7 +387,7 @@ export default function CreateAnimalForm() {
             <h3 className='font-semibold text-center' >Datos privados del Animal</h3>
             <label className='flex flex-col font-bold gap-1'>
               Nombre del contacto:
-              {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>}
+              {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
               <input
                 className='outline-2 outline-gray-200 rounded p-2'
                 type="text"
@@ -397,7 +397,7 @@ export default function CreateAnimalForm() {
             </label>
             <section className='flex flex-col gap-4'>
               <h2 className='text-lg font-bold'>Contactos:</h2>
-              {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>}
+              {/* {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>} */}
 
               {contacts.length > 0 && contacts.map((contact, index) => (
                 <div key={`${contact.value}-${index}`} className='flex gap-2 flex-wrap'>
@@ -529,8 +529,8 @@ export default function CreateAnimalForm() {
               {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
               {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
               {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
-              {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>}
-              {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>}
+              {/* {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>} */}
+              {/* {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>} */}
             </ul>
           </div>
         )}

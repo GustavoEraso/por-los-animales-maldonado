@@ -88,41 +88,41 @@ export default function AnimalPage() {
   }, [currentId]);
 
   const handleDelete = async (currentId: string) => {
-      try {
-  
-     
-        
-        if (!animal) throw new Error(`Animal with id ${currentId} not found`);
-  
-        const updatedAnimal = { ...animal, isDeleted: true , isVisible: false , isAvalible: false};
-  
+    try {
 
- 
-  
-        const newData = {
-          ...privateInfo,
-          date: Date.now(),
-          modifiedBy: auth.currentUser?.email || '',
-          isDeleted: true,
-          isVisible: false,
-          isAvalible: false
-        } as PrivateInfo
-  
-        await postAnimal({ data: updatedAnimal, id:currentId });
-        await postAnimalPrivateInfo({
-          data: newData,
-          id: currentId
-        })
-      
-  
-      
-        router.push('/plam-admin/animales');
-      } catch (error) {
-  
-        console.error('Error al cambiar el estado del animal:', error);
-  
-      }
+
+
+      if (!animal) throw new Error(`Animal with id ${currentId} not found`);
+
+      const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
+
+
+
+
+      const newData = {
+        ...privateInfo,
+        date: Date.now(),
+        modifiedBy: auth.currentUser?.email || '',
+        isDeleted: true,
+        isVisible: false,
+        isAvalible: false
+      } as PrivateInfo
+
+      await postAnimal({ data: updatedAnimal, id: currentId });
+      await postAnimalPrivateInfo({
+        data: newData,
+        id: currentId
+      })
+
+
+
+      router.push('/plam-admin/animales');
+    } catch (error) {
+
+      console.error('Error al cambiar el estado del animal:', error);
+
     }
+  }
 
   if (!animal) {
     return (
@@ -156,8 +156,8 @@ export default function AnimalPage() {
       <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
 
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
-        <div className="flex flex-col md:flex-row gap-4 px-9 py-4 max-w-7xl">
-          <div className="flex flex-col gap-4 text-start text-black px-2">
+        <div className="flex flex-col md:flex-row gap-4 px-9 py-4 w-full max-w-7xl">
+          <div className="fflex flex-col gap-4 text-start text-black px-2 md:w-3/5">
             <p className="text-green-dark text-lg font-bold">{description}</p>
             <ul className="list-disc pl-4 text-green-dark">
               <li className="text-xl font-semibold">Estado: <span className="font-normal">{`${isAvalible ? 'Disponible' : 'De momento no se puede adoptar'}`}</span></li>
@@ -230,15 +230,19 @@ export default function AnimalPage() {
               </section>
             </Modal>
           </div>
-          <img src={img[0].imgUrl} alt={img[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" />
+          {/* <img src={img[0].imgUrl} alt={img[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" /> */}
+          <div className="w-full md:w-2/5 h-auto rounded-lg bg-amber-sunset">
+
+            <PhotoCarrousel images={img} />
+          </div>
 
         </div>
       </section>
 
-      <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl items-center">
+      {/* <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl items-center">
         <h3 className="font-extrabold text-4xl text-green-dark">Más imágenes</h3>
-        <PhotoCarrousel images={img} />
-      </section>
+
+      </section> */}
       <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
         <Link href={`/plam-admin/animales/editar/${animal.id}`} className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300">Editar</Link>
         <Modal buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300" buttonText="Eliminar">

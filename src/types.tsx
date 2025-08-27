@@ -40,7 +40,7 @@ export interface PrivateInfo {
   isVisible: boolean,
   status: 'calle' | 'adoptado' | 'transitorio' | 'protectora',
   since: number,
-  contactName: string,
+  contactName?: string,
   contacts?: ContactType[],
   notes?: string,
   date: number,
