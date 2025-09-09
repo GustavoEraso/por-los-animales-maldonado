@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import cloudinary from '@/lib/cloudinary';
+import cloudinary from '@/cloudinary';
 
 export async function DELETE(req: NextRequest) {
   try {

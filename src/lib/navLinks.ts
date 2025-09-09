@@ -12,6 +12,44 @@ interface Links {
     childs?: LinkChild[];
 }
 
+/**
+ * Navigation links configuration for the application.
+ *
+ * Defines the structure and hierarchy of navigation links, including main links and optional child links.
+ * Each link includes:
+ *   - id: Unique identifier for the link.
+ *   - name: Display name for the link.
+ *   - url: URL path for navigation.
+ *   - childs (optional): Array of child links with the same structure.
+ *
+ * @example
+ * // Render navigation links
+ * <nav>
+ *   <ul>
+ *     {navLinks.map((link) => (
+ *       <li key={link.id + 'father'}>
+ *         <Link
+ *           href={link.url} >
+ *           {link.name}
+ *         </Link>
+ *         {link.childs && (
+ *           <ul >
+ *             {link.childs.map((child) => (
+ *               <li key={child.id + 'child'}>
+ *                 <Link
+ *                   href={child.url}
+ *                 >
+ *                   {child.name}
+ *                 </Link>
+ *               </li>
+ *             ))}
+ *           </ul>
+ *         )}
+ *       </li>
+ *     ))}
+ *   </ul>
+ * </nav>
+ */
 export const navLinks: Links[] = [
     { id: 'LINKSINICIO', name: 'INICIO', url: '/' },
     {
@@ -46,3 +84,27 @@ export const navLinks: Links[] = [
     ] },
 ]
 
+/* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
+
+Render navigation links in a React component
+   <nav>
+     <ul>
+       {navLinks.map((link) => (
+         <li key={link.id + 'father'}>
+           <Link href={link.url}>{link.name}</Link>
+           {link.childs && (
+             <ul>
+               {link.childs.map((child) => (
+                 <li key={child.id + 'child'}>
+                   <Link href={child.url}>{child.name}</Link>
+                 </li>
+               ))}
+             </ul>
+           )}
+         </li>
+       ))}
+     </ul>
+   </nav>
+
+
+──────────────────────────────────────────────────────────────────────────── */
