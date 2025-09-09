@@ -29,7 +29,7 @@ export default function LoginForm() {
             handleGoogleSigIn();
           }}
           type="button"
-          className="flex w-full justify-center items-center gap-4 rounded-md bg-gray-200 px-3 py-1.5 text-sm font-semibold leading-6  shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          className="flex w-full justify-center items-center gap-4 rounded-md bg-gray-200 px-3 py-1.5 text-sm font-semibold leading-6  shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
         >
           <Image width={500} height={500} className="w-8 h-8" src="https://cloudinary-res.cloudinary.com/image/upload/v1645708175/sign_up/cdnlogo.com_google-icon.svg" alt=" google logo" />
           <span>Iniciar con Google</span>
