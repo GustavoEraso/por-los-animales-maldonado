@@ -1,5 +1,4 @@
 'use client';
-
 import Hero from "@/components/Hero";
 import PhotoCarrousel from "@/components/PhotoCarrousel";
 import { Modal } from "@/components/Modal";
@@ -13,12 +12,11 @@ import { getFirestorePrivateInfoById } from '@/lib/firebase/getFirestorePrivateI
 import { auth } from '@/firebase';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from "@/lib/dateUtils";
-import FloatButton from "@/elements/FloatButton";
 import { postAnimal } from "@/lib/firebase/postAnimal";
 import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
-
-
-
+import Loader from "@/components/Loader";
+import { deleteImage } from "@/lib/deleteIgame";
+import { deleteFirestoreData } from "@/lib/firebase/deleteFirestoreData";
 
 
 export default function AnimalPage() {
@@ -27,16 +25,11 @@ export default function AnimalPage() {
   const currentId = params.id as string;
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-
+  const MIN_LOADING_TIME = 600;
 
   const [animal, setAnimal] = useState<Animal>({} as Animal);
   const [privateInfo, setPrivateInfo] = useState<PrivateInfo>({} as PrivateInfo);
   const [allPrivateInfo, setAllPrivateInfo] = useState<PrivateInfo[]>([] as PrivateInfo[]);
-
-
-
-
 
   useEffect(() => {
     const fetchAnimalData = async () => {
@@ -72,10 +65,8 @@ export default function AnimalPage() {
         }
         const currentData = latestData as unknown as PrivateInfo
 
-
         setAnimal(animal)
         setPrivateInfo(currentData);
-
 
       } catch (error) {
         console.error('Error fetching animal data:', error);
@@ -89,16 +80,9 @@ export default function AnimalPage() {
 
   const handleDelete = async (currentId: string) => {
     try {
-
-
-
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
-
-
-
-
       const newData = {
         ...privateInfo,
         date: Date.now(),
@@ -114,13 +98,88 @@ export default function AnimalPage() {
         id: currentId
       })
 
+      router.push('/plam-admin/animales');
+    } catch (error) {
+      console.error("Error changing the animal's status:", error);
+    }
+  }
 
+  const handleRestore = async (currentId: string) => {
+    const start = Date.now();
+    setIsLoading(true);
+    try {
+      const latestData = allPrivateInfo[1];
+
+      const { isAvalible, isVisible } = latestData;
+
+      if (typeof isAvalible != 'boolean' || typeof isVisible != 'boolean') {
+        throw new Error(`isAvalible or isVisible is not boolean for animal with id ${currentId}`);
+      }
+
+      const updatedAnimal = { ...animal, isDeleted: false, isVisible, isAvalible };
+      const newPrivateData = {
+        ...latestData,
+        date: Date.now(),
+        modifiedBy: auth.currentUser?.email || '',
+        isDeleted: false,
+      } as PrivateInfo
+
+      await postAnimal({ data: updatedAnimal, id: currentId });
+      await postAnimalPrivateInfo({
+        data: newPrivateData,
+        id: currentId
+      })
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
+        setIsLoading(false);
+      }
 
       router.push('/plam-admin/animales');
     } catch (error) {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
+        setIsLoading(false);
+      }
 
-      console.error('Error al cambiar el estado del animal:', error);
+      console.error("Error changing the animal's status:", error);
+    }
+  }
 
+  const handleHardDeleteSingleAnimal = async ({ animal }: { animal: Animal }) => {
+    const start = Date.now();
+    setIsLoading(true);
+    try {
+      const images = animal.images;
+      for (const image of images) {
+        if (image.imgId) {
+          await deleteImage(image.imgId);
+        }
+        await deleteFirestoreData({ collection: 'animals', docId: animal.id });
+        await deleteFirestoreData({ collection: 'privateInfo', docId: animal.id });
+      }
+      router.push('/plam-admin/animales/papelera');
+    } catch (error) {
+      console.error('Error to delete animal:', error);
+    } finally {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
+        setIsLoading(false);
+      }
     }
   }
 
@@ -140,9 +199,7 @@ export default function AnimalPage() {
   const img = images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   if (isLoading) {
     return (
-      <section className='flex justify-center items-center w-full h-screen'>
-        <p className='text-2xl font-bold'>Cargando animal...</p>
-      </section>
+      <Loader />
     );
   }
 
@@ -154,7 +211,6 @@ export default function AnimalPage() {
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
       <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
-
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
         <div className="flex flex-col md:flex-row gap-4 px-9 py-4 w-full max-w-7xl">
           <div className="fflex flex-col gap-4 text-start text-black px-2 md:w-3/5">
@@ -173,12 +229,11 @@ export default function AnimalPage() {
               <li>
                 <span className="text-xl font-semibold">Compatibilidad:</span>
                 <ul className="list-disc pl-4 ">
-                  <li> <span className="font-semibold">Con perros:</span> {YesNoUnknownMap[compatibility.dogs]}</li>
-                  <li><span className="font-semibold">Con gatos:</span> {YesNoUnknownMap[compatibility.cats]}</li>
-                  <li><span className="font-semibold">Con niños:</span> {YesNoUnknownMap[compatibility.kids]}</li>
+                  <li> <span className="font-semibold">Con perros:</span> {YesNoUnknownMap[compatibility?.dogs]}</li>
+                  <li><span className="font-semibold">Con gatos:</span> {YesNoUnknownMap[compatibility?.cats]}</li>
+                  <li><span className="font-semibold">Con niños:</span> {YesNoUnknownMap[compatibility?.kids]}</li>
                 </ul>
               </li>
-
             </ul>
             <ul className="list-none p bg-cream-light flex flex-col gap-2 px-2 rounded-lg">
               <li className="text-xl font-semibold">Contacto: <span className="font-normal">{contactName}</span></li>
@@ -210,7 +265,6 @@ export default function AnimalPage() {
                       hour12: false,
                     });
                     const since = new Date(info.since).toLocaleDateString('uy-ES');
-
                     return (<ul key={`${index}-${info.date}`} className="text-xl text-start font-semibold flex flex-col gap- p-2 bg-white rounded">
                       <li className="font-semibold"> Fecha: <span className="font-normal">{(date)} hs</span></li>
                       <li className="font-semibold"> Actualizado por: <span className="font-normal">{info.modifiedBy}</span></li>
@@ -224,26 +278,16 @@ export default function AnimalPage() {
                         <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">{contact.type}: <span className="font-normal">{contact.value}</span></li>))}
                     </ul>)
                   })}
-
                 </ul>
-
               </section>
             </Modal>
           </div>
-          {/* <img src={img[0].imgUrl} alt={img[0].imgAlt} width={300} height={400} className="w-full md:w-1/3 h-auto rounded-lg object-cover" /> */}
           <div className="w-full md:w-2/5 h-auto rounded-lg bg-amber-sunset">
-
             <PhotoCarrousel images={img} />
           </div>
-
         </div>
       </section>
-
-      {/* <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl items-center">
-        <h3 className="font-extrabold text-4xl text-green-dark">Más imágenes</h3>
-
-      </section> */}
-      <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+      {!animal.isDeleted && <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
         <Link href={`/plam-admin/animales/editar/${animal.id}`} className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300">Editar</Link>
         <Modal buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300" buttonText="Eliminar">
           <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center ">
@@ -261,12 +305,44 @@ export default function AnimalPage() {
             </article>
           </section>
         </Modal>
-      </section>
-
-      <FloatButton
-        action={() => router.push(`/plam-admin/animales/editar/${currentId}`)}
-        buttonStyle="edit"
-      />
+      </section>}
+      {animal.isDeleted && <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+        <Modal buttonStyles="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300" buttonText="Restaurar">
+          <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
+            <h2 className="text-2xl font-bold">¿Estás seguro de que quieres restaurar?</h2>
+            <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
+              <div className="aspect-square">
+                <Image className="w-full h-full object-cover bg-white" src={animal.images[0].imgUrl} alt={animal.images[0].imgAlt} width={300} height={300} />
+              </div>
+              <div className="flex flex-col items-center justify-between gap-1 p-2">
+                <span className="uppercase text-2xl text-center font-extrabold">Nombre: {animal.name}</span>
+                <span className="uppercase text-2xl text-center font-extrabold">Id :{animal.id}</span>
+                <button
+                  onClick={() => handleRestore(animal.id)}
+                  className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300"
+                >
+                  Sí, Restaurar
+                </button>
+              </div>
+            </article>
+          </section>
+        </Modal>
+        <Modal buttonStyles="bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300" buttonText="Eliminar definitivamente">
+          <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
+            <h2 className="text-2xl font-bold">¿Estás seguro de que quieres eliminar definitivamente este animal?</h2>
+            <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
+              <div className="aspect-square">
+                <Image className="w-full h-full object-cover bg-white" src={animal.images[0].imgUrl} alt={animal.images[0].imgAlt} width={300} height={300} />
+              </div>
+              <div className="flex flex-col items-center justify-between gap-1 p-2">
+                <span className="uppercase text-2xl text-center font-extrabold">Nombre: {animal.name}</span>
+                <span className="uppercase text-2xl text-center font-extrabold">Id :{animal.id}</span>
+                <button onClick={() => handleHardDeleteSingleAnimal({ animal })} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar definitivamente</button>
+              </div>
+            </article>
+          </section>
+        </Modal>
+      </section>}
     </div>
   );
 }
