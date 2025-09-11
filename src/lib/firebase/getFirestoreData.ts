@@ -1,53 +1,109 @@
 
-// import { db } from '@/firebase';
-// import { collection, getDocs } from 'firebase/firestore';
-// import { Animal, PrivateInfoDocType, UserType } from '@/types';
-
-// type CollectionsMap = {
-//   animals: Animal;
-//   animalPrivateInfo: PrivateInfoDocType;
-//   authorizedEmails: UserType;
-// };
-
-// export async function getFirestoreData<K extends keyof CollectionsMap>(
-//   { currentCollection }: { currentCollection: K }
-// ): Promise<(CollectionsMap[K] & { id: string })[]> {
-//   const snapshot = await getDocs(collection(db, currentCollection));
-//   return snapshot.docs.map(doc => ({
-//     id: doc.id,
-//     ...doc.data(),
-//   })) as (CollectionsMap[K] & { id: string })[];
-// }
-
 import { collection, query, where, orderBy, getDocs, type QueryConstraint } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { Animal, WpContactType, PrivateInfoDocType, UserType } from '@/types';
 
-type CollectionsMap = {
+interface CollectionsMap {
   animals: Animal;
   animalPrivateInfo: PrivateInfoDocType;
   authorizedEmails: UserType;
   contacts: WpContactType;
 };
 
-type Scalar = string | number | boolean;
+type FirestoreSimpleValue = string | number | boolean | null;
+type FirestoreArrayValue = FirestoreSimpleValue[];
 
-type SimpleFilter<T> = Partial<{ [K in keyof T as T[K] extends Scalar ? K : never]: T[K] }>;
+type FirestoreSimpleOperator = '==' | '!=' | '<' | '<=' | '>' | '>=';
+type FirestoreArrayOperator = 'in' | 'not-in' | 'array-contains-any';
+type FirestoreContainsOperator = 'array-contains';
+
+// Filtros para operadores simples
+type FirestoreSimpleFilter = [field: string, op: FirestoreSimpleOperator, value: FirestoreSimpleValue];
+
+// Filtros para operadores que requieren array
+type FirestoreArrayFilter = [field: string, op: FirestoreArrayOperator, value: FirestoreArrayValue];
+
+// Filtro para array-contains (el valor es simple)
+type FirestoreContainsFilter = [field: string, op: FirestoreContainsOperator, value: FirestoreSimpleValue];
+
+// Unión de todos los tipos de filtro
+type FirestoreFilter = FirestoreSimpleFilter | FirestoreArrayFilter | FirestoreContainsFilter;
+
+
 
 const collectionsWithTrash = new Set<keyof CollectionsMap>(['animals']);
 
 interface GetDataParams<C extends keyof CollectionsMap> {
   currentCollection: C;
-  filter?: SimpleFilter<CollectionsMap[C]>;
+  filter?: FirestoreFilter[];
   orderBy?: keyof CollectionsMap[C];
   direction?: 'asc' | 'desc';
   includeDeleted?: boolean;
   onlyDeleted?: boolean;
 }
 
+/**
+ * Retrieves documents from a Firestore collection with optional filters and ordering.
+ *
+ * @param {Object} params - Query parameters.
+ * @param {keyof CollectionsMap} params.currentCollection - The name of the collection to query.
+ * @param {FirestoreFilter[]} [params.filter] - Array of filters in the format [field, operator, value].
+ *   Available operators:
+ *     - '==' : Equal
+ *     - '!=' : Not equal
+ *     - '<'  : Less than
+ *     - '<=' : Less than or equal
+ *     - '>'  : Greater than
+ *     - '>=' : Greater than or equal
+ *     - 'in' : In array of values
+ *     - 'not-in' : Not in array of values
+ *     - 'array-contains' : Array contains value
+ *     - 'array-contains-any' : Array contains any of the values
+ * @param {keyof CollectionsMap[C]} [params.orderBy] - Field to order the results by.
+ * @param {'asc' | 'desc'} [params.direction] - Sort direction ('asc' or 'desc').
+ * @param {boolean} [params.includeDeleted] - If true, includes deleted items (only for collections with trash).
+ * @param {boolean} [params.onlyDeleted] - If true, returns only deleted items (only for collections with trash).
+ * @returns {Promise<(CollectionsMap[C] & { id: string })[]>} Array of documents with their Firestore id.
+ *
+ * @example
+ * // Get all authorized emails
+ * const emails = await getFirestoreData({ currentCollection: 'authorizedEmails' });
+ *
+ * @example
+ * // Get active dogs ordered by name
+ * const dogs = await getFirestoreData({
+ *   currentCollection: 'animals',
+ *   filter: [['species', '==', 'perro']],
+ *   orderBy: 'name',
+ * });
+ *
+ * @example
+ * // Get only deleted animals (trash)
+ * const trash = await getFirestoreData({
+ *   currentCollection: 'animals',
+ *   onlyDeleted: true,
+ * });
+ *
+ * @example
+ * // Get animals with status not equal to 'adoptado'
+ * const notAdopted = await getFirestoreData({
+ *   currentCollection: 'animals',
+ *   filter: [['status', 'not-in', ['adoptado']]],
+ *   orderBy: 'name',
+ * });
+ *
+ * @example
+ * // Get animals with status 'calle' or 'transitorio'
+ * const streetOrTemporary = await getFirestoreData({
+ *   currentCollection: 'animals',
+ *   filter: [['status', 'in', ['calle', 'transitorio']]],
+ *   orderBy: 'name',
+ * });
+ */
+
 export async function getFirestoreData<C extends keyof CollectionsMap>({
   currentCollection,
-  filter = {},
+  filter = [],
   orderBy: orderKey,
   direction = 'asc',
   includeDeleted = false,
@@ -66,12 +122,13 @@ export async function getFirestoreData<C extends keyof CollectionsMap>({
     }
   }
 
-  for (const k in filter) {
-    const v = filter[k as keyof typeof filter];
-    if (v !== undefined) {
-      constraints.push(where(k, '==', v));
-    }
+  for (const f of filter) {
+  if (!Array.isArray(f) || f.length !== 3) {
+    throw new Error(`Filtro inválido: ${JSON.stringify(f)}`);
   }
+  const [field, op, value] = f;
+  constraints.push(where(field, op, value));
+}
 
   if (orderKey) {
     constraints.push(orderBy(orderKey as string, direction));
@@ -82,27 +139,43 @@ export async function getFirestoreData<C extends keyof CollectionsMap>({
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (CollectionsMap[C] & { id: string })[];
 }
 
-/* ─────────────────────────  EJEMPLOS DE USO  ──────────────────────────
+/* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
 
-1) Compatibilidad intacta (todos los emails)
+1) All authorized emails
    const emails = await getFirestoreData({ currentCollection: 'authorizedEmails' });
 
-2) Animales activos y ordenados por nombre
-   const perros = await getFirestoreData({
+2) Active animals ordered by name
+   // No need to add ['isDeleted', '==', false] because the function adds it automatically
+   const dogs = await getFirestoreData({
      currentCollection: 'animals',
-     filter: { species: 'perro' },
+     filter: [['species', '==', 'perro']],
      orderBy: 'name',
    });
 
-3) Papelera completa
+3) Trash bin (only deleted animals)
    const trash = await getFirestoreData({
      currentCollection: 'animals',
      onlyDeleted: true,
    });
 
-4) Activos + papelera (sin filtro)
+4) Active + deleted animals (no isDeleted filter)
    const allAnimals = await getFirestoreData({
      currentCollection: 'animals',
      includeDeleted: true,
    });
+
+5) Animals with status not equal to 'adoptado'
+   const notAdopted = await getFirestoreData({
+     currentCollection: 'animals',
+     filter: [['status', 'not-in', ['adoptado']]],
+     orderBy: 'name',
+   });
+
+6) Animals with status 'calle' or 'transitorio'
+   const streetOrTemporary = await getFirestoreData({
+     currentCollection: 'animals',
+     filter: [['status', 'in', ['calle', 'transitorio']]],
+     orderBy: 'name',
+   });
+
 ──────────────────────────────────────────────────────────────────────────── */

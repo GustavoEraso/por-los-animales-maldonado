@@ -6,17 +6,12 @@ import Link from "next/link"
 import Image from "next/image";
 import Loader from "@/components/Loader";
 import { Animal, PrivateInfoDocType, PrivateInfo } from "@/types";
-
 import FloatButton from "@/elements/FloatButton"
-// import SearchBox from "@/elements/SearchBox";
-
 import { postAnimal } from "@/lib/firebase/postAnimal";
 import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 import { auth } from '@/firebase';
 import { Modal } from "@/components/Modal";
-
-
 
 export default function AnimalsPage() {
   const router = useRouter()
@@ -30,22 +25,17 @@ export default function AnimalsPage() {
 
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([])
   const [privateInfo, setPrivateInfo] = useState<PrivateInfoDocType[]>([])
-
-
   const [sortReference, setSortReference] = useState<string | boolean>('name')
   const [sortOrder, setSortOrder] = useState('>')
   const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([])
   const [refresh, setRefresh] = useState<boolean>(false)
-
-
-
 
   useEffect(() => {
 
     const start = Date.now();
 
     const fetchData = async () => {
-      await getFirestoreData({ currentCollection: 'animals' }).then((data) => {
+      await getFirestoreData({ currentCollection: 'animals', filter:[[ 'status', 'not-in', ['adoptado'] ]] }).then((data) => {
         setAnimalsToShow(data as Animal[]);
       }).catch((error) => {
         console.error("Error fetching Animals:", error);
@@ -55,8 +45,6 @@ export default function AnimalsPage() {
       }).catch((error) => {
         console.error("Error fetching private info:", error);
       });
-
-
     };
     fetchData().finally(() => {
       const elapsed = Date.now() - start;
@@ -71,15 +59,12 @@ export default function AnimalsPage() {
     });
   }, [refresh]);
 
-
   useEffect(() => {
     if (!animalsToShow) { return }
 
     const ref = sortReference as keyof Animal;
     const order = sortOrder
     let response;
-
-
 
     if (animalsToShow.length < 1) { return }
 
@@ -111,12 +96,9 @@ export default function AnimalsPage() {
       return
     }
 
-
-
     setSortedAnimals(response)
 
   }, [animalsToShow, sortOrder, sortReference])
-
 
   const sortAnimalBy = ({ reference }: { reference: string | boolean }) => {
     if (sortReference === reference) {
@@ -126,25 +108,17 @@ export default function AnimalsPage() {
     setSortReference(reference)
   }
   const renderDirection = (ref: string) => sortReference === ref ? sortOrder === '>' ? '▼' : '▲' : '';
-
-
-
   const handleVisible = async ({ currentId, active }: { currentId: string, active: boolean }) => {
     try {
-
-     
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isVisible: active };
       const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
-
       if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
 
-
       const { id, ...onlyData } = currentPrivateInfo;
-
 
       const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
         return data.date > latest[1].date ? [key, data] : latest;
@@ -165,13 +139,10 @@ export default function AnimalsPage() {
         data: newData,
         id
       })
-
-      
       setRefresh(!refresh)
+
     } catch (error) {
-
       console.error('Error al cambiar el estado del animal:', error);
-
     }
   }
   const handleDelete = async (currentId: string) => {
@@ -179,19 +150,15 @@ export default function AnimalsPage() {
     setLoading(true);
     try {
 
-      
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
       const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
-
       if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
 
-
       const { id, ...onlyData } = currentPrivateInfo;
-
 
       const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
         return data.date > latest[1].date ? [key, data] : latest;
@@ -224,8 +191,6 @@ export default function AnimalsPage() {
         setLoading(false);
       }
 
-
-     
       setRefresh(!refresh)
     } catch (error) {
       const elapsed = Date.now() - start;
@@ -237,19 +202,14 @@ export default function AnimalsPage() {
       } else {
         setLoading(false);
       }
-
       console.error('Error al cambiar el estado del animal:', error);
-
     }
   }
 
-
-
-
   return (
-    <section className=" flex flex-col  items-center pb-28">
+    <section className=" flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
-      {/* <SearchBox data={allProducts} setData={setAnimalsToShow}/> */}
+       <h3 className="text-2xl font-bold underline">Animales Activos</h3>
       <div className="relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -314,7 +274,6 @@ export default function AnimalsPage() {
                       <input type="checkbox" onChange={() => handleVisible({ currentId: animal.id, active: !animal.isVisible })} className="sr-only peer" checked={animal.isVisible} />
                       <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-blue-600" />
                     </label>
-
                   </td>
                   <td className="px-2 py-4 text-right">
                     <Link href={`/plam-admin/animales/${animal.id}`} className="font-medium text-green-600  hover:underline">Ver Detalles</Link>
@@ -335,30 +294,24 @@ export default function AnimalsPage() {
                             <span className="uppercase text-2xl text-center font-extrabold">Id :{animal.id}</span>
                             <button onClick={() => handleDelete(animal.id)} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar</button>
                           </div>
-
                         </article>
                       </section>
                     </Modal>
-
-
                   </td>
                 </tr>
               ))
             }
-
           </tbody>
         </table>
         {animalsToShow.length < 1 && <p className="text-center">No hay animales que mostar</p>}
-
         <FloatButton
           buttonStyle="add"
           action={() => {
             router.replace("/plam-admin/animales/crear");
           }} />
       </div>
-
-
-
+      <Link className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300" href='/plam-admin/animales/adoptados'> Ver Adoptados</Link>
+      <Link className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300" href='/plam-admin/animales/papelera'> Ver Papelera</Link>
     </section>)
 
 
