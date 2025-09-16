@@ -19,9 +19,17 @@ export default function UploadImages({onImagesAdd, maxFiles}: UploadImagesProps)
 const handleUpload = (result: CloudinaryUploadWidgetResults) => {
   if (result.event === 'success' && typeof result.info !== 'string' && result.info) {
     const info = result.info as CloudinaryUploadWidgetInfo;
-    const { secure_url, public_id } = info;
+    const { secure_url, public_id , eager } = info;
 
-    onImagesAdd([{ imgUrl: secure_url, imgId: public_id, imgAlt: 'animal image' }]);
+    const eagerArray = eager as Array<{ format: string; secure_url: string }>;
+
+    const webpUrl =
+      eagerArray && eagerArray.length > 0
+        ? eagerArray.find((img) => img.format === 'webp')?.secure_url || secure_url
+        : secure_url;
+
+        console.log('Uploaded image URL:', webpUrl);
+    onImagesAdd([{ imgUrl: webpUrl, imgId: public_id, imgAlt: 'animal image' }]);
 
 
     setTimeout(() => {
