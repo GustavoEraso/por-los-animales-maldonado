@@ -42,6 +42,6 @@ export async function generateAnimalId (name: string): Promise<string> {
 
 3) Use the generated ID to create a new animal
    const id = await generateAnimalId('Bella');
-   await postAnimal({ data: animalData, id });
+   await postFirestoreData<Animal>({ data: animalData, currentCollection: 'animals', id });
 
 ──────────────────────────────────────────────────────────────────────────── */

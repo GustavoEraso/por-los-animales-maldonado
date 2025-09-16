@@ -1,34 +1,31 @@
 'use client'
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link"
+import Link from "next/link";
 import Image from "next/image";
 import Loader from "@/components/Loader";
-import { Animal, PrivateInfoDocType, PrivateInfo } from "@/types";
-import FloatButton from "@/elements/FloatButton"
-import { postAnimal } from "@/lib/firebase/postAnimal";
-import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
+import { Animal, AnimalTransactionType } from "@/types";
+import FloatButton from "@/elements/FloatButton";
+import { postFirestoreData } from "@/lib/firebase/postFirestoreData";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 import { auth } from '@/firebase';
 import { Modal } from "@/components/Modal";
 
 export default function AnimalsPage() {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
-        window.scrollTo(0, 0)
-    }, [])
+        window.scrollTo(0, 0);
+    }, []);
 
-    const [loading, setLoading] = useState<boolean>(true)
+    const [loading, setLoading] = useState<boolean>(true);
     const MIN_LOADING_TIME = 600;
 
-    const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([])
-    const [privateInfo, setPrivateInfo] = useState<PrivateInfoDocType[]>([])
-
-    const [sortReference, setSortReference] = useState<string | boolean>('name')
-    const [sortOrder, setSortOrder] = useState('>')
-    const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([])
-    const [refresh, setRefresh] = useState<boolean>(false)
+    const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([]);
+    const [sortReference, setSortReference] = useState<string | boolean>('name');
+    const [sortOrder, setSortOrder] = useState('>');
+    const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([]);
+    const [refresh, setRefresh] = useState<boolean>(false);
 
     useEffect(() => {
 
@@ -39,11 +36,6 @@ export default function AnimalsPage() {
                 setAnimalsToShow(data as Animal[]);
             }).catch((error) => {
                 console.error("Error fetching Animals:", error);
-            });
-            await getFirestoreData({ currentCollection: 'animalPrivateInfo' }).then((data) => {
-                setPrivateInfo(data as PrivateInfoDocType[]);
-            }).catch((error) => {
-                console.error("Error fetching private info:", error);
             });
         };
         fetchData().finally(() => {
@@ -115,44 +107,25 @@ export default function AnimalsPage() {
             if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
             const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
-            const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
-            if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
-
-            const { id, ...onlyData } = currentPrivateInfo;
-
-            const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
-                return data.date > latest[1].date ? [key, data] : latest;
-            });
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const [dateKey, latestData] = latestEntry;
-
-            const newData = {
-                ...latestData,
+            const newTransaction = {
+                id: currentId,
+                name: animal.name,
+                since: Date.now(),
                 date: Date.now(),
                 modifiedBy: auth.currentUser?.email || '',
                 isDeleted: true,
                 isVisible: false,
                 isAvalible: false
-            } as PrivateInfo
+            } as AnimalTransactionType;
 
-            await postAnimal({ data: updatedAnimal, id });
-            await postAnimalPrivateInfo({
-                data: newData,
-                id
-            })
-            const elapsed = Date.now() - start;
-            const remaining = MIN_LOADING_TIME - elapsed;
-            if (remaining > 0) {
-                setTimeout(() => {
-                    setLoading(false);
-                }, remaining);
-            } else {
-                setLoading(false);
-            }
+            await Promise.all([
+                postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id: currentId }),
+                postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+            ]);
 
-            setRefresh(!refresh)
+
+            
         } catch (error) {
             const elapsed = Date.now() - start;
             const remaining = MIN_LOADING_TIME - elapsed;
@@ -164,13 +137,24 @@ export default function AnimalsPage() {
                 setLoading(false);
             }
             console.error("Error changing animal status:", error);
+        } finally {
+            const elapsed = Date.now() - start;
+            const remaining = MIN_LOADING_TIME - elapsed;
+            if (remaining > 0) {
+                setTimeout(() => {
+                    setLoading(false);
+                }, remaining);
+            } else {
+                setLoading(false);
+            }
+            setRefresh(!refresh);
         }
     }
 
     return (
         <section className=" flex flex-col gap-2  items-center pb-28">
             {loading && <Loader />}
-            <h3 className="text-2xl font-bold underline">Animales Adoptados</h3>            
+            <h3 className="text-2xl font-bold underline">Animales Adoptados</h3>
             <div className="relative overflow-x-auto shadow-md rounded-lg ">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">

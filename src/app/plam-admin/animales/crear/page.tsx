@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Animal, Img, PrivateInfo, CompatibilityType } from '@/types';
+import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import UploadImages from '@/elements/UploadImage';
 import Loader from '@/components/Loader';
 import { deleteImage } from '@/lib/deleteIgame';
-import { postAnimal } from '@/lib/firebase/postAnimal';
-import { postAnimalPrivateInfo } from '@/lib/firebase/postAnimalPrivateInfo';
+import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { useRouter } from 'next/navigation';
 import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
@@ -34,22 +33,34 @@ const initialAnimal: Animal = {
   waitingSince: Date.now(),
 };
 
-const initialPrivateInfo: PrivateInfo = {
+const initialPrivateInfo: PrivateInfoType = {
+  id: '',
+  name: '',
+  contactName: '',
+  contacts: [],
+};
+
+
+
+const initialTransaction: AnimalTransactionType = {
+  id: '',
+  name: '',
   isAvalible: false,
   isVisible: false,
   isDeleted: false,
   status: 'transitorio',
-  since: Date.now(),
-  contactName: '',
   date: Date.now(),
   modifiedBy: '',
+  since: Date.now(),
 }
+
 
 export default function CreateAnimalForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [animal, setAnimal] = useState<Animal>(initialAnimal);
-  const [privateInfo, setPrivateInfo] = useState<PrivateInfo>(initialPrivateInfo);
+  const [privateInfo, setPrivateInfo] = useState<PrivateInfoType>(initialPrivateInfo);
+  const [transaction, setTransaction] = useState<AnimalTransactionType>(initialTransaction);
 
   const [images, setImages] = useState<Img[]>([]);
 
@@ -65,14 +76,14 @@ export default function CreateAnimalForm() {
     cats: 'no_se',
     kids: 'no_se',
   });
-  
-  useEffect(()=>{
+
+  useEffect(() => {
     setAnimal((prev) => ({
       ...prev,
       compatibility: compatibility,
-      }))
-    
-  },[compatibility])
+    }))
+
+  }, [compatibility])
 
 
   function formatMillisForInputDate(millis: number): string {
@@ -112,6 +123,15 @@ export default function CreateAnimalForm() {
       [name]: value as 'si' | 'no' | 'no_se',
     }));
   };
+  const handleTransactionChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setTransaction((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
   const handlePrivateInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -143,12 +163,13 @@ export default function CreateAnimalForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const MIN_LOADING_TIME = 600;
+    const start = Date.now();
     try {
-      const MIN_LOADING_TIME = 600;
-      const start = Date.now();
 
       setLoading(true);
       const id = await generateAnimalId(animal.name);
+
       const newAnimal: Animal = {
         ...animal,
         id: id,
@@ -156,11 +177,17 @@ export default function CreateAnimalForm() {
         isAvalible: isAvalible,
         isVisible: isVisible,
       }
-
-
-      const newPrivateInfo: PrivateInfo =
-      {
+      const newPrivateInfo: PrivateInfoType = {
         ...privateInfo,
+        id: id,
+        name: animal.name,
+      }
+
+      const newTransaction: AnimalTransactionType =
+      {
+        ...transaction,
+        id: id,
+        name: animal.name,
         isAvalible: isAvalible,
         isVisible: isVisible,
         status: animal.status,
@@ -191,9 +218,19 @@ export default function CreateAnimalForm() {
         return;
       }
 
-      await postAnimal({ data: newAnimal, id })
-      await postAnimalPrivateInfo({ data: newPrivateInfo, id })
+      await Promise.all([
+        postFirestoreData<Animal>({ data: newAnimal, currentCollection: 'animals', id }),
+        postFirestoreData<PrivateInfoType>({ data: newPrivateInfo, currentCollection: 'animalPrivateInfo', id }),
+        postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+      ]);
       
+
+    } catch (error) {
+      console.error('Error al guardar el animal:', error);
+      alert('algo salio mal')
+      setLoading(false);
+
+    }finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
 
@@ -205,16 +242,9 @@ export default function CreateAnimalForm() {
       } else {
         setLoading(false);
         router.replace('/plam-admin/animales');
-      }
+      }}
 
 
-
-    } catch (error) {
-      console.error('Error al guardar el animal:', error);
-      alert('algo salio mal')
-      setLoading(false);
-
-    }
   };
 
   const handleImageDelete = async (imgId: string) => {
@@ -350,7 +380,7 @@ export default function CreateAnimalForm() {
 
         <label className='flex flex-col font-bold'>
           Situación actual:
-          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }}>
+          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handleTransactionChange(e) }}>
             <option value="adoptado">Adoptado</option>
             <option value="calle">Calle</option>
             <option value="protectora">Protectora</option>
@@ -485,7 +515,7 @@ export default function CreateAnimalForm() {
                 name="since"
                 defaultValue={formatMillisForInputDate(Date.now())}
                 onChange={(e) =>
-                  setPrivateInfo((prev) => ({
+                  setTransaction((prev) => ({
                     ...prev,
                     since: e.target.value ? new Date(e.target.value).getTime() : 0,
                   }))
@@ -494,7 +524,7 @@ export default function CreateAnimalForm() {
             </label>
             <label className='flex flex-col font-bold'>
               Notas:
-              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" onChange={handlePrivateInfoChange} />
+              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" onChange={handleTransactionChange} />
             </label>
 
 

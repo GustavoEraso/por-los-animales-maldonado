@@ -6,17 +6,16 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { Animal, PrivateInfo } from '@/types';
-import { getFirestoreAnimalById } from '@/lib/firebase/getFirestoreAnimalById';
-import { getFirestorePrivateInfoById } from '@/lib/firebase/getFirestorePrivateInfoById ';
+import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { auth } from '@/firebase';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from "@/lib/dateUtils";
-import { postAnimal } from "@/lib/firebase/postAnimal";
-import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
+import { postFirestoreData } from "@/lib/firebase/postFirestoreData";
 import Loader from "@/components/Loader";
 import { deleteImage } from "@/lib/deleteIgame";
 import { deleteFirestoreData } from "@/lib/firebase/deleteFirestoreData";
+import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 
 
 export default function AnimalPage() {
@@ -28,45 +27,44 @@ export default function AnimalPage() {
   const MIN_LOADING_TIME = 600;
 
   const [animal, setAnimal] = useState<Animal>({} as Animal);
-  const [privateInfo, setPrivateInfo] = useState<PrivateInfo>({} as PrivateInfo);
-  const [allPrivateInfo, setAllPrivateInfo] = useState<PrivateInfo[]>([] as PrivateInfo[]);
+  const [privateInfo, setPrivateInfo] = useState<PrivateInfoType>({} as PrivateInfoType);
+  // const [animalTransaction, setAnimalTransaction] = useState<AnimalTransactionType>({} as AnimalTransactionType);
+  const [allAnimalTransactions, setAllAnimalTransactions] = useState<AnimalTransactionType[]>([] as AnimalTransactionType[]);
 
   useEffect(() => {
     const fetchAnimalData = async () => {
       try {
         if (!currentId) return null;
-        const animal = await getFirestoreAnimalById(currentId);
+        const animal = await getFirestoreDocById<Animal>({ currentCollection: 'animals', id: currentId });
         if (!animal) {
           console.error('Animal not found');
           return;
         }
-        const currentPrivateInfo = await getFirestorePrivateInfoById(currentId);
+        const currentPrivateInfo = await getFirestoreDocById<PrivateInfoType>({ currentCollection: 'animalPrivateInfo', id: currentId });
         if (!currentPrivateInfo) {
-          console.error('Private info not found for this animal');
+          console.error('Private info not found');
           return;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...onlyData } = currentPrivateInfo;
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const parsedPrivateData = Object.entries(onlyData).map(([_, data]) => data) as unknown as PrivateInfo[];
-        const sortedPrivateData = parsedPrivateData.sort((a, b) => b.date - a.date)
-
-        setAllPrivateInfo(sortedPrivateData);
-        const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
-          return data.date > latest[1].date ? [key, data] : latest;
-        });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [dateKey, latestData] = latestEntry;
-
-        if (!latestData) {
-          console.error('No valid private info data found');
+        const currentTransactions = await getFirestoreData({ currentCollection: 'animalTransactions', filter: [['id', '==', currentId]] });
+        if (!currentTransactions) {
+          console.error('Transaction info not found for this animal');
           return;
-        }
-        const currentData = latestData as unknown as PrivateInfo
+        };
 
-        setAnimal(animal)
-        setPrivateInfo(currentData);
+        const sortedTransactions = currentTransactions.sort((a, b) => b.date - a.date);
+
+        setAllAnimalTransactions(sortedTransactions);
+        const latestTransaction = sortedTransactions[0];
+
+        if (!latestTransaction) {
+          console.error('No valid animal transaction data found');
+          return;
+        };
+
+        setAnimal(animal);
+        setPrivateInfo(currentPrivateInfo);
+
+        console.log({'animal': animal, 'privateInfo': currentPrivateInfo, 'latestTransaction': latestTransaction});
 
       } catch (error) {
         console.error('Error fetching animal data:', error);
@@ -83,20 +81,21 @@ export default function AnimalPage() {
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
-      const newData = {
-        ...privateInfo,
+      const newTransaction = {
+        id: currentId,
+        name: animal.name,
+        since: Date.now(),
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: true,
         isVisible: false,
         isAvalible: false
-      } as PrivateInfo
+      } as AnimalTransactionType;
 
-      await postAnimal({ data: updatedAnimal, id: currentId });
-      await postAnimalPrivateInfo({
-        data: newData,
-        id: currentId
-      })
+      await Promise.all([
+        postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id: currentId }),
+        postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+      ]);
 
       router.push('/plam-admin/animales');
     } catch (error) {
@@ -108,38 +107,24 @@ export default function AnimalPage() {
     const start = Date.now();
     setIsLoading(true);
     try {
-      const latestData = allPrivateInfo[1];
+       
 
-      const { isAvalible, isVisible } = latestData;
-
-      if (typeof isAvalible != 'boolean' || typeof isVisible != 'boolean') {
-        throw new Error(`isAvalible or isVisible is not boolean for animal with id ${currentId}`);
-      }
-
-      const updatedAnimal = { ...animal, isDeleted: false, isVisible, isAvalible };
-      const newPrivateData = {
-        ...latestData,
+      const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvalible: false };
+      const newTransactionData = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: false,
-      } as PrivateInfo
+        isVisible: false,
+        isAvalible: false,
+      } as AnimalTransactionType;
 
-      await postAnimal({ data: updatedAnimal, id: currentId });
-      await postAnimalPrivateInfo({
-        data: newPrivateData,
-        id: currentId
-      })
-      const elapsed = Date.now() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
-          setIsLoading(false);
-        }, remaining);
-      } else {
-        setIsLoading(false);
-      }
+      await Promise.all([
+        postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id: currentId }),
+        postFirestoreData<AnimalTransactionType>({ data: newTransactionData, currentCollection: 'animalTransactions' })
+      ]);
 
-      router.push('/plam-admin/animales');
+       router.push('/plam-admin/animales');
+      
     } catch (error) {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -152,25 +137,7 @@ export default function AnimalPage() {
       }
 
       console.error("Error changing the animal's status:", error);
-    }
-  }
-
-  const handleHardDeleteSingleAnimal = async ({ animal }: { animal: Animal }) => {
-    const start = Date.now();
-    setIsLoading(true);
-    try {
-      const images = animal.images;
-      for (const image of images) {
-        if (image.imgId) {
-          await deleteImage(image.imgId);
-        }
-        await deleteFirestoreData({ collection: 'animals', docId: animal.id });
-        await deleteFirestoreData({ collection: 'privateInfo', docId: animal.id });
-      }
-      router.push('/plam-admin/animales/papelera');
-    } catch (error) {
-      console.error('Error to delete animal:', error);
-    } finally {
+    }finally{
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
       if (remaining > 0) {
@@ -180,22 +147,69 @@ export default function AnimalPage() {
       } else {
         setIsLoading(false);
       }
+
+     
     }
   }
 
-  if (!animal) {
+      const handleHardDeleteSingleAnimal = async ({ animal }: { animal: Animal }) => {
+        const start = Date.now();
+        setIsLoading(true);
+        try {
+            const images = animal.images;
+            for (const image of images) {
+                if (image.imgId) {
+                    await deleteImage(image.imgId);
+                }
+            };
+
+            const newTransaction: AnimalTransactionType = {
+                id: animal.id,
+                name: animal.name,
+                hardDeleted: true,
+                date: Date.now(),
+                since:Date.now(),
+                modifiedBy: auth.currentUser?.email || '',
+            };
+
+           await Promise.all([
+                deleteFirestoreData({ collection: 'animals', docId: animal.id }),
+                postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+            ]);
+
+            router.push('/plam-admin/animales');
+            
+        } catch (error) {
+            console.error('Error to delete animal:', error);
+        } finally {
+            const elapsed = Date.now() - start;
+            const remaining = MIN_LOADING_TIME - elapsed;
+            if (remaining > 0) {
+                setTimeout(() => {
+                    setIsLoading(false);
+                }, remaining);
+            } else {
+                setIsLoading(false);
+            }
+            
+        }
+    };
+
+
+  if (!animal.id || !privateInfo.id || !allAnimalTransactions.length) {
     return (
       <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
-        <Hero title="ups" />
+        <Hero title="cargando" />
         <section className="flex flex-col gap-4 px-9 py-4 max-w-7xl">
-          <h1>Pagina no encontrada</h1>
+          <h1>cargando...</h1>
         </section>
       </div>
     );
-  }
+  };
 
   const { name, description, isAvalible, images, gender, aproxBirthDate, status, size, species, waitingSince, compatibility, isSterilized } = animal;
-  const { contactName, contacts, notes, modifiedBy, date } = privateInfo;
+  const { date, modifiedBy, notes } = allAnimalTransactions[0];
+  const { contactName, contacts } = privateInfo;
   const img = images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   if (isLoading) {
     return (
@@ -244,7 +258,7 @@ export default function AnimalPage() {
               ))}
               <li className="text-xl font-semibold">Notas: <span className="font-normal">{notes}</span></li>
               <li className="text-xl font-semibold">
-                Ultima actualización: <span className="font-normal">{`${formatDateMMYYYY(date)} (hace ${yearsOrMonthsElapsed(waitingSince)})`}</span>
+                Ultima actualización: <span className="font-normal">{`${formatDateMMYYYY(date)} (hace ${yearsOrMonthsElapsed(date)})`}</span>
               </li>
               <li className="text-xl font-semibold">Actualizado por: <span className="font-normal">{modifiedBy}</span></li>
             </ul>
@@ -255,7 +269,7 @@ export default function AnimalPage() {
                   Este animal ha tenido los siguientes estados a lo largo del tiempo:
                 </p>
                 <ul className="flex flex-col gap-2 list-disc p-2 text-green-dark">
-                  {allPrivateInfo.map((info, index) => {
+                  {allAnimalTransactions.map((info, index) => {
                     const date = new Date(info.date).toLocaleDateString('uy-ES', {
                       day: '2-digit',
                       month: '2-digit',
@@ -264,16 +278,24 @@ export default function AnimalPage() {
                       minute: '2-digit',
                       hour12: false,
                     });
-                    const since = new Date(info.since).toLocaleDateString('uy-ES');
+                    
                     return (<ul key={`${index}-${info.date}`} className="text-xl text-start font-semibold flex flex-col gap- p-2 bg-white rounded">
-                      <li className="font-semibold"> Fecha: <span className="font-normal">{(date)} hs</span></li>
-                      <li className="font-semibold"> Actualizado por: <span className="font-normal">{info.modifiedBy}</span></li>
-                      <li className="font-semibold">Estado: <span className="font-normal">{`${info.isAvalible ? 'Disponible' : 'No disponible'}`}</span></li>
-                      <li className="font-semibold">Mostrar: <span className="font-normal">{`${info.isVisible ? 'Mostrar' : 'Ocultar'}`}</span></li>
-                      <li className="font-semibold"> Situación actual: <span className="font-normal">{info.status}</span></li>
-                      <li className="font-semibold"> Desde: <span className="font-normal">{since}</span></li>
-                      <li className="font-semibold"> Contacto: <span className="font-normal">{info.contactName}</span></li>
-                      <li className="font-semibold"> Notas: <span className="font-normal">{info.notes}</span></li>
+                     <li className="font-semibold"> Fecha: <span className="font-normal">{(date)} hs</span></li>
+                      {info.modifiedBy!== undefined && <li className="font-semibold"> Actualizado por: <span className="font-normal">{info.modifiedBy}</span></li>}
+                      {info.name!== undefined && <li className="font-semibold">Nombre: <span className="font-normal">{info.name}</span></li>}
+                      {info.description!== undefined && <li className="font-semibold">Descripción: <span className="font-normal">{info.description}</span></li>}
+                      {info.gender!== undefined && <li className="font-semibold">Género: <span className="font-normal">{info.gender}</span></li>}
+                      {info.aproxBirthDate!== undefined && <li className="font-semibold">Fecha de nacimiento aproximada: <span className="font-normal">{info.aproxBirthDate}</span></li>}
+                      {info.isSterilized!== undefined && <li className="font-semibold">Esterilizado: <span className="font-normal">{`${info.isSterilized ? 'Si' : 'No'}`}</span></li>}
+                      {info.lifeStage!== undefined && <li className="font-semibold">Etapa de vida: <span className="font-normal">{info.lifeStage}</span></li>}
+                      {info.isAvalible!== undefined && <li className="font-semibold">Estado: <span className="font-normal">{`${info.isAvalible ? 'Disponible' : 'No disponible'}`}</span></li>}
+                      {info.isVisible!== undefined && <li className="font-semibold">Mostrar: <span className="font-normal">{`${info.isVisible ? 'Mostrar' : 'Ocultar'}`}</span></li>}
+                      {info.isDeleted!== undefined && <li className="font-semibold">Eliminado: <span className="font-normal">{`${info.isDeleted ? 'Si' : 'No'}`}</span></li>}
+                      {info.status!== undefined && <li className="font-semibold"> Situación actual: <span className="font-normal">{info.status}</span></li>}
+                      {info.size!== undefined && <li className="font-semibold"> Tamaño: <span className="font-normal">{info.size}</span></li>}
+                      {info.species!== undefined && <li className="font-semibold"> Especie: <span className="font-normal">{info.species}</span></li>}
+                      {info.contactName!== undefined && <li className="font-semibold"> Contacto: <span className="font-normal">{info.contactName}</span></li>}
+                      {info.notes!== undefined && <li className="font-semibold"> Notas: <span className="font-normal">{info.notes}</span></li>}
                       {info.contacts && info.contacts.map((contact, index) => (
                         <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">{contact.type}: <span className="font-normal">{contact.value}</span></li>))}
                     </ul>)
@@ -287,26 +309,10 @@ export default function AnimalPage() {
           </div>
         </div>
       </section>
-      {!animal.isDeleted && <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
-        <Link href={`/plam-admin/animales/editar/${animal.id}`} className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300">Editar</Link>
-        <Modal buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300" buttonText="Eliminar">
-          <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center ">
-            <h2 className="text-2xl font-bold">¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?</h2>
-            <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
-              <div className="aspect-square">
-                <Image className="w-full h-full object-cover bg-white" src={animal.images[0].imgUrl} alt={animal.images[0].imgAlt} width={300} height={300} />
-              </div>
-              <div className="flex flex-col items-center justify-between gap-1 p-2">
-                <span className="uppercase text-2xl text-center font-extrabold">Nombre: {animal.name}</span>
-                <span className="uppercase text-2xl text-center font-extrabold">Id :{animal.id}</span>
-                <button onClick={() => handleDelete(animal.id)} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar</button>
-              </div>
 
-            </article>
-          </section>
-        </Modal>
-      </section>}
-      {animal.isDeleted && <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+        {animal.isDeleted 
+
+        ? (<section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
         <Modal buttonStyles="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300" buttonText="Restaurar">
           <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
             <h2 className="text-2xl font-bold">¿Estás seguro de que quieres restaurar?</h2>
@@ -342,7 +348,28 @@ export default function AnimalPage() {
             </article>
           </section>
         </Modal>
-      </section>}
+      </section>)
+
+      :(<section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+        <Link href={`/plam-admin/animales/editar/${animal.id}`} className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300">Editar</Link>
+        <Modal buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300" buttonText="Eliminar">
+          <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center ">
+            <h2 className="text-2xl font-bold">¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?</h2>
+            <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
+              <div className="aspect-square">
+                <Image className="w-full h-full object-cover bg-white" src={animal.images[0].imgUrl} alt={animal.images[0].imgAlt} width={300} height={300} />
+              </div>
+              <div className="flex flex-col items-center justify-between gap-1 p-2">
+                <span className="uppercase text-2xl text-center font-extrabold">Nombre: {animal.name}</span>
+                <span className="uppercase text-2xl text-center font-extrabold">Id :{animal.id}</span>
+                <button onClick={() => handleDelete(animal.id)} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar</button>
+              </div>
+
+            </article>
+          </section>
+        </Modal>
+      </section>)}
+    
     </div>
   );
 }
