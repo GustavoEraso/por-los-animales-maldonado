@@ -28,6 +28,7 @@ export interface Animal {
   status: 'calle' | 'protectora' | 'transitorio' | 'adoptado',
   waitingSince: number,
   isDeleted?: boolean,
+  hardDeleted?: boolean
 }
 
 interface ContactType {
@@ -35,24 +36,21 @@ interface ContactType {
   value: string | number,
 }
 
-export interface PrivateInfo {
-  isAvalible: boolean,
-  isVisible: boolean,
-  status: 'calle' | 'adoptado' | 'transitorio' | 'protectora',
-  since: number,
+export interface PrivateInfoType {
+  id: string,
+  name: string,
   contactName?: string,
   contacts?: ContactType[],
+}
+
+export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType {
+  id: string,
+  name: string,
   notes?: string,
   date: number,
   modifiedBy: string,
-  isDeleted?: boolean,
+  since: number,
 }
-
-export interface PrivateInfoDocType {
-  id: string;
-  data: Record<string, PrivateInfo>;
-}
-
 
 export interface UserType {
   id: string,
@@ -67,5 +65,5 @@ export interface WpContactType{
 }
 
 export interface CollectionsType {
-  currentColection: 'animals' | 'authorizedEmails' | 'privateInfo' | 'contacts';
+  currentColection: 'animals' | 'authorizedEmails' | 'contacts' |'animalTransactions' |'animalPrivateInfo';
 }

@@ -1,13 +1,13 @@
 
 import { collection, query, where, orderBy, getDocs, type QueryConstraint } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { Animal, WpContactType, PrivateInfoDocType, UserType } from '@/types';
+import { Animal, WpContactType, AnimalTransactionType,UserType } from '@/types';
 
 interface CollectionsMap {
   animals: Animal;
-  animalPrivateInfo: PrivateInfoDocType;
   authorizedEmails: UserType;
   contacts: WpContactType;
+  animalTransactions: AnimalTransactionType;
 };
 
 type FirestoreSimpleValue = string | number | boolean | null;

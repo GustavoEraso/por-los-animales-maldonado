@@ -1,16 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Animal, Img, PrivateInfo, CompatibilityType } from '@/types';
+import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import UploadImages from '@/elements/UploadImage';
 import { deleteImage } from '@/lib/deleteIgame';
-import { postAnimal } from '@/lib/firebase/postAnimal';
-import { postAnimalPrivateInfo } from '@/lib/firebase/postAnimalPrivateInfo';
+import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { useRouter, useParams } from 'next/navigation';
 import { auth } from '@/firebase';
-import { getFirestoreAnimalById } from '@/lib/firebase/getFirestoreAnimalById';
-import { getFirestorePrivateInfoById } from '@/lib/firebase/getFirestorePrivateInfoById ';
-
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import Loader from '@/components/Loader';
+import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getChangedFields } from '@/lib/getChangedFields';
 
 
 const initialAnimal: Animal = {
@@ -35,7 +34,16 @@ const initialAnimal: Animal = {
   waitingSince: Date.now(),
 };
 
-const initialPrivateInfo: PrivateInfo = {
+const initialPrivateInfo: PrivateInfoType = {
+  id: '',
+  name: '',
+  contactName: '',
+  contacts: [],
+};
+
+const initialTransactionInfo: AnimalTransactionType = {
+  id: '',
+  name: '',
   isAvalible: false,
   isVisible: false,
   status: 'transitorio',
@@ -54,8 +62,12 @@ export default function EditAnimalForm() {
   const MIN_LOADING_TIME = 600;
 
 
+  const [oldAnimal, setOldAnimal] = useState<Animal>(initialAnimal);
+  const [oldPrivateInfo, setOldPrivateInfo] = useState<PrivateInfoType>(initialPrivateInfo);
+
   const [animal, setAnimal] = useState<Animal>(initialAnimal);
-  const [privateInfo, setPrivateInfo] = useState<PrivateInfo>(initialPrivateInfo);
+  const [privateInfo, setPrivateInfo] = useState<PrivateInfoType>(initialPrivateInfo);
+  const [transactionInfo, setTransactionInfo] = useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
 
   const [contacts, setContacts] = useState<{ type: 'celular' | 'email' | 'other'; value: string | number }[]>([]);
@@ -87,35 +99,39 @@ export default function EditAnimalForm() {
     const fetchAnimalData = async () => {
       try {
         if (!currentId) return null;
-        const animal = await getFirestoreAnimalById(currentId);
-        if (!animal) {
+        const fetchedAnimal = await getFirestoreDocById<Animal>({ currentCollection: 'animals', id: currentId });
+        if (!fetchedAnimal) {
           console.error('Animal not found');
           return;
         }
-        const currentPrivateInfo = await getFirestorePrivateInfoById(currentId);
-        if (!currentPrivateInfo) {
-          console.error('Private info not found for this animal');
+        const fetchedPrivateInfo = await getFirestoreDocById<PrivateInfoType>({ currentCollection: 'animalPrivateInfo', id: currentId });
+        if (!fetchedPrivateInfo) {
+          console.error('Private info not found');
           return;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...onlyData } = currentPrivateInfo;
-        const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
-          return data.date > latest[1].date ? [key, data] : latest;
-        });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [dateKey, latestData] = latestEntry;
-
-        if (!latestData) {
-          console.error('No valid private info data found');
+        const transactionsList = await getFirestoreData({ currentCollection: 'animalTransactions', filter: [['id', '==', currentId]] });
+        if (!transactionsList) {
+          console.error('Transactions list not found');
           return;
         }
-        const currentData = latestData as unknown as PrivateInfo
+        if (!transactionsList.length) {
+          console.error('Transaction info not found for this animal');
+          return;
+        }
+        const sortedTransactions = transactionsList.sort((a, b) => b.date - a.date);
+        const currentTransactionInfo = sortedTransactions[0];
 
-        setAnimal(animal)
-        setPrivateInfo(currentData);
 
-        setImages(animal.images || []);
-        setContacts(currentData.contacts || []);
+
+        setOldAnimal(structuredClone(fetchedAnimal));
+        setOldPrivateInfo(structuredClone(fetchedPrivateInfo));
+
+        setAnimal(fetchedAnimal);
+        setPrivateInfo(fetchedPrivateInfo);
+        setTransactionInfo(currentTransactionInfo);
+
+        setImages(fetchedAnimal.images || []);
+        setContacts(currentTransactionInfo.contacts || []);
 
 
       } catch (error) {
@@ -150,7 +166,7 @@ export default function EditAnimalForm() {
       ...prev,
       isAvalible: isAvalible,
     }));
-    setPrivateInfo((prev) => ({
+    setTransactionInfo((prev) => ({
       ...prev,
       isAvalible: isAvalible,
     }));
@@ -161,7 +177,7 @@ export default function EditAnimalForm() {
       ...prev,
       isVisible: isVisible,
     }));
-    setPrivateInfo((prev) => ({
+    setTransactionInfo((prev) => ({
       ...prev,
       isVisible: isVisible,
     }));
@@ -197,11 +213,23 @@ export default function EditAnimalForm() {
       [name]: value as 'si' | 'no' | 'no_se',
     }));
   };
+
+
+
   const handlePrivateInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setPrivateInfo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const handleTransactionInfoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setTransactionInfo((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -225,6 +253,8 @@ export default function EditAnimalForm() {
     contactName: "Falta el nombre de contacto.",
     contacts: "Faltan medios de contacto.",
   };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -236,13 +266,15 @@ export default function EditAnimalForm() {
         isVisible: isVisible,
       }
 
-
-      const newPrivateInfo: PrivateInfo =
+      const animalChanges = getChangedFields({ oldObj: oldAnimal, newObj: newAnimal });
+      const privateInfoChanges = getChangedFields({ oldObj: oldPrivateInfo, newObj: privateInfo });
+      const newTransactionInfo: AnimalTransactionType =
       {
-        ...privateInfo,
-        isAvalible: isAvalible,
-        isVisible: isVisible,
-        status: animal.status,
+        ...animalChanges,
+        ...privateInfoChanges,
+        id: animal.id,
+        name: animal.name,
+        since: transactionInfo.since,
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
       }
@@ -260,8 +292,29 @@ export default function EditAnimalForm() {
         return;
       }
 
-      await postAnimal({ data: newAnimal, id: animal.id })
-      await postAnimalPrivateInfo({ data: newPrivateInfo, id: animal.id })
+      const promises = [];
+
+      if (Object.keys(animalChanges).length === 0 && Object.keys(privateInfoChanges).length === 0) {
+        alert('No se detectaron cambios para guardar.');
+        return;
+      } else{
+        promises.push(
+          postFirestoreData<AnimalTransactionType>({ data: newTransactionInfo, currentCollection: 'animalTransactions' })
+        )
+      }
+
+      if (Object.keys(animalChanges).length > 0) {
+        promises.push(
+           postFirestoreData<Animal>({ data: newAnimal, currentCollection: 'animals', id: animal.id }),
+        );
+      }
+      if (Object.keys(privateInfoChanges).length > 0) {
+        promises.push(
+          postFirestoreData<PrivateInfoType>({ data: privateInfo, currentCollection: 'animalPrivateInfo', id: privateInfo.id })
+        );
+      }
+
+      await Promise.all(promises);
 
       router.replace('/plam-admin/animales')
 
@@ -339,32 +392,32 @@ export default function EditAnimalForm() {
         <div className='flex flex-col gap-4'>
           <h3 className='text-lg font-bold '>Compatibilidad:</h3>
 
-            <label className='flex gap-2 font-bold items-center ml-6'>
-              <span>Perros:</span>
-              <select className='outline-2 outline-gray-200 rounded p-2' name="dogs" value={animal.compatibility?.dogs || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-            <label className='flex gap-2 font-bold items-center ml-6'>
-              <span>Gatos:</span>
-              <select className='outline-2 outline-gray-200 rounded p-2' name="cats" value={animal.compatibility?.cats || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-            <label className='flex gap-2 font-bold items-center ml-6'>
-              <span>Niños:</span>
-              <select className='outline-2 outline-gray-200 rounded p-2' name="kids" value={animal.compatibility?.kids || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-          </div>
-    
+          <label className='flex gap-2 font-bold items-center ml-6'>
+            <span>Perros:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="dogs" value={animal.compatibility?.dogs || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+          <label className='flex gap-2 font-bold items-center ml-6'>
+            <span>Gatos:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="cats" value={animal.compatibility?.cats || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+          <label className='flex gap-2 font-bold items-center ml-6'>
+            <span>Niños:</span>
+            <select className='outline-2 outline-gray-200 rounded p-2' name="kids" value={animal.compatibility?.kids || 'no_se'} onChange={(e) => handleCompatibilityChange(e)}>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+              <option value="no_se">No sé</option>
+            </select>
+          </label>
+        </div>
+
         <label className='flex gap-2 font-bold items-center'>
           <span>¿Está esterilizado?</span>
           <select className='outline-2 outline-gray-200 rounded p-2' name="isSterilized" value={animal.isSterilized || 'no_se'} onChange={(e) => handleChange(e)}>
@@ -412,7 +465,7 @@ export default function EditAnimalForm() {
 
         <label className='flex flex-col font-bold'>
           Situación actual:
-          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={(e) => { handleChange(e); handlePrivateInfoChange(e) }} >
+          <select className='outline-2 outline-gray-200 rounded p-2' name="status" value={animal.status} onChange={handleChange} >
             <option value="adoptado">Adoptado</option>
             <option value="calle">Calle</option>
             <option value="protectora">Protectora</option>
@@ -454,7 +507,7 @@ export default function EditAnimalForm() {
                 className='outline-2 outline-gray-200 rounded p-2'
                 type="text"
                 name="contactName"
-                defaultValue={privateInfo.contactName}
+                defaultValue={transactionInfo.contactName}
                 onChange={handlePrivateInfoChange}
               />
             </label>
@@ -546,9 +599,9 @@ export default function EditAnimalForm() {
                 className='outline-2 outline-gray-200 rounded p-2'
                 type="date"
                 name="since"
-                defaultValue={formatMillisForInputDate(privateInfo.since)}
+                defaultValue={formatMillisForInputDate(transactionInfo.since)}
                 onChange={(e) =>
-                  setPrivateInfo((prev) => ({
+                  setTransactionInfo((prev) => ({
                     ...prev,
                     since: e.target.value ? new Date(e.target.value).getTime() : 0,
                   }))
@@ -557,7 +610,7 @@ export default function EditAnimalForm() {
             </label>
             <label className='flex flex-col font-bold'>
               Notas:
-              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" defaultValue={privateInfo.notes} onChange={handlePrivateInfoChange} />
+              <textarea className='outline-2 outline-gray-200 rounded p-2 field-sizing-content' name="notes" defaultValue={transactionInfo.notes} onChange={handleTransactionInfoChange} />
             </label>
 
           </section>

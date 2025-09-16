@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link"
 import Image from "next/image";
 import Loader from "@/components/Loader";
-import { Animal, PrivateInfoDocType, PrivateInfo } from "@/types";
+import { Animal, AnimalTransactionType } from "@/types";
 import FloatButton from "@/elements/FloatButton"
-import { postAnimal } from "@/lib/firebase/postAnimal";
-import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
+import { postFirestoreData } from "@/lib/firebase/postFirestoreData";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 import { auth } from '@/firebase';
 import { Modal } from "@/components/Modal";
@@ -27,7 +26,6 @@ export default function AnimalsPage() {
     const MIN_LOADING_TIME = 600;
 
     const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([])
-    const [privateInfo, setPrivateInfo] = useState<PrivateInfoDocType[]>([])
 
     const [sortReference, setSortReference] = useState<string | boolean>('name')
     const [sortOrder, setSortOrder] = useState('>')
@@ -44,12 +42,7 @@ export default function AnimalsPage() {
             }).catch((error) => {
                 console.error("Error fetching Animals:", error);
             });
-            await getFirestoreData({ currentCollection: 'animalPrivateInfo' }).then((data) => {
-                setPrivateInfo(data as PrivateInfoDocType[]);
-            }).catch((error) => {
-                console.error("Error fetching private info:", error);
-            });
-
+           
         };
         fetchData().finally(() => {
             const elapsed = Date.now() - start;
@@ -116,48 +109,21 @@ export default function AnimalsPage() {
         setLoading(true);
         try {
             const animal = sortedAnimals.find((animal) => animal.id === currentId);
-            if (!animal) throw new Error(`Animal with id ${currentId} not found`);
+            if (!animal) throw new Error(`Animal with id ${currentId} not found`);            
 
-            const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
-            if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
-
-            const { id, ...onlyData } = currentPrivateInfo;
-
-            const entries = Object.entries(onlyData);
-            const sorted = entries.sort((a, b) => Number(b[1].date) - Number(a[1].date));
-            const previousEntry = sorted[1];
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const [dateKey, latestData] = previousEntry;
-
-            const { isAvalible, isVisible } = latestData;
-
-            if (typeof isAvalible != 'boolean' || typeof isVisible != 'boolean') {
-                throw new Error(`isAvalible or isVisible is not boolean for animal with id ${currentId}`);
-            }
-
-            const updatedAnimal = { ...animal, isDeleted: false, isVisible, isAvalible };
-            const newPrivateData = {
-                ...latestData,
+            const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvalible: false };
+            const newTransactionData = {                
                 date: Date.now(),
                 modifiedBy: auth.currentUser?.email || '',
                 isDeleted: false,
-            } as PrivateInfo
+                isVisible:  false,
+                isAvalible: false,
+            } as AnimalTransactionType;
 
-            await postAnimal({ data: updatedAnimal, id });
-            await postAnimalPrivateInfo({
-                data: newPrivateData,
-                id
-            })
-            const elapsed = Date.now() - start;
-            const remaining = MIN_LOADING_TIME - elapsed;
-            if (remaining > 0) {
-                setTimeout(() => {
-                    setLoading(false);
-                }, remaining);
-            } else {
-                setLoading(false);
-            }
+            await Promise.all([
+                postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id: currentId }),
+                postFirestoreData<AnimalTransactionType>({ data: newTransactionData, currentCollection: 'animals' })
+            ]);
 
             setRefresh(!refresh)
         } catch (error) {
@@ -172,8 +138,18 @@ export default function AnimalsPage() {
             }
 
             console.error('Error restoring animal:', error);
+        }finally{
+            const elapsed = Date.now() - start;
+            const remaining = MIN_LOADING_TIME - elapsed;
+            if (remaining > 0) {
+                setTimeout(() => {
+                    setLoading(false);
+                }, remaining);
+            } else {
+                setLoading(false);
+            };
         }
-    }
+    };
 
     const handleHardDeleteSingleAnimal = async ({ animal }: { animal: Animal }) => {
         const start = Date.now();
@@ -184,9 +160,22 @@ export default function AnimalsPage() {
                 if (image.imgId) {
                     await deleteImage(image.imgId);
                 }
-                await deleteFirestoreData({ collection: 'animals', docId: animal.id });
-                await deleteFirestoreData({ collection: 'privateInfo', docId: animal.id });
-            }
+            };
+
+            const newTransaction: AnimalTransactionType = {
+                id: animal.id,
+                name: animal.name,
+                hardDeleted: true,
+                date: Date.now(),
+                since:Date.now(),
+                modifiedBy: auth.currentUser?.email || '',
+            };
+
+           await Promise.all([
+                deleteFirestoreData({ collection: 'animals', docId: animal.id }),
+                postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+            ]);
+            
         } catch (error) {
             console.error('Error to delete animal:', error);
         } finally {
@@ -201,7 +190,7 @@ export default function AnimalsPage() {
             }
             setRefresh(!refresh)
         }
-    }
+    };
 
     const handleAllHardDelete = () => {
         const start = Date.now();
@@ -230,7 +219,7 @@ export default function AnimalsPage() {
     return (
         <section className=" flex flex-col gap-2  items-center pb-28">
             {loading && <Loader />}
-             <h3 className="text-2xl font-bold underline">Papelera</h3>
+            <h3 className="text-2xl font-bold underline">Papelera</h3>
             <div className="relative overflow-x-auto shadow-md rounded-lg ">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -346,15 +335,15 @@ export default function AnimalsPage() {
             <Modal buttonText="Vaciar Papelera" buttonStyles="font-medium text-red-600  hover:underline cursor-pointer">
                 <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
                     <h2 className="text-2xl font-bold">¿Estás seguro de que quieres vaciar la apelera?</h2>
-                    
-                            <p className="text-2xl font-bold">Se eliminaran los siguientes id</p> 
-                            <ul className="list-disc">
+
+                    <p className="text-2xl font-bold">Se eliminaran los siguientes id</p>
+                    <ul className="list-disc">
                         {
-                            animalsToShow.map((animal)=>(<li className="text-xl font-bold" key={`bydelete${animal.id}`}>{animal.id}</li>))
+                            animalsToShow.map((animal) => (<li className="text-xl font-bold" key={`bydelete${animal.id}`}>{animal.id}</li>))
                         }
-                        </ul>                         
-                            <button onClick={handleAllHardDelete} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar definitivamente</button>
-                       
+                    </ul>
+                    <button onClick={handleAllHardDelete} className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">Eliminar definitivamente</button>
+
                 </section>
 
 

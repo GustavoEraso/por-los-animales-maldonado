@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link"
 import Image from "next/image";
 import Loader from "@/components/Loader";
-import { Animal, PrivateInfoDocType, PrivateInfo } from "@/types";
+import { Animal, AnimalTransactionType } from "@/types";
 import FloatButton from "@/elements/FloatButton"
-import { postAnimal } from "@/lib/firebase/postAnimal";
-import { postAnimalPrivateInfo } from "@/lib/firebase/postAnimalPrivateInfo";
+import { postFirestoreData } from "@/lib/firebase/postFirestoreData";
 import { getFirestoreData } from "@/lib/firebase/getFirestoreData";
 import { auth } from '@/firebase';
 import { Modal } from "@/components/Modal";
@@ -24,7 +23,6 @@ export default function AnimalsPage() {
   const MIN_LOADING_TIME = 600;
 
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([])
-  const [privateInfo, setPrivateInfo] = useState<PrivateInfoDocType[]>([])
   const [sortReference, setSortReference] = useState<string | boolean>('name')
   const [sortOrder, setSortOrder] = useState('>')
   const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([])
@@ -35,15 +33,10 @@ export default function AnimalsPage() {
     const start = Date.now();
 
     const fetchData = async () => {
-      await getFirestoreData({ currentCollection: 'animals', filter:[[ 'status', 'not-in', ['adoptado'] ]] }).then((data) => {
+      await getFirestoreData({ currentCollection: 'animals', filter: [['status', 'not-in', ['adoptado']]] }).then((data) => {
         setAnimalsToShow(data as Animal[]);
       }).catch((error) => {
         console.error("Error fetching Animals:", error);
-      });
-      await getFirestoreData({ currentCollection: 'animalPrivateInfo' }).then((data) => {
-        setPrivateInfo(data as PrivateInfoDocType[]);
-      }).catch((error) => {
-        console.error("Error fetching private info:", error);
       });
     };
     fetchData().finally(() => {
@@ -108,43 +101,35 @@ export default function AnimalsPage() {
     setSortReference(reference)
   }
   const renderDirection = (ref: string) => sortReference === ref ? sortOrder === '>' ? '▼' : '▲' : '';
+
   const handleVisible = async ({ currentId, active }: { currentId: string, active: boolean }) => {
     try {
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isVisible: active };
-      const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
-      if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
-
-      const { id, ...onlyData } = currentPrivateInfo;
-
-      const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
-        return data.date > latest[1].date ? [key, data] : latest;
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [dateKey, latestData] = latestEntry;
-
-      const newData = {
-        ...latestData,
+      const newTransaction = {
+        visible: active,
+        id: currentId,
+        name: animal.name,
+        since: Date.now(),
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isVisible: active
-      } as PrivateInfo
+      } as AnimalTransactionType
 
-      await postAnimal({ data: updatedAnimal, id });
-      await postAnimalPrivateInfo({
-        data: newData,
-        id
-      })
+      await Promise.all([
+        postFirestoreData<Animal>({ currentCollection: 'animals', data: updatedAnimal, id: currentId }),
+        postFirestoreData<AnimalTransactionType>({ currentCollection: 'animalTransactions', data: newTransaction })
+      ]);
       setRefresh(!refresh)
 
     } catch (error) {
       console.error('Error al cambiar el estado del animal:', error);
     }
-  }
+  };
+
   const handleDelete = async (currentId: string) => {
     const start = Date.now();
     setLoading(true);
@@ -154,44 +139,21 @@ export default function AnimalsPage() {
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
-      const currentPrivateInfo = privateInfo.find((privateInfo) => privateInfo.id === animal.id);
 
-      if (!currentPrivateInfo) throw new Error(`Private info for animal with id ${currentId} not found`);
-
-      const { id, ...onlyData } = currentPrivateInfo;
-
-      const latestEntry = Object.entries(onlyData).reduce((latest, [key, data]) => {
-        return data.date > latest[1].date ? [key, data] : latest;
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [dateKey, latestData] = latestEntry;
-
-      const newData = {
-        ...latestData,
+      const newTransaction = {
         date: Date.now(),
+        since: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: true,
         isVisible: false,
         isAvalible: false
-      } as PrivateInfo
+      } as AnimalTransactionType;
 
-      await postAnimal({ data: updatedAnimal, id });
-      await postAnimalPrivateInfo({
-        data: newData,
-        id
-      })
-      const elapsed = Date.now() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
-          setLoading(false);
-        }, remaining);
-      } else {
-        setLoading(false);
-      }
+      await Promise.all([
+        postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id: currentId }),
+        postFirestoreData<AnimalTransactionType>({ data: newTransaction, currentCollection: 'animalTransactions' })
+      ]);
 
-      setRefresh(!refresh)
     } catch (error) {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -203,13 +165,24 @@ export default function AnimalsPage() {
         setLoading(false);
       }
       console.error('Error al cambiar el estado del animal:', error);
+    } finally {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remaining);
+      } else {
+        setLoading(false);
+      }
+      setRefresh(!refresh)
     }
   }
 
   return (
     <section className=" flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
-       <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+      <h3 className="text-2xl font-bold underline">Animales Activos</h3>
       <div className="relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
