@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react'; 
 import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
@@ -7,21 +7,62 @@ import ScrollTrigger from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * Props for the CircleCard component.
+ */
 interface CircleCardProps {
+  /** URL of the image to display */
   imgUrl: string;
+  /** Alt text for the image */
   imgAlt: string;
+  /** URL for the link destination */
   linkUrl: string;
+  /** Text to display on the link button */
   linkText: string;
+  /** Whether to use inverted color scheme for the button */
   invert?: boolean;
 }
 
+/**
+ * Animated circular card component with image and action button.
+ *
+ * Features scroll-triggered animations, hover effects, and responsive behavior.
+ * Uses GSAP for animations and supports reduced motion preferences.
+ *
+ * @param {CircleCardProps} props - Component props
+ * @param {string} props.imgUrl - URL of the image to display
+ * @param {string} props.imgAlt - Alt text for the image
+ * @param {string} props.linkUrl - URL for the link destination
+ * @param {string} props.linkText - Text to display on the link button
+ * @param {boolean} [props.invert] - Whether to use inverted color scheme for the button
+ * @returns {React.ReactElement} The rendered circular card component
+ *
+ * @example
+ * // Basic usage
+ * <CircleCard
+ *   imgUrl="/path/to/image.jpg"
+ *   imgAlt="Example image"
+ *   linkUrl="/example"
+ *   linkText="Learn More"
+ * />
+ *
+ * @example
+ * // With inverted button style
+ * <CircleCard
+ *   imgUrl="/path/to/image.jpg"
+ *   imgAlt="Example image"
+ *   linkUrl="/example"
+ *   linkText="Get Started"
+ *   invert={true}
+ * />
+ */
 export default function CircleCard({
   imgUrl,
   imgAlt,
   linkUrl,
   linkText,
   invert,
-}: CircleCardProps) {
+}: CircleCardProps): React.ReactElement {
   const root = useRef<HTMLDivElement | null>(null);
   const hoverTl = useRef<gsap.core.Timeline | null>(null);
 
@@ -32,16 +73,16 @@ export default function CircleCard({
     ScrollTrigger.normalizeScroll(true);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    /* 1️⃣  Crea un contenedor matchMedia */
+    /* 1️⃣ Create a matchMedia container */
     const mm = gsap.matchMedia();
     const ctx = gsap.context(self => {
       const q = self.selector;
         if (!q) return;
 
-      /* 2️⃣  Registra las queries */
+      /* 2️⃣ Register the queries */
       mm.add(
         {
-          // móvil
+          // mobile
           isMobile: '(max-width: 767px)',
           // desktop
           isDesktop: '(min-width: 768px)',
@@ -67,7 +108,7 @@ export default function CircleCard({
         }
       );
 
-      /* Timeline de hover (no depende de media-query) */
+      /* Hover timeline (does not depend on media-query) */
       hoverTl.current = gsap
         .timeline({ paused: true })
         .to(q('.circle-img'), { scale: 1.05, duration: 0.3, ease: 'power1.out' })
@@ -84,10 +125,10 @@ export default function CircleCard({
         );
     }, root);
 
-    /* Limpieza */
+    /* Cleanup */
     return () => {
-      ctx.revert();   // timelines y styles
-      mm.revert();    // media-queries + ScrollTriggers asociados
+      ctx.revert();   // timelines and styles
+      mm.revert();    // media-queries + associated ScrollTriggers
     };
   }, []);
 

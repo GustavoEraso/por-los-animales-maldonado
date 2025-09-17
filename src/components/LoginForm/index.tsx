@@ -1,8 +1,29 @@
 'use client'
+import React from 'react';
 import { loginWithGoogle } from '@/lib/firebase/loginWithGoogle';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-export default function LoginForm() {
+
+/**
+ * Login form component with Google authentication.
+ *
+ * Provides a login interface with Google OAuth integration. Displays the organization
+ * logo, welcome message, and a Google sign-in button. Handles authentication flow
+ * and redirects users to the admin panel on success or error page on failure.
+ *
+ * @returns {React.ReactElement} The rendered login form component
+ *
+ * @example
+ * // Basic usage
+ * <LoginForm />
+ *
+ * @example
+ * // Typically used in a login page
+ * export default function LoginPage() {
+ *   return <LoginForm />;
+ * }
+ */
+export default function LoginForm(): React.ReactElement {
   const router = useRouter();
   const handleGoogleSigIn = async (): Promise<void> => {
     try {
@@ -10,7 +31,7 @@ export default function LoginForm() {
       router.replace('/plam-admin');
     } catch (error) {
       console.error(error);
-      router.replace('/login?error=unauthorized'); // Redirige a una página de error si el usuario no está autorizado
+      router.replace('/login?error=unauthorized'); // Redirect to error page if user is not authorized
     }
   };
 

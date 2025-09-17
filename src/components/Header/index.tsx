@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react';
 import Link from 'next/link';
 import { navLinks } from '@/lib/navLinks';
 import styles from './styles.module.css';
@@ -9,9 +9,20 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/firebase';
 
-
-
-export default function Header() {
+/**
+ * Main navigation header component with responsive menu and authentication features.
+ *
+ * Renders the website header with logo, navigation menu, authentication status,
+ * and responsive mobile menu. Includes login/logout functionality and admin dashboard
+ * access for authenticated users.
+ *
+ * @returns {React.ReactElement} The rendered header component
+ *
+ * @example
+ * // Basic usage
+ * <Header />
+ */
+export default function Header(): React.ReactElement {
     const router = useRouter();
 
     const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
@@ -19,7 +30,7 @@ export default function Header() {
     const handleLogout = () => {
         signOut(auth)
             .then(() => {
-                // Logout exitoso, podés redirigir
+                // Successful logout, redirect user
                 router.replace("/");
             })
             .catch((error) => {
@@ -110,13 +121,13 @@ export default function Header() {
                 </div>
             }
 
-            {/* Boton de menu */}
+            {/* Menu button */}
             <div className='bg-gray-200 p-2 rounded-md block md:hidden w-10 h-10'>
                 <button aria-label='boton menu' onClick={(e) => { e.preventDefault(); setVisibe(!visible) }}  >
                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" /></svg>
                 </button>
             </div>
-            {/* Menu responsive */}
+            {/* Responsive menu */}
             <nav className={`${visible ? 'block' : 'hidden'} md:hidden  fixed top-0 right-0 left-0 bottom-0 bg-gray-200 flex flex-col items-center overflow-scroll`}>
                 <button onClick={(e) => { e.preventDefault(); setVisibe(!visible) }} className='bg-gray-100 p-2 rounded-full self-end m-2'>
                     <svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>

@@ -1,13 +1,46 @@
 'use client';
+import React from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
+/**
+ * Props for the Hero component.
+ */
 interface Props {
+    /** URL of the hero image */
     imgURL?: string;
+    /** Alt text for the hero image */
     imgAlt?: string;
+    /** Title to display on the hero section */
     title?: string;
 }
-export default function Hero({ imgURL, imgAlt, title }: Props) {
+
+/**
+ * Hero section component with customizable image and title.
+ *
+ * Displays a full-width hero section with background image and overlaid title.
+ * If no title is provided, uses the current page path as the title.
+ * Features responsive design with gradient overlay for better text readability.
+ *
+ * @param {Props} props - Component props
+ * @param {string} [props.imgURL] - URL of the hero image (defaults to "/heroImg.webp")
+ * @param {string} [props.imgAlt] - Alt text for the hero image (defaults to "Hero image")
+ * @param {string} [props.title] - Title to display (defaults to current pathname)
+ * @returns {React.ReactElement} The rendered hero section component
+ *
+ * @example
+ * // Basic usage with defaults
+ * <Hero />
+ *
+ * @example
+ * // With custom image and title
+ * <Hero 
+ *   imgURL="/custom-hero.jpg"
+ *   imgAlt="Custom hero image"
+ *   title="Welcome"
+ * />
+ */
+export default function Hero({ imgURL, imgAlt, title }: Props): React.ReactElement {
     const pathName = usePathname().split("/").filter(Boolean).pop();
 
     const imageSrc = imgURL ?? "/heroImg.webp";

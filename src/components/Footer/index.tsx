@@ -1,9 +1,23 @@
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 import { navLinks } from "@/lib/navLinks";
 
-export default function Footer() {
+/**
+ * Website footer component with navigation, social links, and copyright information.
+ *
+ * Renders the main footer with logo, navigation menu with dropdowns, social media links
+ * (Facebook and Instagram), and copyright information. Includes responsive design
+ * with different layouts for mobile and desktop.
+ *
+ * @returns {React.ReactElement} The rendered footer component
+ *
+ * @example
+ * // Basic usage
+ * <Footer />
+ */
+export default function Footer(): React.ReactElement {
     const currentYear = new Date().getFullYear();
 
 

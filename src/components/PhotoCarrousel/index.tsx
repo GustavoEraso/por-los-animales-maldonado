@@ -1,9 +1,16 @@
 'use client';
 
+import React from 'react';
 import Image from 'next/image';
 import {  useCallback, useEffect, useRef, useState } from 'react';
 import type { SVGProps } from 'react';
 
+/**
+ * X Circle icon component for closing the fullscreen carousel.
+ *
+ * @param {SVGProps<SVGSVGElement>} props - SVG element props
+ * @returns {React.ReactNode} The rendered X circle icon
+ */
 function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="black" {...props}>
@@ -12,13 +19,48 @@ function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
   );
 }
 
+/**
+ * Props for individual carousel items.
+ */
 interface ItemsProps {
+  /** URL of the image */
   imgUrl: string;
+  /** Alt text for the image */
   imgAlt: string;
-  imgId?: string,
-};
+  /** Optional unique identifier for the image */
+  imgId?: string;
+}
 
-export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
+/**
+ * Photo carousel component with fullscreen mode and touch gestures.
+ *
+ * Displays a collection of images in a carousel format with navigation controls,
+ * thumbnail indicators, and fullscreen viewing capability. Supports touch gestures
+ * for mobile devices and automatic image transitions. Can be used in both normal
+ * and fullscreen modes.
+ *
+ * @param {Object} props - Component props
+ * @param {ItemsProps[]} props.images - Array of image objects to display in the carousel
+ * @returns {React.ReactElement} The rendered photo carousel component
+ *
+ * @example
+ * // Basic usage
+ * const images = [
+ *   { imgUrl: '/photo1.jpg', imgAlt: 'Primera foto' },
+ *   { imgUrl: '/photo2.jpg', imgAlt: 'Segunda foto' },
+ *   { imgUrl: '/photo3.jpg', imgAlt: 'Tercera foto', imgId: 'unique-id' }
+ * ];
+ * <PhotoCarrousel images={images} />
+ *
+ * @example
+ * // With animal photos
+ * const animalPhotos = [
+ *   { imgUrl: '/perro1.jpg', imgAlt: 'Perro jugando en el parque' },
+ *   { imgUrl: '/gato1.jpg', imgAlt: 'Gato durmiendo' }
+ * ];
+ * <PhotoCarrousel images={animalPhotos} />
+ */
+export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): React.ReactElement {
 
   const [carrouselFullSize, setCarrouselFullSize] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -26,11 +68,12 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
   const carrouselRef = useRef<HTMLDivElement>(null);
   const initialXRef = useRef<number | null>(null);
 
+  // Update items when images prop changes
   useEffect(() => {
     setItems(images);
   }, [images]);
 
-
+  // Handle image navigation (next/previous)
   const handleImg = useCallback(
     (direction: 'next' | 'prev') => {
       setCurrentIndex((prevIndex) => {
@@ -45,17 +88,12 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
     [items],
   );
 
-
-
-
-
-  // Swipe gestures
+  // Setup touch gesture handlers for mobile swipe navigation
   useEffect(() => {
     const carrouselElement = carrouselRef.current;
 
     const handleTouchStart = (event: TouchEvent) => {
       initialXRef.current = event.touches[0].clientX;
-
     };
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -65,6 +103,7 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }) {
       const currentX = event.touches[0].clientX;
       const diffX = initialX - currentX;
 
+      // Swipe right to go to next image, swipe left for previous
       if (diffX > 3) handleImg('next');
       else if (diffX < -3) handleImg('prev');
 
