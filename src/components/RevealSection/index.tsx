@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
@@ -9,15 +10,61 @@ import type { SplitText as SplitTextInstance } from 'gsap/SplitText';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
+/**
+ * Props for the RevealSection component.
+ */
 export interface RevealSectionProps {
+  /** Source URL of the image to display */
   imgSrc: string;
+  /** Alt text for the image */
   imgAlt: string;
+  /** Title text to display */
   title: string;
+  /** Main content text */
   text: string;
+  /** Optional link URL */
   linkHref?: string;
+  /** Optional link text */
   linkText?: string;
 }
 
+/**
+ * Animated reveal section component with GSAP scroll-triggered animations.
+ *
+ * Creates an engaging section with image and text content that animates into view
+ * as the user scrolls. Features responsive design with different animation triggers
+ * for mobile and desktop. Uses GSAP SplitText for line-by-line text animations,
+ * and includes optional call-to-action link.
+ *
+ * @param {RevealSectionProps} props - Component props
+ * @param {string} props.imgSrc - Source URL of the image to display
+ * @param {string} props.imgAlt - Alt text for the image
+ * @param {string} props.title - Title text to display
+ * @param {string} props.text - Main content text
+ * @param {string} [props.linkHref] - Optional link URL
+ * @param {string} [props.linkText] - Optional link text
+ * @returns {React.ReactElement} The rendered reveal section component
+ *
+ * @example
+ * // Basic usage without link
+ * <RevealSection
+ *   imgSrc="/animal-care.jpg"
+ *   imgAlt="Cuidado de animales"
+ *   title="Nuestro Compromiso"
+ *   text="Trabajamos todos los días para mejorar la vida de los animales en Maldonado."
+ * />
+ *
+ * @example
+ * // With call-to-action link
+ * <RevealSection
+ *   imgSrc="/volunteer.jpg"
+ *   imgAlt="Voluntarios trabajando"
+ *   title="Únete a Nosotros"
+ *   text="Forma parte de nuestro equipo de voluntarios y ayuda a cambiar vidas."
+ *   linkHref="/voluntarios"
+ *   linkText="Ser Voluntario"
+ * />
+ */
 export default function RevealSection({
   imgSrc,
   imgAlt,
@@ -25,27 +72,27 @@ export default function RevealSection({
   text,
   linkHref,
   linkText,
-}: RevealSectionProps) {
+}: RevealSectionProps): React.ReactElement {
   const root = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     if (!root.current) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    /* 1️⃣  Normaliza el scroll móvil una sola vez */
+    // Normalize mobile scroll behavior once
     ScrollTrigger.normalizeScroll(true);
 
     let split: SplitTextInstance | null = null;
 
-    /* 2️⃣  Contenedor de media-queries */
+    // Media queries container
     const mm = gsap.matchMedia();
 
-    /* 3️⃣  Contexto GSAP, para limpiar fácilmente */
+    // GSAP context for easy cleanup
     const ctx = gsap.context(self => {
       const q = self.selector;
       if (!q) return;
 
-      /* 4️⃣  Registro de queries */
+      // Register media queries for responsive animations
       mm.add(
         {
           isMobile: '(max-width: 767px)',
@@ -54,8 +101,7 @@ export default function RevealSection({
         ({ conditions }) => {
           const start = conditions?.isMobile ? 'center 90%' : 'top 70%';
          
-
-          /* Imagen desde la derecha */
+          // Image animation from right
           gsap.from(q('.img'), {
             xPercent: 100,
             opacity: 0,
@@ -68,7 +114,7 @@ export default function RevealSection({
             },
           });
 
-          /* Texto en líneas con SplitText */
+          // Text animation with SplitText line by line
           split = SplitText.create(q('.text'), { type: 'lines', aria: 'auto' });
 
           gsap.from(split.lines, {
@@ -85,7 +131,7 @@ export default function RevealSection({
             },
           });
 
-          /* Título + botón */
+          // Title and button animations
           gsap.from(q(['.title', '.btn']), {
             y: 40,
             opacity: 0,
@@ -103,29 +149,29 @@ export default function RevealSection({
       );
     }, root);
 
-    /* 5️⃣  Limpieza */
+    // Cleanup function
     return () => {
-      ctx.revert();   // tweens + estilos
-      mm.revert();    // media-queries y triggers
+      ctx.revert();   // tweens and styles
+      mm.revert();    // media queries and triggers
       split?.revert();
     };
   }, []);
 
-  /* 6️⃣  JSX */
+  // Component JSX
   return (
     <section
       ref={root}
       className="flex w-full flex-col items-center justify-center bg-cream-light px-6"
     >
       <div className="flex w-full max-w-6xl flex-col items-center justify-center gap-8 py-16 md:flex-row-reverse">
-        {/* Imagen */}
+        {/* Image container */}
         <div className="flex w-full lg:w-2/3 min-w-1/3 items-center justify-center">
           <div className="flex aspect-square w-full max-w-lg items-center justify-center rounded-full bg-cream-light">
             <img src={imgSrc} alt={imgAlt} className="img w-9/12" />
           </div>
         </div>
 
-        {/* Texto + botón */}
+        {/* Text content and optional button */}
         <div className="flex w-full flex-col gap-4 px-2 text-start text-black">
           <h3 className="title text-4xl font-bold uppercase">{title}</h3>
 

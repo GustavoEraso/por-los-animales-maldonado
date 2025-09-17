@@ -5,8 +5,12 @@ import type { SVGProps } from 'react';
 
 import styles from './styles.module.css';
 
-
-
+/**
+ * X Circle icon component for closing the modal.
+ *
+ * @param {SVGProps<SVGSVGElement>} props - SVG element props
+ * @returns {React.ReactNode} The rendered X circle icon
+ */
 function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="black" {...props}>
@@ -15,16 +19,56 @@ function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
   );
 }
 
+/**
+ * Props for the Modal component.
+ */
 interface ModalProps {
-  buttonText: string
+  /** Text to display on the modal trigger button */
+  buttonText: string;
+  /** Content to render inside the modal */
   children: React.ReactNode;
+  /** Optional custom CSS classes for the button styling */
   buttonStyles?: string;
 }
 
+/**
+ * Modal component with overlay and customizable trigger button.
+ *
+ * Provides a modal dialog that can be opened by clicking a trigger button.
+ * The modal includes an overlay backdrop and a close button. Content is
+ * fully customizable through the children prop. Button styling can be
+ * customized or will use default caramel theme styling.
+ *
+ * @param {ModalProps} props - Component props
+ * @param {React.ReactNode} props.children - Content to render inside the modal
+ * @param {string} props.buttonText - Text to display on the modal trigger button
+ * @param {string} [props.buttonStyles] - Optional custom CSS classes for button styling
+ * @returns {React.ReactNode} The rendered modal component
+ *
+ * @example
+ * // Basic usage with default button styling
+ * <Modal buttonText="Abrir Modal">
+ *   <p>Contenido del modal aquí</p>
+ * </Modal>
+ *
+ * @example
+ * // With custom button styling
+ * <Modal 
+ *   buttonText="Ver Detalles" 
+ *   buttonStyles="bg-blue-500 text-white px-6 py-2 rounded"
+ * >
+ *   <div>
+ *     <h2>Título del Modal</h2>
+ *     <p>Contenido personalizado</p>
+ *   </div>
+ * </Modal>
+ */
 function Modal({ children, buttonText, buttonStyles }: ModalProps): React.ReactNode {
   const [isOpen, setModalOpen] = useState(false);
 
+  // Open modal handler
   const openModal = () => setModalOpen(true);
+  // Close modal handler
   const closeModal = () => setModalOpen(false);
 
 

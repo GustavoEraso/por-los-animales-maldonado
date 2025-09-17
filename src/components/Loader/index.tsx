@@ -1,24 +1,42 @@
 'use client';
 
+import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 
-export default function Loader() {
+/**
+ * Animated loading screen component with floating bones and pulsing text.
+ *
+ * Displays a full-screen loading overlay with animated bone graphics floating across
+ * the screen and a pulsing "Cargando..." text with animated dots. Uses GSAP for
+ * smooth animations and responsive design.
+ *
+ * @returns {React.ReactElement} The rendered loading screen component
+ *
+ * @example
+ * // Basic usage
+ * <Loader />
+ *
+ * @example
+ * // Conditional rendering during loading states
+ * {isLoading && <Loader />}
+ */
+export default function Loader(): React.ReactElement {
     const root = useRef<HTMLDivElement | null>(null);
 
-    /* 15 huesos con escala y z‑index variables */
+    /* 15 floating bones with variable scale and z-index */
     const bones = Array.from({ length: 15 }, (_, i) => ({
         id: i,
-        scale: gsap.utils.mapRange(0, 14, 1.6, 0.5, i), // ← usa i
+        scale: gsap.utils.mapRange(0, 14, 1.6, 0.5, i), // ← uses i
         z: gsap.utils.mapRange(0, 14, 0, 14, i),
     }));
 
     useLayoutEffect(() => {
         const ctx = gsap.context(() => {
-            /* ───── Huesos flotantes ───── */
+            /* ───── Floating bones ───── */
             const vw = window.innerWidth;
             const distance = vw * 2.2;          // 110 vw → –110 vw
-            const baseSpeed = 600;              // px/s; sube/baja para “viento”
+            const baseSpeed = 600;              // px/s; up/down for “wind”
 
             gsap.set('.bone', {
                 visibility: 'visible',
@@ -32,15 +50,15 @@ export default function Loader() {
                 x: '-110vw',
                 ease: 'none',
                 duration: () =>
-                    (distance / baseSpeed) * gsap.utils.random(0.8, 1.2), // igual velocidad en todos los viewports
+                    (distance / baseSpeed) * gsap.utils.random(0.8, 1.2), // equal speed in all viewports
                 stagger: {
-                    repeat: -1,                       // cada hueso se auto‑reinicia
-                    each: 0.2,                      // muchos huesos al mismo tiempo
+                    repeat: -1,                       // each bone restarts automatically
+                    each: 0.2,                      // many bones at the same time
                     from: 'random',
                 },
             });
 
-            /* ───── Texto “Cargando…” ───── */
+            /* ───── Text “Cargando…” ───── */
             gsap.set('.loading-dot', { opacity: 0 });
             gsap.timeline({ repeat: -1 })
                 .to('.loading-dot', {
@@ -57,7 +75,7 @@ export default function Loader() {
                         stagger: 0.25,
                         ease: 'power1.inOut',
                     },
-                    '+=0.25' // pequeña pausa antes de reiniciar
+                    '+=0.25' // short pause before restarting
                 );
         }, root);
 
@@ -69,7 +87,7 @@ export default function Loader() {
             ref={root}
             className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-amber-sunset/90"
         >
-            {/* Capa de huesos */}
+            {/* layer of bones */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 {bones.map(({ id, scale, z }) => (
                     <img
@@ -87,7 +105,7 @@ export default function Loader() {
                 ))}
             </div>
 
-            {/* Logo + texto */}
+            {/* Logo + text */}
             <div className="relative z-20 flex flex-col items-center">
                 <img src="/logo300.webp" alt="logo" className="w-40 md:w-56" />
                 <p className="mt-4 text-center text-2xl font-bold text-white select-none">

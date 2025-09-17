@@ -1,22 +1,91 @@
 'use client';
 
+import React from 'react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
+/**
+ * Props for individual carousel items.
+ */
 type ItemsProps = {
-
+  /** Title of the carousel item */
   title: string;
+  /** Description text for the carousel item */
   description: string;
+  /** Text to display on the action button */
   buttonText: string;
+  /** URL for the action button link */
   buttonUrl: string;
+  /** Image configuration for the carousel item */
   image: {
+    /** Source URL of the image */
     src: string;
+    /** Alt text for the image */
     alt: string;
   };
 };
 
-export default function HeroCarrousel() {
+/**
+ * Props for the HeroCarrousel component.
+ */
+interface HeroCarrouselProps {
+  /** Array of custom carousel items */
+  items?: ItemsProps[];
+  /** Whether to replace default items (true) or merge with them (false) */
+  replaceDefault?: boolean;
+}
+
+/**
+ * Hero carousel component with auto-sliding and touch/swipe support.
+ *
+ * Displays a full-width hero carousel with configurable content items.
+ * By default includes adoption, transport, foster care, and donation information.
+ * Supports custom items that can either replace or merge with default content.
+ * Features automatic slideshow, manual navigation controls, touch/swipe gestures, and pause on hover.
+ *
+ * @param {HeroCarrouselProps} props - Component props
+ * @param {ItemsProps[]} [props.items] - Array of custom carousel items
+ * @param {boolean} [props.replaceDefault=false] - Whether to replace default items (true) or merge with them (false)
+ * @returns {React.ReactElement} The rendered hero carousel component
+ *
+ * @example
+ * // Basic usage with default items
+ * <HeroCarrousel />
+ *
+ * @example
+ * // Add custom items to default ones
+ * const customItems = [
+ *   {
+ *     image: {
+ *       src: '/custom-image.webp',
+ *       alt: 'Custom image description',
+ *     },
+ *     title: 'CUSTOM TITLE',
+ *     description: 'Custom description text for this carousel item.',
+ *     buttonText: 'custom button',
+ *     buttonUrl: '/custom-url',
+ *   }
+ * ];
+ * <HeroCarrousel items={customItems} replaceDefault={false} />
+ *
+ * @example
+ * // Replace default items completely
+ * const replacementItems = [
+ *   {
+ *     image: {
+ *       src: '/hero-image.webp',
+ *       alt: 'Hero image',
+ *     },
+ *     title: 'NEW HERO',
+ *     description: 'This replaces all default content.',
+ *     buttonText: 'get started',
+ *     buttonUrl: '/get-started',
+ *   }
+ * ];
+ * <HeroCarrousel items={replacementItems} replaceDefault={true} />
+ */
+export default function HeroCarrousel({ items: customItems, replaceDefault = false }: HeroCarrouselProps = {}): React.ReactElement {
   const itemsListS: ItemsProps[] = [
     {
       image:{
@@ -64,7 +133,16 @@ export default function HeroCarrousel() {
   ];
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [items] = useState<ItemsProps[]>(itemsListS);
+  
+  // Determine final items array based on props
+  const finalItems = React.useMemo(() => {
+    if (!customItems || customItems.length === 0) {
+      return itemsListS;
+    }
+    return replaceDefault ? customItems : [...itemsListS, ...customItems];
+  }, [customItems, replaceDefault]);
+  
+  const [items] = useState<ItemsProps[]>(finalItems);
   const carrouselRef = useRef<HTMLDivElement>(null);
   const intervalIdRef = useRef<number | null>(null);
   const initialXRef = useRef<number | null>(null);
