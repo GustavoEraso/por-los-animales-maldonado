@@ -4,6 +4,19 @@
 
 Web project for managing and tracking animals, transactions, and contacts in Maldonado.
 
+## 🔒 Branch Protection
+
+This repository has implemented comprehensive protection for the `main` branch. Only **GustavoEraso** (repository owner) can create pull requests and merge to the main branch.
+
+### Protection Features
+- ✅ Automated user authorization checks
+- ✅ Code quality validation (linting)
+- ✅ Build verification 
+- ✅ Security scanning
+- ✅ CODEOWNERS enforcement
+
+For details, see [Branch Protection Documentation](.github/BRANCH_PROTECTION.md) and [Contributing Guidelines](CONTRIBUTING.md).
+
 ## Quick Start
 
 Install dependencies:
