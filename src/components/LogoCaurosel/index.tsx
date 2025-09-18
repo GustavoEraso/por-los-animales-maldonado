@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLayoutEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
+import { gsap } from 'gsap/dist/gsap';
 
 /**
  * Props for individual logo items.
@@ -33,7 +33,8 @@ interface LogoCarouselProps {
  *
  * Displays an array of logos in a continuously scrolling carousel with smooth
  * GSAP animations. Features hover pause/resume, optional grayscale effects,
- * and automatic duplication to ensure seamless infinite loop.
+ * and automatic duplication to ensure seamless infinite loop. Uses optimized GSAP
+ * imports for better performance.
  *
  * @param {LogoCarouselProps} props - Component props
  * @param {LogoItem[]} props.logos - Array of logo items to display

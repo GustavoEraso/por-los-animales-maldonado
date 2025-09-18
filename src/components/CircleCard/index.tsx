@@ -2,8 +2,9 @@
 import React from 'react'; 
 import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
+import { gsap } from 'gsap/dist/gsap';
+import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -27,7 +28,7 @@ interface CircleCardProps {
  * Animated circular card component with image and action button.
  *
  * Features scroll-triggered animations, hover effects, and responsive behavior.
- * Uses GSAP for animations and supports reduced motion preferences.
+ * Uses optimized GSAP imports for better performance and supports reduced motion preferences.
  *
  * @param {CircleCardProps} props - Component props
  * @param {string} props.imgUrl - URL of the image to display

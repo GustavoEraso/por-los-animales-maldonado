@@ -2,14 +2,14 @@
 
 import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
-import gsap from 'gsap';
+import { gsap } from 'gsap/dist/gsap';
 
 /**
  * Animated loading screen component with floating bones and pulsing text.
  *
  * Displays a full-screen loading overlay with animated bone graphics floating across
- * the screen and a pulsing "Cargando..." text with animated dots. Uses GSAP for
- * smooth animations and responsive design.
+ * the screen and a pulsing "Cargando..." text with animated dots. Uses optimized GSAP 
+ * imports for better performance and responsive design.
  *
  * @returns {React.ReactElement} The rendered loading screen component
  *

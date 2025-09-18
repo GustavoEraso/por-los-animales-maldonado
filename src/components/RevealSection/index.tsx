@@ -3,9 +3,9 @@
 import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
-import SplitText from 'gsap/SplitText';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { SplitText } from 'gsap/SplitText';
 import type { SplitText as SplitTextInstance } from 'gsap/SplitText';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -33,8 +33,8 @@ export interface RevealSectionProps {
  *
  * Creates an engaging section with image and text content that animates into view
  * as the user scrolls. Features responsive design with different animation triggers
- * for mobile and desktop. Uses GSAP SplitText for line-by-line text animations,
- * and includes optional call-to-action link.
+ * for mobile and desktop. Uses optimized GSAP imports with SplitText for 
+ * line-by-line text animations, and includes optional call-to-action link.
  *
  * @param {RevealSectionProps} props - Component props
  * @param {string} props.imgSrc - Source URL of the image to display
