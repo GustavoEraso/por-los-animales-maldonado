@@ -1,4 +1,3 @@
-
 /**
  * Generates a unique animal ID based on the provided name by calling the internal API.
  *
@@ -16,19 +15,19 @@
  * // Generate an animal ID for "Luna"
  * const id = await generateAnimalId('Luna'); // returns 'luna' or 'luna1'
  */
-export async function generateAnimalId (name: string): Promise<string> {
+export async function generateAnimalId(name: string): Promise<string> {
   const res = await fetch('/api/generate-animal-id', {
     method: 'POST',
-    headers: { 
-        'Content-Type': 'application/json',
-        'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET!,
-     },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET!,
+    },
     body: JSON.stringify({ name }),
   });
 
   const data = await res.json();
   return data.id;
-};
+}
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
 

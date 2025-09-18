@@ -1,5 +1,4 @@
-
-import { WpContactType } from "@/types";
+import { WpContactType } from '@/types';
 
 /**
  * Fetches the list of WhatsApp contacts from the API.
@@ -32,16 +31,16 @@ import { WpContactType } from "@/types";
  */
 export async function fetchContacts(): Promise<WpContactType[]> {
   const baseUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : "https://www.porlosanimalesmaldonado.com";
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://www.porlosanimalesmaldonado.com';
 
   const res = await fetch(`${baseUrl}/api/contacts`, {
-    next: { revalidate: 60 }, 
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
-    console.error("Error al obtener contactos:", res.statusText);
+    console.error('Error al obtener contactos:', res.statusText);
     return [];
   }
 

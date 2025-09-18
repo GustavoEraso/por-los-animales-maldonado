@@ -33,7 +33,7 @@ export interface RevealSectionProps {
  *
  * Creates an engaging section with image and text content that animates into view
  * as the user scrolls. Features responsive design with different animation triggers
- * for mobile and desktop. Uses optimized GSAP imports with SplitText for 
+ * for mobile and desktop. Uses optimized GSAP imports with SplitText for
  * line-by-line text animations, and includes optional call-to-action link.
  *
  * @param {RevealSectionProps} props - Component props
@@ -88,7 +88,7 @@ export default function RevealSection({
     const mm = gsap.matchMedia();
 
     // GSAP context for easy cleanup
-    const ctx = gsap.context(self => {
+    const ctx = gsap.context((self) => {
       const q = self.selector;
       if (!q) return;
 
@@ -100,7 +100,7 @@ export default function RevealSection({
         },
         ({ conditions }) => {
           const start = conditions?.isMobile ? 'center 90%' : 'top 70%';
-         
+
           // Image animation from right
           gsap.from(q('.img'), {
             xPercent: 100,
@@ -127,7 +127,6 @@ export default function RevealSection({
               trigger: root.current,
               start,
               once: true,
-             
             },
           });
 
@@ -142,7 +141,6 @@ export default function RevealSection({
               trigger: root.current,
               start,
               once: true,
-            
             },
           });
         }
@@ -151,8 +149,8 @@ export default function RevealSection({
 
     // Cleanup function
     return () => {
-      ctx.revert();   // tweens and styles
-      mm.revert();    // media queries and triggers
+      ctx.revert(); // tweens and styles
+      mm.revert(); // media queries and triggers
       split?.revert();
     };
   }, []);

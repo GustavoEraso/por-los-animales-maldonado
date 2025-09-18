@@ -2,8 +2,8 @@ import { doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 interface DeleteDataParams {
-    collection: string;
-    docId: string;
+  collection: string;
+  docId: string;
 }
 
 /**
@@ -23,11 +23,12 @@ interface DeleteDataParams {
  * await deleteFirestoreData({ collection: 'users', docId: 'user42' });
  */
 
-export async function deleteFirestoreData({collection, docId}: DeleteDataParams): Promise<void> {
-    if (!collection || !docId) throw new Error('Both collection and docId are required to delete a document.');
-    
-    const docRef = doc(db, collection, docId);
-    await deleteDoc(docRef);
+export async function deleteFirestoreData({ collection, docId }: DeleteDataParams): Promise<void> {
+  if (!collection || !docId)
+    throw new Error('Both collection and docId are required to delete a document.');
+
+  const docRef = doc(db, collection, docId);
+  await deleteDoc(docRef);
 }
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────

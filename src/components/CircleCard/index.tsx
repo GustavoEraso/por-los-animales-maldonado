@@ -1,10 +1,9 @@
 'use client';
-import React from 'react'; 
+import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap/dist/gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
-
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -76,9 +75,9 @@ export default function CircleCard({
 
     /* 1️⃣ Create a matchMedia container */
     const mm = gsap.matchMedia();
-    const ctx = gsap.context(self => {
+    const ctx = gsap.context((self) => {
       const q = self.selector;
-        if (!q) return;
+      if (!q) return;
 
       /* 2️⃣ Register the queries */
       mm.add(
@@ -128,8 +127,8 @@ export default function CircleCard({
 
     /* Cleanup */
     return () => {
-      ctx.revert();   // timelines and styles
-      mm.revert();    // media-queries + associated ScrollTriggers
+      ctx.revert(); // timelines and styles
+      mm.revert(); // media-queries + associated ScrollTriggers
     };
   }, []);
 

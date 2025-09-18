@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import { fetchAnimals } from '@/lib/fetchAnimal';
 
@@ -6,7 +5,7 @@ type RouteParams = { id: string };
 
 /* -------- generateMetadata -------- */
 export async function generateMetadata(
-  { params }: { params: Promise<RouteParams> }, // 👈  params es una Promise
+  { params }: { params: Promise<RouteParams> } // 👈  params es una Promise
 ): Promise<Metadata> {
   const { id } = await params;
 
@@ -26,19 +25,19 @@ export async function generateMetadata(
 
   const cover = images.length > 0 ? images[0].imgUrl : null;
 
-return {
-  title: `${name} - Por los Animales Maldonado`,
-  openGraph: {
-    type: 'article',
-    title: name,
-    description,
-    url: `https://porlosanimalesmaldonado.com/adopta/${id}`,
-    images: cover 
-      ? [{ url: cover, alt: `Foto de ${name}` }] // Solo la imagen del animal
-      : undefined, // Deja que Next.js use las del layout padre
-    section: 'Adopción',
-  },
-};
+  return {
+    title: `${name} - Por los Animales Maldonado`,
+    openGraph: {
+      type: 'article',
+      title: name,
+      description,
+      url: `https://porlosanimalesmaldonado.com/adopta/${id}`,
+      images: cover
+        ? [{ url: cover, alt: `Foto de ${name}` }] // Solo la imagen del animal
+        : undefined, // Deja que Next.js use las del layout padre
+      section: 'Adopción',
+    },
+  };
 }
 
 /* -------- RootLayout -------- */

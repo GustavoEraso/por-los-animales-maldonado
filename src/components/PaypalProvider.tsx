@@ -1,7 +1,11 @@
 'use client';
 import React from 'react';
-import { PayPalScriptProvider, usePayPalScriptReducer, DISPATCH_ACTION } from "@paypal/react-paypal-js";
-import { ReactNode, useEffect } from "react";
+import {
+  PayPalScriptProvider,
+  usePayPalScriptReducer,
+  DISPATCH_ACTION,
+} from '@paypal/react-paypal-js';
+import { ReactNode, useEffect } from 'react';
 
 /**
  * Props for the PayPalProvider component.
@@ -10,7 +14,7 @@ interface PayPalProviderProps {
   /** Child components to be wrapped with PayPal functionality */
   children: ReactNode;
   /** Type of PayPal transaction - capture for one-time payments, subscription for recurring */
-  type: "capture" | "subscription";
+  type: 'capture' | 'subscription';
 }
 
 /**
@@ -30,7 +34,7 @@ interface PayPalProviderProps {
  * // For one-time donations using PayPalDonationButton
  * import PayPalProvider from '@/components/PaypalProvider';
  * import PayPalDonationButton from '@/elements/PayPalDonationButton';
- * 
+ *
  * <PayPalProvider type="capture">
  *   <PayPalDonationButton amount={25} />
  * </PayPalProvider>
@@ -39,16 +43,16 @@ interface PayPalProviderProps {
  * // For recurring subscriptions using PayPalSuscripcionButton
  * import PayPalProvider from '@/components/PaypalProvider';
  * import PayPalSuscripcionButton from '@/elements/PayPalSuscripcionButton';
- * 
+ *
  * <PayPalProvider type="subscription">
  *   <PayPalSuscripcionButton planId="P-12345" />
  * </PayPalProvider>
- * 
+ *
  * @example
  * // Multiple donation amounts with capture type
  * import PayPalProvider from '@/components/PaypalProvider';
  * import PayPalDonationButton from '@/elements/PayPalDonationButton';
- * 
+ *
  * <PayPalProvider type="capture">
  *   <div className="grid grid-cols-2 gap-4">
  *     <PayPalDonationButton amount={10} />
@@ -58,20 +62,21 @@ interface PayPalProviderProps {
  *   </div>
  * </PayPalProvider>
  */
-export default function PayPalProvider({ children, type }: PayPalProviderProps): React.ReactElement {
+export default function PayPalProvider({
+  children,
+  type,
+}: PayPalProviderProps): React.ReactElement {
   const initialOptions = {
-    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '', 
-    components: "buttons",
-    currency: "USD",
+    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+    components: 'buttons',
+    currency: 'USD',
     intent: type,
-    ...(type === "subscription" && { vault: true }),
+    ...(type === 'subscription' && { vault: true }),
   };
 
   return (
     <PayPalScriptProvider options={initialOptions} deferLoading={true}>
-      <PayPalProviderInner type={type}>
-        {children}
-      </PayPalProviderInner>
+      <PayPalProviderInner type={type}>{children}</PayPalProviderInner>
     </PayPalScriptProvider>
   );
 }
@@ -88,7 +93,13 @@ export default function PayPalProvider({ children, type }: PayPalProviderProps):
  * @param {"capture" | "subscription"} props.type - Type of PayPal transaction
  * @returns {React.ReactElement} The rendered inner provider or loading state
  */
-function PayPalProviderInner({ children, type }: { children: ReactNode; type: "capture" | "subscription" }): React.ReactElement {
+function PayPalProviderInner({
+  children,
+  type,
+}: {
+  children: ReactNode;
+  type: 'capture' | 'subscription';
+}): React.ReactElement {
   const [{ isResolved }, dispatch] = usePayPalScriptReducer();
 
   // Update PayPal options when transaction type changes
@@ -97,10 +108,10 @@ function PayPalProviderInner({ children, type }: { children: ReactNode; type: "c
       type: DISPATCH_ACTION.RESET_OPTIONS,
       value: {
         clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
-        components: "buttons",
-        currency: "USD",
+        components: 'buttons',
+        currency: 'USD',
         intent: type,
-        ...(type === "subscription" && { vault: true }),
+        ...(type === 'subscription' && { vault: true }),
       },
     });
   }, [type, dispatch]);

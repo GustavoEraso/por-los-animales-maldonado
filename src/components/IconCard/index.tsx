@@ -1,16 +1,15 @@
-
 import React from 'react';
 
 /**
  * Props for the IconCard component.
  */
 interface IconCardProps {
-    /** URL or path to the icon image */
-    icon: string;
-    /** Title text for the card */
-    title: string;
-    /** Description text for the card */
-    description: string;
+  /** URL or path to the icon image */
+  icon: string;
+  /** Title text for the card */
+  title: string;
+  /** Description text for the card */
+  description: string;
 }
 
 /**
@@ -42,11 +41,11 @@ interface IconCardProps {
  * />
  */
 export default function IconCard({ icon, title, description }: IconCardProps): React.ReactElement {
-    return (
-        <div className="flex flex-col items-center  w-full p-4 gap-4 bg-white rounded-lg text-center font-barlo text-black">
-            <img src={icon} alt={title} className="w-36 h-36 mb-4 object-contain" />
-            <h3 className="text-2xl font-bold text-gray-800 uppercase">{title}</h3>
-            <p className="mt-2 text-gray-600">{description}</p>
-        </div>
-    );
+  return (
+    <div className="flex flex-col items-center  w-full p-4 gap-4 bg-white rounded-lg text-center font-barlo text-black">
+      <img src={icon} alt={title} className="w-36 h-36 mb-4 object-contain" />
+      <h3 className="text-2xl font-bold text-gray-800 uppercase">{title}</h3>
+      <p className="mt-2 text-gray-600">{description}</p>
+    </div>
+  );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
-import Card from "@/components/Card";
-import { Animal } from "@/types";
+import Card from '@/components/Card';
+import { Animal } from '@/types';
 
 /**
  * Props for the CardContainer component.
@@ -25,19 +25,19 @@ interface CardContainerProps {
  * @example
  * // Display a list of animals in a responsive grid
  * const animals = [
- *   { 
- *     id: '1', 
- *     name: 'Luna', 
- *     species: 'perro', 
+ *   {
+ *     id: '1',
+ *     name: 'Luna',
+ *     species: 'perro',
  *     gender: 'hembra',
  *     images: [{ imgId: '1', imgUrl: '/luna.jpg', imgAlt: 'Luna' }],
  *     description: 'Perrita muy cariñosa',
  *     // ...other Animal properties
  *   },
- *   { 
- *     id: '2', 
- *     name: 'Michi', 
- *     species: 'gato', 
+ *   {
+ *     id: '2',
+ *     name: 'Michi',
+ *     species: 'gato',
  *     gender: 'macho',
  *     images: [{ imgId: '2', imgUrl: '/michi.jpg', imgAlt: 'Michi' }],
  *     description: 'Gatito juguetón',
@@ -50,7 +50,9 @@ interface CardContainerProps {
  * // Empty state with no animals
  * <CardContainer animalsList={[]} />
  */
-export default function CardContainer({ animalsList = [] }: CardContainerProps): React.ReactElement {
+export default function CardContainer({
+  animalsList = [],
+}: CardContainerProps): React.ReactElement {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 sm:p-4">
       {animalsList.map((animal, index) => (

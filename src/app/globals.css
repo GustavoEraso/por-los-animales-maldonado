@@ -1,9 +1,6 @@
-@import "tailwindcss";
-
+@import 'tailwindcss';
 
 @config "../../tailwind.config.js";
-
-
 
 :root {
   --background: #ffffff;
@@ -13,7 +10,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
+
   /* --color-green-soft: #d4e0b5;        Verde claro suave - Fondo del logo */
   /* --color-amber-sunset: #a7b86a;       Verde oliva - Banner inferior */
   /* --color-caramel-deep: #d6336c;         Rojo corazón - Pañuelo y acentos emocionales */
@@ -22,61 +19,52 @@
   /* --color-white: #f8f7f3;             Crema - Fondos suaves y legibilidad */
   /* --color-green-dark: #3c3c3c;         Negro suave / gris oscuro - Texto principal */
 
-  --color-green-forest: #606c38;      /* Verde bosque profundo - Conexión con la naturaleza */
-  --color-green-dark: #283618;        /* Verde oliva oscuro - Fuerza y estabilidad */
-  --color-cream-light: #fefae0;       /* Crema cálido - Fondo suave y acogedor */
-  --color-amber-sunset: #dda15e;      /* Ámbar suave - Detalles cálidos */
-  --color-caramel-deep: #bc6c25;      /* Caramelo intenso - Acentos energéticos */
-
+  --color-green-forest: #606c38; /* Verde bosque profundo - Conexión con la naturaleza */
+  --color-green-dark: #283618; /* Verde oliva oscuro - Fuerza y estabilidad */
+  --color-cream-light: #fefae0; /* Crema cálido - Fondo suave y acogedor */
+  --color-amber-sunset: #dda15e; /* Ámbar suave - Detalles cálidos */
+  --color-caramel-deep: #bc6c25; /* Caramelo intenso - Acentos energéticos */
 
   --animate-wiggle: wiggle 2s ease-in-out forwards;
 
   @keyframes wiggle {
     0% {
-      opacity: 0; 
+      opacity: 0;
       transform: translateY(50px);
     }
     50% {
-      opacity: 0; 
+      opacity: 0;
       transform: translateY(50px);
     }
     100% {
-      opacity: 1; 
-      transform: translateY(0)
+      opacity: 1;
+      transform: translateY(0);
     }
-    
   }
 }
 
 @keyframes shimmer {
-  0% { background-position: 0% 0; }
-  50% { background-position: 100% 0; }
+  0% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
 }
 
 @layer utilities {
   .skeleton {
     position: relative;
     overflow: hidden;
-    
-    background-image:
-    linear-gradient(
-      45deg, 
-     #fefae0,
-      #dda15e 
-    );
+
+    background-image: linear-gradient(45deg, #fefae0, #dda15e);
     background-size: 300% 100%;
     animation: shimmer 2s ease-in-out infinite;
   }
 }
 
-
-
-
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Helvetica, var(--font-roboto),sans-serif;
+  font-family: Helvetica, var(--font-roboto), sans-serif;
 }
-
-
