@@ -55,13 +55,13 @@ export default function Header(): React.ReactElement {
   return (
     <header className="flex justify-between w-full items-center relative z-50 bg-white shadow-md p-4">
       <div className="w-32 h-32 flex-shrink-0">
-        <Link href="/">
+        <a href="/">
           <img
             className="block w-32 h-32  object-contain"
             src="/logo300.webp"
             alt="logo de por los animales maldonado"
           />
-        </Link>
+        </a>
       </div>
       <nav className="hidden md:block">
         <ul className="flex space-x-4 text-md flex-wrap justify-center bg-white">
