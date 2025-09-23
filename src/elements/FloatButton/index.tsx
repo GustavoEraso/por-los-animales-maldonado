@@ -24,34 +24,33 @@ interface FloatButtonProps {
  *
  * @example
  * // Add button for creating new items
- * <FloatButton 
- *   action={() => navigate('/admin/animals/new')} 
- *   buttonStyle="add" 
+ * <FloatButton
+ *   action={() => navigate('/admin/animals/new')}
+ *   buttonStyle="add"
  * />
  *
  * @example
  * // Edit button for modifying existing items
- * <FloatButton 
- *   action={() => setEditMode(true)} 
- *   buttonStyle="edit" 
+ * <FloatButton
+ *   action={() => setEditMode(true)}
+ *   buttonStyle="edit"
  * />
  *
  * @example
  * // Add new animal button in admin panel
- * <FloatButton 
- *   action={() => router.push('/admin/animals/create')} 
- *   buttonStyle="add" 
+ * <FloatButton
+ *   action={() => router.push('/admin/animals/create')}
+ *   buttonStyle="add"
  * />
  */
 export default function FloatButton({ action, buttonStyle }: FloatButtonProps): React.ReactElement {
-
   return (
     <div className=" w-16 h-16 fixed right-3 bottom-3 rounded-full outline flex items-center justify-center overflow-hidden opacity-50 hover:opacity-100 ">
       <button
         onClick={action}
         className="w-full h-full bg-green-400 flex items-center justify-center "
       >
-        {buttonStyle === "add" && (
+        {buttonStyle === 'add' && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -60,14 +59,10 @@ export default function FloatButton({ action, buttonStyle }: FloatButtonProps): 
             stroke="currentColor"
             className="w-16 h-16"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5v15m7.5-7.5h-15"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         )}
-        {buttonStyle === "edit" && (
+        {buttonStyle === 'edit' && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

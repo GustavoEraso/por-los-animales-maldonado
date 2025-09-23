@@ -9,14 +9,12 @@
  * const dateStr = formatDateMMYYYY(1711929600000); // "03/2024"
  */
 export function formatDateMMYYYY(timestamp: number): string {
-    const date = new Date(timestamp);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
+  const date = new Date(timestamp);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
 
-    return `${month}/${year}`;
+  return `${month}/${year}`;
 }
-
-
 
 /**
  * Calculates the elapsed time in years and months from a given timestamp to now.
@@ -33,12 +31,11 @@ export function formatDateMMYYYY(timestamp: number): string {
  * const elapsed = yearsOrMonthsElapsed(1711929600000); // "menos de un mes"
  */
 export function yearsOrMonthsElapsed(millis: number): string {
-  
   const then = new Date(millis);
-  const now  = new Date();
+  const now = new Date();
 
-  let years  = now.getFullYear() - then.getFullYear();
-  let months = now.getMonth()   - then.getMonth();
+  let years = now.getFullYear() - then.getFullYear();
+  let months = now.getMonth() - then.getMonth();
 
   // Adjust months if the current day is before the day in 'then'
   if (now.getDate() < then.getDate()) months--;
@@ -49,9 +46,9 @@ export function yearsOrMonthsElapsed(millis: number): string {
     months += 12;
   }
 
-  // If there is at least one year, return years and months (months can be 0)  
+  // If there is at least one year, return years and months (months can be 0)
   if (years >= 1) {
-    const yearPart  = `${years} ${years === 1 ? 'año' : 'años'}`;
+    const yearPart = `${years} ${years === 1 ? 'año' : 'años'}`;
     const monthPart = months > 0 ? ` y ${months} ${months === 1 ? 'mes' : 'meses'}` : '';
     return yearPart + monthPart;
   }
@@ -62,4 +59,3 @@ export function yearsOrMonthsElapsed(millis: number): string {
   // If less than a month, return this message
   return 'menos de un mes';
 }
-

@@ -1,9 +1,9 @@
 'use client';
 
-import Hero from "@/components/Hero";
-import IconCard from "@/components/IconCard";
+import Hero from '@/components/Hero';
+import IconCard from '@/components/IconCard';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from "react";
+import { Suspense } from 'react';
 
 // Este es el componente que sí usa useSearchParams
 function ThanksContent() {

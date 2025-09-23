@@ -15,11 +15,11 @@
 
 export const deleteImage = async (imgId: string): Promise<void> => {
   await fetch(`/api/delete-image?publicId=${imgId}`, {
-  method: 'DELETE',
-  headers: {
-    'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET!,
-  },
-});
+    method: 'DELETE',
+    headers: {
+      'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET!,
+    },
+  });
 };
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────

@@ -1,14 +1,20 @@
-
-import { collection, query, where, orderBy, getDocs, type QueryConstraint } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  type QueryConstraint,
+} from 'firebase/firestore';
 import { db } from '@/firebase';
-import { Animal, WpContactType, AnimalTransactionType,UserType } from '@/types';
+import { Animal, WpContactType, AnimalTransactionType, UserType } from '@/types';
 
 interface CollectionsMap {
   animals: Animal;
   authorizedEmails: UserType;
   contacts: WpContactType;
   animalTransactions: AnimalTransactionType;
-};
+}
 
 type FirestoreSimpleValue = string | number | boolean | null;
 type FirestoreArrayValue = FirestoreSimpleValue[];
@@ -18,18 +24,24 @@ type FirestoreArrayOperator = 'in' | 'not-in' | 'array-contains-any';
 type FirestoreContainsOperator = 'array-contains';
 
 // Filtros para operadores simples
-type FirestoreSimpleFilter = [field: string, op: FirestoreSimpleOperator, value: FirestoreSimpleValue];
+type FirestoreSimpleFilter = [
+  field: string,
+  op: FirestoreSimpleOperator,
+  value: FirestoreSimpleValue,
+];
 
 // Filtros para operadores que requieren array
 type FirestoreArrayFilter = [field: string, op: FirestoreArrayOperator, value: FirestoreArrayValue];
 
 // Filtro para array-contains (el valor es simple)
-type FirestoreContainsFilter = [field: string, op: FirestoreContainsOperator, value: FirestoreSimpleValue];
+type FirestoreContainsFilter = [
+  field: string,
+  op: FirestoreContainsOperator,
+  value: FirestoreSimpleValue,
+];
 
 // Unión de todos los tipos de filtro
 type FirestoreFilter = FirestoreSimpleFilter | FirestoreArrayFilter | FirestoreContainsFilter;
-
-
 
 const collectionsWithTrash = new Set<keyof CollectionsMap>(['animals']);
 
@@ -123,12 +135,12 @@ export async function getFirestoreData<C extends keyof CollectionsMap>({
   }
 
   for (const f of filter) {
-  if (!Array.isArray(f) || f.length !== 3) {
-    throw new Error(`Filtro inválido: ${JSON.stringify(f)}`);
+    if (!Array.isArray(f) || f.length !== 3) {
+      throw new Error(`Filtro inválido: ${JSON.stringify(f)}`);
+    }
+    const [field, op, value] = f;
+    constraints.push(where(field, op, value));
   }
-  const [field, op, value] = f;
-  constraints.push(where(field, op, value));
-}
 
   if (orderKey) {
     constraints.push(orderBy(orderKey as string, direction));
@@ -136,7 +148,9 @@ export async function getFirestoreData<C extends keyof CollectionsMap>({
 
   const snap = await getDocs(constraints.length ? query(baseRef, ...constraints) : baseRef);
 
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (CollectionsMap[C] & { id: string })[];
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (CollectionsMap[C] & {
+    id: string;
+  })[];
 }
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────

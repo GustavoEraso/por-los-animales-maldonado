@@ -1,6 +1,6 @@
-import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { CollectionsType } from "@/types";
+import { db } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { CollectionsType } from '@/types';
 
 interface Props {
   currentCollection: CollectionsType['currentColection'];
@@ -32,7 +32,10 @@ interface Props {
  * const transaction = await getFirestoreDocById<AnimalTransactionType>({ currentCollection: 'animalTransactions', id: 'txn789' });
  */
 
-export const getFirestoreDocById = async <T>({ currentCollection, id }: Props): Promise<T | null> => {
+export const getFirestoreDocById = async <T>({
+  currentCollection,
+  id,
+}: Props): Promise<T | null> => {
   try {
     const docRef = doc(db, currentCollection, id);
     const docSnap = await getDoc(docRef);
@@ -40,11 +43,11 @@ export const getFirestoreDocById = async <T>({ currentCollection, id }: Props): 
     if (docSnap.exists()) {
       return docSnap.data() as T;
     } else {
-      console.log("No such document!");
+      console.log('No such document!');
       return null;
     }
   } catch (error) {
-    console.error("Error getting document:", error);
+    console.error('Error getting document:', error);
     throw error;
   }
 };

@@ -85,21 +85,25 @@ interface HeroCarrouselProps {
  * ];
  * <HeroCarrousel items={replacementItems} replaceDefault={true} />
  */
-export default function HeroCarrousel({ items: customItems, replaceDefault = false }: HeroCarrouselProps = {}): React.ReactElement {
+export default function HeroCarrousel({
+  items: customItems,
+  replaceDefault = false,
+}: HeroCarrouselProps = {}): React.ReactElement {
   const itemsListS: ItemsProps[] = [
     {
-      image:{
+      image: {
         src: '/manada-peluda.webp',
         alt: 'manada de perritos peludos',
       },
       title: 'ADOPTÁ',
-      description: 'Al pensar en adoptar, es crucial tener en cuenta diversos factores para garantizar una convivencia armoniosa.',
+      description:
+        'Al pensar en adoptar, es crucial tener en cuenta diversos factores para garantizar una convivencia armoniosa.',
       buttonText: 'más información',
       buttonUrl: '/adopta',
     },
 
     {
-      image:{
+      image: {
         src: '/perrito-negro-respaldo.webp',
         alt: 'perrito apollado en respaldo de auto',
       },
@@ -109,31 +113,31 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
       buttonUrl: '/involucrate#traslados',
     },
     {
-      image:{
+      image: {
         src: '/perrito-negro-dormido.webp',
         alt: 'imagen de un perrito negro durmiendo',
       },
       title: 'TRANSITORIOS',
-      description: '¿No podés adoptar? ¡Quizás podés hacerle un lugarcito hasta que encuentre una familia!',
+      description:
+        '¿No podés adoptar? ¡Quizás podés hacerle un lugarcito hasta que encuentre una familia!',
       buttonText: 'si puedo!',
       buttonUrl: '/involucrate#transitorio',
     },
     {
-      image:{
+      image: {
         src: '/perra-con-panuelo-masticando.webp',
         alt: 'imagen de una perra masticando una botella',
       },
       title: 'DONACIONES',
-      description: 'Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados. ',
+      description:
+        'Los aportes económicos de ustedes son nuestro respaldo para continuar haciendo nuestro labor. Son destinados para pagar principalmente atención veterinaria (cirugías, tratamientos, análisis, medicación, honorarios), y también para comprar insumos y alimento para nuestros rescatados. ',
       buttonText: 'ver opciones',
       buttonUrl: '/donaciones',
     },
-
-    
   ];
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  
+
   // Determine final items array based on props
   const finalItems = React.useMemo(() => {
     if (!customItems || customItems.length === 0) {
@@ -141,7 +145,7 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
     }
     return replaceDefault ? customItems : [...itemsListS, ...customItems];
   }, [customItems, replaceDefault]);
-  
+
   const [items] = useState<ItemsProps[]>(finalItems);
   const carrouselRef = useRef<HTMLDivElement>(null);
   const intervalIdRef = useRef<number | null>(null);
@@ -158,7 +162,7 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
         }
       });
     },
-    [items],
+    [items]
   );
 
   // Interval helpers
@@ -240,8 +244,9 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
         {items.map((item, index) => (
           <div
             key={`${item.image.src}-image-${index}`}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${currentIndex === index ? 'opacity-100 visible' : 'opacity-0 invisible'
-              }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              currentIndex === index ? 'opacity-100 visible' : 'opacity-0 invisible'
+            }`}
           >
             <Image
               width={700}
@@ -251,18 +256,19 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
               className="absolute w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
             />
 
+            <section
+              className={`${index == currentIndex && 'animate-wiggle'} w-full h-full md:h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-black bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}
+            >
+              <section className="flex flex-col gap-4 w-full h-2/3 justify-end pb-10 max-w-4xl xl:pr-60 text-green-dark ">
+                <h3 className="text-5xl font-extrabold self-start uppercase ">{item.title}</h3>
+                <p className="text-2xl text-left font-bold">{item.description}</p>
 
-            <section className={`${index == currentIndex && 'animate-wiggle'} w-full h-full md:h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 pb-8 left-1/2 -translate-x-1/2 text-black bg-gradient-to-t from-white to-zinc-900/0 p-4 rounded-lg`}>
-
-              <section className='flex flex-col gap-4 w-full h-2/3 justify-end pb-10 max-w-4xl xl:pr-60 text-green-dark '>
-
-                <h3 className='text-5xl font-extrabold self-start uppercase '>{item.title}</h3>
-                <p className='text-2xl text-left font-bold'>{item.description}</p>
-
-                <Link href={item.buttonUrl} className="self-start z-10 text-2xl uppercase bg-caramel-deep text-white px-8 py-2 rounded-full hover:bg-caramel-deep/80 transition-colors duration-300">
+                <Link
+                  href={item.buttonUrl}
+                  className="self-start z-10 text-2xl uppercase bg-caramel-deep text-white px-8 py-2 rounded-full hover:bg-caramel-deep/80 transition-colors duration-300"
+                >
                   {item.buttonText}
                 </Link>
-
               </section>
             </section>
           </div>
@@ -276,8 +282,11 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
             key={`indicator-${index}`}
             type="button"
             onClick={() => setCurrentIndex(index)}
-            className={`w-4 h-4  rounded-full ${currentIndex === index ? 'bg-caramel-deep' : 'bg-white border border-caramel-deep hover:bg-caramel-deep/30'
-              }`}
+            className={`w-4 h-4  rounded-full ${
+              currentIndex === index
+                ? 'bg-caramel-deep'
+                : 'bg-white border border-caramel-deep hover:bg-caramel-deep/30'
+            }`}
             aria-current={currentIndex === index}
             aria-label={`Slide ${index + 1}`}
           />
@@ -292,7 +301,13 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
       >
         <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
           <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
-            <path d="M5 1 1 5l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M5 1 1 5l4 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
       </button>
@@ -303,7 +318,13 @@ export default function HeroCarrousel({ items: customItems, replaceDefault = fal
       >
         <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
           <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
-            <path d="m1 9 4-4-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="m1 9 4-4-4-4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
       </button>

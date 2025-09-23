@@ -39,7 +39,7 @@ export default function Card({ props }: { props: Animal }): React.ReactElement {
               src={img.imgUrl}
               alt={img.imgAlt}
               className="w-full h-full object-cover bg-white"
-              width={300} 
+              width={300}
               height={300}
             />
           </Link>

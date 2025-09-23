@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLayoutEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
+import { gsap } from 'gsap/dist/gsap';
 
 /**
  * Props for individual logo items.
@@ -33,7 +33,8 @@ interface LogoCarouselProps {
  *
  * Displays an array of logos in a continuously scrolling carousel with smooth
  * GSAP animations. Features hover pause/resume, optional grayscale effects,
- * and automatic duplication to ensure seamless infinite loop.
+ * and automatic duplication to ensure seamless infinite loop. Uses optimized GSAP
+ * imports for better performance.
  *
  * @param {LogoCarouselProps} props - Component props
  * @param {LogoItem[]} props.logos - Array of logo items to display
@@ -58,19 +59,19 @@ export default function LogoCarousel({
   speed = 120,
   grayscale = true,
 }: LogoCarouselProps): React.ReactElement {
-  const root   = useRef<HTMLDivElement | null>(null);
-  const track  = useRef<HTMLUListElement | null>(null);
-  const tween  = useRef<gsap.core.Tween | null>(null); // Save tween reference
+  const root = useRef<HTMLDivElement | null>(null);
+  const track = useRef<HTMLUListElement | null>(null);
+  const tween = useRef<gsap.core.Tween | null>(null); // Save tween reference
   const [copies, setCopies] = useState(2);
 
   // A. Adjusts how many copies are needed to cover 2× the width
   useLayoutEffect(() => {
     const parent = root.current;
-    const t      = track.current;
+    const t = track.current;
     if (!parent || !t) return;
 
     const setWidth = t.scrollWidth / copies;
-    const needed   = Math.ceil((parent.offsetWidth * 2) / setWidth);
+    const needed = Math.ceil((parent.offsetWidth * 2) / setWidth);
 
     if (needed > copies) setCopies(needed);
   }, [logos, copies]);
@@ -81,15 +82,15 @@ export default function LogoCarousel({
     if (!t) return;
 
     const dist = t.scrollWidth / copies;
-    const dur  = dist / speed;
+    const dur = dist / speed;
 
     tween.current = gsap.to(t, {
       x: -dist,
       ease: 'none',
       duration: dur,
-        modifiers: {
-            x: gsap.utils.unitize(x => parseFloat(x) % -dist ),
-        },
+      modifiers: {
+        x: gsap.utils.unitize((x) => parseFloat(x) % -dist),
+      },
       repeat: -1,
     });
 
@@ -100,7 +101,7 @@ export default function LogoCarousel({
   }, [copies, speed, logos]);
 
   // C. Hover pauses / resumes
-  const pause  = () => tween.current?.pause();
+  const pause = () => tween.current?.pause();
   const resume = () => tween.current?.resume();
 
   // D. Complete duplicated list
@@ -117,11 +118,7 @@ export default function LogoCarousel({
       onMouseLeave={resume}
       className="relative w-full overflow-hidden py-6 bg-white/5 backdrop-blur-sm"
     >
-      <ul
-        ref={track}
-        className="flex gap-12 whitespace-nowrap"
-        style={{ willChange: 'transform' }}
-      >
+      <ul ref={track} className="flex gap-12 whitespace-nowrap" style={{ willChange: 'transform' }}>
         {full.map((logo, idx) => (
           <li key={idx} className="shrink-0">
             {logo.href ? (

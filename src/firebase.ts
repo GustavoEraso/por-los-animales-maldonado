@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-  const firebaseConfig = {
+const firebaseConfig = {
   apiKey: 'AIzaSyBvCipId0uvanpDmXkV8srnkEZleuPrpYE',
   authDomain: 'por-los-animales-maldona-c5cf0.firebaseapp.com',
   projectId: 'por-los-animales-maldona-c5cf0',
@@ -14,6 +14,3 @@ import { getAuth } from 'firebase/auth';
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-
-
- 

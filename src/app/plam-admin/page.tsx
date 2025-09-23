@@ -1,4 +1,3 @@
-
 export default function PlamAdmin() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen sm:p-4 ">

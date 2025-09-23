@@ -1,6 +1,6 @@
-import { CollectionsType } from "@/types";
-import { collection, addDoc, setDoc, doc } from "firebase/firestore";
-import { db } from "@/firebase";
+import { CollectionsType } from '@/types';
+import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 interface Props<T> {
   data: T;
@@ -35,16 +35,20 @@ interface Props<T> {
  * const updatedTransaction = { ...transactionData, status: 'adoptado' };
  * await postFirestoreData<AnimalTransactionType>({ data: updatedTransaction, currentCollection: 'animalTransactions', id: 'txn456' });
  */
-export async function postFirestoreData<T extends object>({ data, currentCollection, id }: Props<T>): Promise<void> {
+export async function postFirestoreData<T extends object>({
+  data,
+  currentCollection,
+  id,
+}: Props<T>): Promise<void> {
   try {
     if (!id) {
-      await addDoc(collection(db, currentCollection), data); 
+      await addDoc(collection(db, currentCollection), data);
     } else {
-      const docRef = doc(db, currentCollection, id); 
-      await setDoc(docRef, data, {merge: true}); 
+      const docRef = doc(db, currentCollection, id);
+      await setDoc(docRef, data, { merge: true });
     }
   } catch (error) {
-    console.error("Error creating document:", error);
+    console.error('Error creating document:', error);
     throw error;
   }
 }

@@ -1,5 +1,3 @@
-
-
 # Por Los Animales Maldonado
 
 Web project for managing and tracking animals, transactions, and contacts in Maldonado.
