@@ -8,6 +8,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { useRouter } from 'next/navigation';
 import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 
 const initialAnimal: Animal = {
   id: '',
@@ -193,6 +194,24 @@ export default function CreateAnimalForm() {
       };
 
       setFormErrors(errors);
+      errors.name &&
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.name,
+        });
+      errors.description &&
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.description,
+        });
+      errors.images &&
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.images,
+        });
 
       if (Object.values(errors).some(Boolean)) {
         const elapsed = Date.now() - start;
@@ -207,7 +226,7 @@ export default function CreateAnimalForm() {
         return;
       }
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({ data: newAnimal, currentCollection: 'animals', id }),
         postFirestoreData<PrivateInfoType>({
           data: newPrivateInfo,
@@ -219,9 +238,26 @@ export default function CreateAnimalForm() {
           currentCollection: 'animalTransactions',
         }),
       ]);
+
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: `Subiendo a ${animal.name}...`,
+            text: `Por favor espera mientras creamos a ${animal.name}`,
+          },
+          success: {
+            title: `${animal.name} creado`,
+            text: `${animal.name} fue creado exitosamente`,
+          },
+          error: {
+            title: `Hubo un error al crear a ${animal.name}`,
+            text: `Hubo un error al crear a ${animal.name}`,
+          },
+        },
+      });
+      router.replace('/plam-admin/animales');
     } catch (error) {
       console.error('Error al guardar el animal:', error);
-      alert('algo salio mal');
       setLoading(false);
     } finally {
       const elapsed = Date.now() - start;
@@ -230,17 +266,21 @@ export default function CreateAnimalForm() {
       if (remaining > 0) {
         setTimeout(() => {
           setLoading(false);
-          router.replace('/plam-admin/animales');
         }, remaining);
       } else {
         setLoading(false);
-        router.replace('/plam-admin/animales');
       }
     }
   };
 
   const handleImageDelete = async (imgId: string) => {
-    await deleteImage(imgId);
+    await handlePromiseToast(deleteImage(imgId), {
+      messages: {
+        pending: { title: 'Eliminando imagen...', text: 'Por favor espera...' },
+        success: { title: 'Imagen eliminada', text: 'La imagen fue eliminada exitosamente' },
+        error: { title: 'Error', text: 'Hubo un error al eliminar la imagen' },
+      },
+    });
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
   };

@@ -250,9 +250,10 @@ export function handleToast({
  * - Success state: Shows logo300.webp (organization logo)
  * - Error state: Shows error.webp (error icon)
  *
- * Perfect for async operations like API calls, file uploads, or database operations.
+ * Perfect for async operations like API calls, file uploads, database operations, and batch processing.
+ * Supports Promise.all and Promise.allSettled patterns for handling multiple concurrent operations.
  *
- * @param {Promise<any>} promise - The promise to track and display status for.
+ * @param {Promise<any>} promise - The promise to track and display status for (including Promise.all results).
  * @param {Object} options - Configuration for the promise toast.
  * @param {PromiseToastMessages} options.messages - Messages for each promise state (pending, success, error).
  * @param {'top-right'|'top-center'|'top-left'|'bottom-right'|'bottom-center'|'bottom-left'} [options.position='bottom-right'] - Toast position.
@@ -309,6 +310,35 @@ export function handleToast({
  *   theme: 'colored'
  * });
  * // Result: Visual feedback throughout the entire upload process with custom icons
+ *
+ * @example
+ * // Handle multiple operations with Promise.all
+ * const saveAnimalComplete = async (animalData, privateInfo, transaction) => {
+ *   const promises = [
+ *     postFirestoreData({ data: animalData, currentCollection: 'animals' }),
+ *     postFirestoreData({ data: privateInfo, currentCollection: 'animalPrivateInfo' }),
+ *     postFirestoreData({ data: transaction, currentCollection: 'animalTransactions' })
+ *   ];
+ *   return Promise.all(promises);
+ * };
+ *
+ * handlePromiseToast(saveAnimalComplete(animal, info, trans), {
+ *   messages: {
+ *     pending: {
+ *       title: 'Creating Animal',
+ *       text: 'Saving all animal data...'
+ *     },
+ *     success: {
+ *       title: 'Animal Created',
+ *       text: 'All data has been saved successfully.'
+ *     },
+ *     error: {
+ *       title: 'Save Failed',
+ *       text: 'Failed to save animal data. Please try again.'
+ *     }
+ *   }
+ * });
+ * // Result: Success only if ALL operations complete, error if ANY fails
  */
 export function handlePromiseToast<T>(
   promise: Promise<T>,
@@ -470,7 +500,7 @@ export function handlePromiseToast<T>(
    });
    // Result: Visual progress with colored theme and custom icons for success/error states
 
-7) Batch operations with detailed progress feedback
+7) Batch operations with detailed progress feedback using Promise.all
    const batchUpdateAnimals = async (animals) => {
      const results = await Promise.all(
        animals.map(animal => updateAnimal(animal))
@@ -497,11 +527,72 @@ export function handlePromiseToast<T>(
      position: 'bottom-center',
      hideProgressBar: false
    });
-   // Result: Comprehensive batch operation feedback with custom icons
+   // Result: Shows progress for all operations, success only if ALL succeed
+
+8) Promise.all with error handling - all-or-nothing approach
+   const saveAnimalComplete = async (animalData, privateInfo, transaction) => {
+     const promises = [
+       postFirestoreData({ data: animalData, currentCollection: 'animals' }),
+       postFirestoreData({ data: privateInfo, currentCollection: 'animalPrivateInfo' }),
+       postFirestoreData({ data: transaction, currentCollection: 'animalTransactions' })
+     ];
+     
+     // Promise.all fails if ANY promise fails
+     return Promise.all(promises);
+   };
+
+   await handlePromiseToast(saveAnimalComplete(animal, info, trans), {
+     messages: {
+       pending: { title: 'Guardando animal', text: 'Creando registro completo...' },
+       success: { title: 'Animal creado', text: 'Todos los datos fueron guardados correctamente.' },
+       error: { title: 'Error al crear', text: 'Falló al guardar los datos. Intenta nuevamente.' }
+     },
+     position: 'top-center',
+     theme: 'colored'
+   });
+
+9) Promise.allSettled with partial success reporting
+   const saveAnimalWithReport = async (animalData, privateInfo, transaction) => {
+     const promises = [
+       postFirestoreData({ data: animalData, currentCollection: 'animals' }),
+       postFirestoreData({ data: privateInfo, currentCollection: 'animalPrivateInfo' }),
+       postFirestoreData({ data: transaction, currentCollection: 'animalTransactions' })
+     ];
+     
+     const results = await Promise.allSettled(promises);
+     const successful = results.filter(r => r.status === 'fulfilled').length;
+     const failed = results.length - successful;
+     
+     if (failed > 0) {
+       throw Object.assign(new Error('Algunos datos no se guardaron'), { successful, failed });
+     }
+     
+     return { successful, failed };
+   };
+
+   try {
+     await handlePromiseToast(saveAnimalWithReport(animal, info, trans), {
+       messages: {
+         pending: { title: 'Guardando datos', text: 'Procesando múltiples operaciones...' },
+         success: { title: 'Guardado completo', text: 'Todos los datos fueron procesados.' },
+         error: { title: 'Guardado parcial', text: 'Algunos datos no se pudieron guardar.' }
+       }
+     });
+   } catch (error) {
+     // Show detailed results after the main toast
+     if (error.successful && error.failed) {
+       handleToast({
+         type: 'warning',
+         title: 'Resumen de guardado',
+         text: `Exitosos: ${error.successful} | Fallidos: ${error.failed}`,
+         autoClose: 8000
+       });
+     }
+   }
 
 === ADVANCED CUSTOMIZATION EXAMPLES ===
 
-8) Quick auto-save notification with minimal UI
+10) Quick auto-save notification with minimal UI
    handleToast({
      type: 'info',
      title: 'Auto-saved',
@@ -513,7 +604,7 @@ export function handlePromiseToast<T>(
    });
    // Result: Subtle bone icon notification that doesn't interrupt workflow
 
-9) Persistent critical error with enhanced visibility
+11) Persistent critical error with enhanced visibility
    handleToast({
      type: 'error',
      title: 'System Error',

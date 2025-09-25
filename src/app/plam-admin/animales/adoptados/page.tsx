@@ -10,6 +10,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
+import { handlePromiseToast } from '@/lib/handleToast';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -127,7 +128,7 @@ export default function AnimalsPage() {
         isAvalible: false,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
@@ -138,6 +139,22 @@ export default function AnimalsPage() {
           currentCollection: 'animalTransactions',
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Enviando a la papelera...',
+            text: `Enviando a la papelera al animal ${animal.name}...`,
+          },
+          success: {
+            title: 'Animal enviado a la papelera',
+            text: `El animal ${animal.name} fue enviado a la papelera exitosamente.`,
+          },
+          error: {
+            title: 'Error al enviar a la papelera',
+            text: `Hubo un error al enviar a la papelera al animal ${animal.name}.`,
+          },
+        },
+      });
     } catch (error) {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

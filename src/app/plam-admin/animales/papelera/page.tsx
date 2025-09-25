@@ -13,6 +13,7 @@ import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
 import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { deleteImage } from '@/lib/deleteIgame';
+import { handlePromiseToast } from '@/lib/handleToast';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -122,7 +123,7 @@ export default function AnimalsPage() {
         isAvalible: false,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
@@ -133,6 +134,17 @@ export default function AnimalsPage() {
           currentCollection: 'animals',
         }),
       ]);
+
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Restaurando animal...',
+            text: `'Por favor, espera mientras restauramos a ${animal.name}.'`,
+          },
+          success: { title: 'Éxito', text: `${animal.name} ha sido restaurado correctamente.` },
+          error: { title: 'Error', text: `Hubo un error al restaurar a ${animal.name}.` },
+        },
+      });
 
       setRefresh(!refresh);
     } catch (error) {
@@ -167,7 +179,22 @@ export default function AnimalsPage() {
       const images = animal.images;
       for (const image of images) {
         if (image.imgId) {
-          await deleteImage(image.imgId);
+          await handlePromiseToast(deleteImage(image.imgId), {
+            messages: {
+              pending: {
+                title: 'Eliminando imagen...',
+                text: `'Por favor, espera mientras eliminamos la imagen de ${animal.name}.'`,
+              },
+              success: {
+                title: 'Éxito',
+                text: `La imagen de ${animal.name} ha sido eliminada correctamente.`,
+              },
+              error: {
+                title: 'Error',
+                text: `Hubo un error al eliminar la imagen de ${animal.name}.`,
+              },
+            },
+          });
         }
       }
 
@@ -180,13 +207,23 @@ export default function AnimalsPage() {
         modifiedBy: auth.currentUser?.email || '',
       };
 
-      await Promise.all([
+      const promises = Promise.all([
         deleteFirestoreData({ collection: 'animals', docId: animal.id }),
         postFirestoreData<AnimalTransactionType>({
           data: newTransaction,
           currentCollection: 'animalTransactions',
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Eliminando animal...',
+            text: `'Por favor, espera mientras eliminamos a ${animal.name}.'`,
+          },
+          success: { title: 'Éxito', text: `${animal.name} ha sido eliminado correctamente.` },
+          error: { title: 'Error', text: `Hubo un error al eliminar a ${animal.name}.` },
+        },
+      });
     } catch (error) {
       console.error('Error to delete animal:', error);
     } finally {

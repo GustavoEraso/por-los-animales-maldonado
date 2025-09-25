@@ -16,6 +16,7 @@ import Loader from '@/components/Loader';
 import { deleteImage } from '@/lib/deleteIgame';
 import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 
 export default function AnimalPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function AnimalPage() {
         });
         if (!animal) {
           console.error('Animal not found');
-          return;
+          throw new Error('Animal not found');
         }
         const currentPrivateInfo = await getFirestoreDocById<PrivateInfoType>({
           currentCollection: 'animalPrivateInfo',
@@ -50,7 +51,7 @@ export default function AnimalPage() {
         });
         if (!currentPrivateInfo) {
           console.error('Private info not found');
-          return;
+          throw new Error('Private info not found');
         }
         const currentTransactions = await getFirestoreData({
           currentCollection: 'animalTransactions',
@@ -58,7 +59,7 @@ export default function AnimalPage() {
         });
         if (!currentTransactions) {
           console.error('Transaction info not found for this animal');
-          return;
+          throw new Error('Transaction info not found for this animal');
         }
 
         const sortedTransactions = currentTransactions.sort((a, b) => b.date - a.date);
@@ -68,19 +69,18 @@ export default function AnimalPage() {
 
         if (!latestTransaction) {
           console.error('No valid animal transaction data found');
-          return;
+          throw new Error('No valid animal transaction data found');
         }
 
         setAnimal(animal);
         setPrivateInfo(currentPrivateInfo);
-
-        console.log({
-          animal: animal,
-          privateInfo: currentPrivateInfo,
-          latestTransaction: latestTransaction,
-        });
       } catch (error) {
         console.error('Error fetching animal data:', error);
+        handleToast({
+          type: 'error',
+          title: 'Error',
+          text: 'Error al obtener los datos del animal.',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +104,7 @@ export default function AnimalPage() {
         isAvalible: false,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
@@ -115,6 +115,22 @@ export default function AnimalPage() {
           currentCollection: 'animalTransactions',
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Eliminando...',
+            text: `'Por favor, espera mientras eliminamos a ${animal.name}.'`,
+          },
+          success: {
+            title: 'Éxito',
+            text: `${animal.name} ha sido eliminado correctamente.`,
+          },
+          error: {
+            title: 'Error',
+            text: `Hubo un error al eliminar a ${animal.name}.`,
+          },
+        },
+      });
 
       router.push('/plam-admin/animales');
     } catch (error) {
@@ -135,7 +151,7 @@ export default function AnimalPage() {
         isAvalible: false,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
@@ -146,6 +162,23 @@ export default function AnimalPage() {
           currentCollection: 'animalTransactions',
         }),
       ]);
+
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Restaurando...',
+            text: `'Por favor, espera mientras restauramos a ${animal.name}.'`,
+          },
+          success: {
+            title: 'Éxito',
+            text: `${animal.name} ha sido restaurado correctamente.`,
+          },
+          error: {
+            title: 'Error',
+            text: `Hubo un error al restaurar a ${animal.name}.`,
+          },
+        },
+      });
 
       router.push('/plam-admin/animales');
     } catch (error) {
@@ -180,7 +213,22 @@ export default function AnimalPage() {
       const images = animal.images;
       for (const image of images) {
         if (image.imgId) {
-          await deleteImage(image.imgId);
+          await handlePromiseToast(deleteImage(image.imgId), {
+            messages: {
+              pending: {
+                title: 'Eliminando imagen...',
+                text: `'Por favor, espera mientras eliminamos la imagen de ${animal.name}.'`,
+              },
+              success: {
+                title: 'Éxito',
+                text: `La imagen de ${animal.name} ha sido eliminada correctamente.`,
+              },
+              error: {
+                title: 'Error',
+                text: `Hubo un error al eliminar la imagen de ${animal.name}.`,
+              },
+            },
+          });
         }
       }
 
@@ -193,13 +241,29 @@ export default function AnimalPage() {
         modifiedBy: auth.currentUser?.email || '',
       };
 
-      await Promise.all([
+      const promises = Promise.all([
         deleteFirestoreData({ collection: 'animals', docId: animal.id }),
         postFirestoreData<AnimalTransactionType>({
           data: newTransaction,
           currentCollection: 'animalTransactions',
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Eliminando...',
+            text: `'Por favor, espera mientras eliminamos a ${animal.name}.'`,
+          },
+          success: {
+            title: 'Éxito',
+            text: `${animal.name} ha sido eliminado correctamente.`,
+          },
+          error: {
+            title: 'Error',
+            text: `Hubo un error al eliminar a ${animal.name}.`,
+          },
+        },
+      });
 
       router.push('/plam-admin/animales');
     } catch (error) {
