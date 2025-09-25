@@ -10,6 +10,7 @@ import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import Loader from '@/components/Loader';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getChangedFields } from '@/lib/getChangedFields';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 
 const initialAnimal: Animal = {
   id: '',
@@ -109,7 +110,7 @@ export default function EditAnimalForm() {
         });
         if (!fetchedAnimal) {
           console.error('Animal not found');
-          return;
+          throw new Error('Animal not found');
         }
         const fetchedPrivateInfo = await getFirestoreDocById<PrivateInfoType>({
           currentCollection: 'animalPrivateInfo',
@@ -117,7 +118,7 @@ export default function EditAnimalForm() {
         });
         if (!fetchedPrivateInfo) {
           console.error('Private info not found');
-          return;
+          throw new Error('Private info not found');
         }
         const transactionsList = await getFirestoreData({
           currentCollection: 'animalTransactions',
@@ -125,11 +126,11 @@ export default function EditAnimalForm() {
         });
         if (!transactionsList) {
           console.error('Transactions list not found');
-          return;
+          throw new Error('Transactions list not found');
         }
         if (!transactionsList.length) {
           console.error('Transaction info not found for this animal');
-          return;
+          throw new Error('Transaction info not found for this animal');
         }
         const sortedTransactions = transactionsList.sort((a, b) => b.date - a.date);
         const currentTransactionInfo = sortedTransactions[0];
@@ -145,6 +146,11 @@ export default function EditAnimalForm() {
         setContacts(currentTransactionInfo.contacts || []);
       } catch (error) {
         console.error('Error fetching animal data:', error);
+        handleToast({
+          type: 'error',
+          title: 'Error',
+          text: 'Hubo un error al obtener los datos del animal',
+        });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;
@@ -281,17 +287,45 @@ export default function EditAnimalForm() {
 
       setFormErrors(errors);
 
+      if (errors.name) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.name,
+        });
+      }
+
+      if (errors.description) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.description,
+        });
+      }
+
+      if (errors.images) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.images,
+        });
+      }
+
       if (Object.values(errors).some(Boolean)) {
         return;
       }
 
-      const promises = [];
+      const promisesList = [];
 
       if (Object.keys(animalChanges).length === 0 && Object.keys(privateInfoChanges).length === 0) {
-        alert('No se detectaron cambios para guardar.');
+        handleToast({
+          type: 'info',
+          title: 'Sin cambios',
+          text: 'No se detectaron cambios para guardar.',
+        });
         return;
       } else {
-        promises.push(
+        promisesList.push(
           postFirestoreData<AnimalTransactionType>({
             data: newTransactionInfo,
             currentCollection: 'animalTransactions',
@@ -300,7 +334,7 @@ export default function EditAnimalForm() {
       }
 
       if (Object.keys(animalChanges).length > 0) {
-        promises.push(
+        promisesList.push(
           postFirestoreData<Animal>({
             data: newAnimal,
             currentCollection: 'animals',
@@ -309,7 +343,7 @@ export default function EditAnimalForm() {
         );
       }
       if (Object.keys(privateInfoChanges).length > 0) {
-        promises.push(
+        promisesList.push(
           postFirestoreData<PrivateInfoType>({
             data: privateInfo,
             currentCollection: 'animalPrivateInfo',
@@ -318,17 +352,47 @@ export default function EditAnimalForm() {
         );
       }
 
-      await Promise.all(promises);
+      const promises = Promise.all(promisesList);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: `Actualizando ${animal.name}...`,
+            text: `Por favor espera mientras actualizamos a ${animal.name}`,
+          },
+          success: {
+            title: `${animal.name} actualizado`,
+            text: `${animal.name} fue actualizado exitosamente`,
+          },
+          error: {
+            title: `Hubo un error al actualizar a ${animal.name}`,
+            text: `Hubo un error al actualizar a ${animal.name}`,
+          },
+        },
+      });
 
       router.replace('/plam-admin/animales');
     } catch (error) {
       console.error('Error al guardar el animal:', error);
-      alert('algo salio mal');
     }
   };
 
   const handleImageDelete = async (imgId: string) => {
-    await deleteImage(imgId);
+    await handlePromiseToast(deleteImage(imgId), {
+      messages: {
+        pending: {
+          title: `Eliminando imagen...`,
+          text: `Por favor espera mientras eliminamos la imagen`,
+        },
+        success: {
+          title: `Imagen eliminada`,
+          text: `La imagen fue eliminada exitosamente`,
+        },
+        error: {
+          title: `Error`,
+          text: `Hubo un error al eliminar la imagen`,
+        },
+      },
+    });
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
   };

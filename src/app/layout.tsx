@@ -4,6 +4,9 @@ import { Roboto } from 'next/font/google';
 import './globals.css';
 import { GoogleAnalytics } from '@next/third-parties/google';
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -47,6 +50,7 @@ export default function RootLayout({
         {children}
         <Analytics />
         <Footer />
+        <ToastContainer position="bottom-right" theme="colored" />
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_ANALYTICS_ID ?? ''} />
     </html>

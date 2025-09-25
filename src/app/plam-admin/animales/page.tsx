@@ -11,6 +11,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
+import { handlePromiseToast } from '@/lib/handleToast';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -126,7 +127,7 @@ export default function AnimalsPage() {
         isVisible: active,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           currentCollection: 'animals',
           data: updatedAnimal,
@@ -137,6 +138,19 @@ export default function AnimalsPage() {
           data: newTransaction,
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Cambiando estado...',
+            text: `Por favor espera mientras actualizamos el estado de ${animal.name}`,
+          },
+          success: {
+            title: 'Estado cambiado',
+            text: `El estado de ${animal.name} fue cambiado exitosamente`,
+          },
+          error: { title: 'Error', text: `Hubo un error al cambiar el estado de ${animal.name}` },
+        },
+      });
       setRefresh(!refresh);
     } catch (error) {
       console.error('Error al cambiar el estado del animal:', error);
@@ -161,7 +175,7 @@ export default function AnimalsPage() {
         isAvalible: false,
       } as AnimalTransactionType;
 
-      await Promise.all([
+      const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
@@ -172,6 +186,20 @@ export default function AnimalsPage() {
           currentCollection: 'animalTransactions',
         }),
       ]);
+      await handlePromiseToast(promises, {
+        messages: {
+          pending: {
+            title: 'Enviando a la papelera...',
+            text: `Por favor espera mientras enviamos a la papelera a ${animal.name}`,
+          },
+          success: {
+            title: 'Enviado a la papelera',
+            text: `${animal.name} fue enviado a la papelera exitosamente`,
+          },
+          error: { title: 'Error', text: `Hubo un error al eliminar a ${animal.name}` },
+        },
+      });
+      router.replace('/plam-admin/animales');
     } catch (error) {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
