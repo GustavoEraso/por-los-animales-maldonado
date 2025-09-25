@@ -16,11 +16,6 @@ interface MsgProps extends Partial<ToastContentProps> {
     /** Type of toast: 'success', 'error', 'warning', 'info' */
     type: 'success' | 'error' | 'warning' | 'info';
   };
-  /**
-   * Toast properties from react-toastify containing type and other metadata
-   * Used to determine which icon/image to display
-   */
-  toastProps: ToastContentProps['toastProps'];
 }
 
 /**
@@ -83,7 +78,7 @@ interface MsgProps extends Partial<ToastContentProps> {
  *     text: 'Please wait while processing...'
  *   }
  * });
- */ export default function ToastMsg({ data, toastProps }: MsgProps): React.ReactElement {
+ */ export default function ToastMsg({ data }: MsgProps): React.ReactElement {
   const title = data?.title ?? '';
   const text = data?.text ?? '';
   const type = data?.type ?? '';

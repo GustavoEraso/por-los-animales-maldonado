@@ -393,6 +393,7 @@ export function handlePromiseToast<T>(
   };
 
   // Use toast.promise with type assertion for flexibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (toast.promise as any)(promise, promiseConfig, toastOptions);
 
   // Return the original promise for chaining
