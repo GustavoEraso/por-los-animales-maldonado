@@ -286,24 +286,30 @@ export default function EditAnimalForm() {
       };
 
       setFormErrors(errors);
-      errors.name &&
+
+      if (errors.name) {
         handleToast({
           type: 'error',
           title: 'Ups!',
           text: fieldErrorMessagesRecord.name,
         });
-      errors.description &&
+      }
+
+      if (errors.description) {
         handleToast({
           type: 'error',
           title: 'Ups!',
           text: fieldErrorMessagesRecord.description,
         });
-      errors.images &&
+      }
+
+      if (errors.images) {
         handleToast({
           type: 'error',
           title: 'Ups!',
           text: fieldErrorMessagesRecord.images,
         });
+      }
 
       if (Object.values(errors).some(Boolean)) {
         return;
