@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import SmartLink from '@/lib/SmartLink';
 import Hero from '@/components/Hero';
 
 import type { Metadata } from 'next';
@@ -88,55 +89,48 @@ export default function Donaciones() {
             />
             <p className="text-xl text-black   font-bold">Links para donar</p>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 w-full h-full place-items-center ">
-              <Link
-                target="_blank"
+              <SmartLink
                 href="https://mpago.la/1wGBy73"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $50
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/2rEweLb"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $100
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/2CwawDF"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $200
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/1NDdWeX"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $500
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/16nU73n"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $1000
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/2L5g2xM"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $1500
-              </Link>
-              <Link
-                target="_blank"
+              </SmartLink>
+              <SmartLink
                 href="https://mpago.la/31eZYyd"
                 className="w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 DONÁ $2000
-              </Link>
+              </SmartLink>
             </section>
             <section className="flex flex-col items-center justify-center gap-4 px-4 text-lg text-black font-semibold text-center text-balance">
               <p>
@@ -144,13 +138,12 @@ export default function Donaciones() {
                 el monto que vos elijas.
               </p>
               <p>¡Es una forma súper simple de ayudar!</p>
-              <Link
-                target="_blank"
+              <SmartLink
                 href="https://www.mercadopago.com.uy/subscriptions/checkout?preapproval_plan_id=2c9380848dc7c6e8018dd0ac13f8052e"
                 className="animate-bounce w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
               >
                 SUSCRIPCIÓN MENSUAL
-              </Link>
+              </SmartLink>
             </section>
           </article>
 

@@ -3,6 +3,7 @@ import HeroCarrousel from '@/components/HeroCarrousel';
 import CircleCard from '@/components/CircleCard';
 import RevealSection from '@/components/RevealSection';
 import LogoCarousel from '@/components/LogoCaurosel';
+import SmartLink from '@/lib/SmartLink';
 
 export default function Home() {
   const logos = [
@@ -129,10 +130,8 @@ export default function Home() {
               siguenos en nuestras redes:
             </h3>
             <section className="flex flex-col md:flex-row gap-6 items-center justify-center ">
-              <a
+              <SmartLink
                 href="https://www.facebook.com/PorLosAnimalesMaldonado"
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label="Enlace a Facebook"
               >
                 <span className="flex justify-center items-center p-4 rounded-full gap-2 text-2xl hover:bg-white transition duration-300 ease-in-out">
@@ -146,11 +145,9 @@ export default function Home() {
                   </svg>
                   FACEBOOK
                 </span>
-              </a>
-              <a
+              </SmartLink>
+              <SmartLink
                 href="https://www.instagram.com/porlosanimales_maldonado/?hl=es"
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label="Enlace a Instagram"
               >
                 <span className="flex justify-center items-center p-4 rounded-full gap-2 text-2xl hover:bg-white transition duration-300 ease-in-out">
@@ -164,17 +161,17 @@ export default function Home() {
                   </svg>
                   INSTAGRAM
                 </span>
-              </a>
+              </SmartLink>
             </section>
             <h3 className="font-bold text-4xl uppercase text-center text-balance">
               nuestro correo electronico:
             </h3>
-            <a
+            <SmartLink
               className=" text-xl md:text-3xl text-center"
               href="mailto:porlosanimalesmaldo@gmail.com"
             >
               porlosanimalesmaldo@gmail.com
-            </a>
+            </SmartLink>
           </div>
         </section>
       </main>

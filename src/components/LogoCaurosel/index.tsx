@@ -3,6 +3,7 @@
 import React from 'react';
 import { useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap/dist/gsap';
+import SmartLink from '@/lib/SmartLink';
 
 /**
  * Props for individual logo items in the carousel.
@@ -170,14 +171,9 @@ export default function LogoCarousel({
         {full.map((logo, idx) => (
           <li key={`${logo.src}-${idx}`} className="shrink-0">
             {logo.href ? (
-              <a
-                href={logo.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={logo.alt ?? `Logo ${idx}`}
-              >
+              <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${idx}`}>
                 <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-              </a>
+              </SmartLink>
             ) : (
               <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
             )}
