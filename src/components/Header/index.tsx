@@ -54,20 +54,22 @@ export default function Header(): React.ReactElement {
 
   return (
     <header className="flex justify-between w-full items-center relative z-50 bg-white shadow-md p-4">
-      <div className="w-32 h-32 flex-shrink-0">
-        <a href="/">
-          <img
-            className="block w-32 h-32  object-contain"
-            src="/logo300.webp"
-            alt="logo de por los animales maldonado"
-          />
-        </a>
-      </div>
+      <Link
+        href="/"
+        className="w-32 h-32 flex-shrink-0"
+        aria-label="Ir al inicio - Por los animales Maldonado"
+      >
+        <img
+          className="block w-32 h-32 object-contain"
+          src="/logo300.webp"
+          alt="logo de por los animales maldonado"
+        />
+      </Link>
       <nav className="hidden md:block">
         <ul className="flex space-x-4 text-md flex-wrap justify-center bg-white">
           {navLinks.map((link) => (
             <li className="group relative flex flex-col items-center" key={link.id + 'desktop'}>
-              <a
+              <Link
                 className={`inline-flex items-center gap-1 relative text-center p-2 ${styles.outline_bottom}`}
                 href={link.url}
                 aria-label={`Enlace a ${link.name}`}
@@ -88,18 +90,18 @@ export default function Header(): React.ReactElement {
                     <path d="M6 9l6 6 6-6"></path>
                   </svg>
                 )}
-              </a>
+              </Link>
               {link.childs && (
                 <ul className="absolute hidden group-hover:flex flex-col bottom-0 translate-y-full z-10 bg-white">
                   {link.childs.map((child) => (
                     <li key={child.id + 'desktop'}>
-                      <a
+                      <Link
                         className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`}
                         href={child.url}
                         aria-label={`Enlace a ${child.name}`}
                       >
                         {child.name}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -185,13 +187,13 @@ export default function Header(): React.ReactElement {
         <ul className="flex flex-col w-full gap-4 px-4 text-lg">
           {isUserLoggedIn && (
             <div className="flex flex-col-reverse justify-center items-center gap-4">
-              <a
+              <Link
                 className={`block text-center p-2 whitespace-nowrap text-2xl font-semibold ${styles.outline_bottom}`}
                 href={'/plam-admin'}
                 aria-label={'Enlace al panel de administración'}
               >
                 Dashboard
-              </a>
+              </Link>
 
               <button
                 onClick={handleLogout}
@@ -210,26 +212,26 @@ export default function Header(): React.ReactElement {
                   <ul className="pl-4">
                     {link.childs.map((child) => (
                       <li key={child.id + 'mobile'} className="w-full rounded-2xl overflow-hidden">
-                        <a
+                        <Link
                           className="block text-center hover:bg-gray-300 p-2"
                           href={child.url}
                           aria-label={`Enlace a ${child.name}`}
                         >
                           {child.name}
-                        </a>
+                        </Link>
                       </li>
                     ))}
                   </ul>
                 </>
               ) : (
-                <a
+                <Link
                   className="block w-full text-center hover:bg-gray-300 p-2"
                   href={link.url}
                   onClick={() => setVisibe(false)}
                   aria-label={`Enlace a ${link.name}`}
                 >
                   {link.name}
-                </a>
+                </Link>
               )}
             </li>
           ))}
