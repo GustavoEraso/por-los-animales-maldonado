@@ -133,7 +133,7 @@ export default function Chart({
   title,
   width,
   height,
-  colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'],
+  colors = ['#606c38', '#283618', '#dda15e', '#bc6c25', '#fefae0', '#8dd1e1'],
   animationDuration = 2,
   showLegend,
 }: ChartProps) {
@@ -489,7 +489,7 @@ export default function Chart({
   const isMultiLineData = datasets.length > 0;
 
   return (
-    <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+    <div className="bg-white p-4 md:p-6 rounded-lg ">
       {title && <h2 className="text-lg md:text-xl font-semibold mb-4">{title}</h2>}
       <div ref={containerRef} className="flex justify-center overflow-hidden">
         <svg ref={chartRef}></svg>
