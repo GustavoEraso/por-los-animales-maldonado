@@ -3,6 +3,7 @@ import React from 'react';
 import SmartLink from '@/lib/SmartLink';
 import { navLinks } from '@/lib/navLinks';
 import styles from './styles.module.css';
+import { ChevronDownIcon, MenuIcon, XIcon } from '../Icons';
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -76,19 +77,12 @@ export default function Header(): React.ReactElement {
               >
                 {link.name}
                 {link.childs && (
-                  <svg
+                  <ChevronDownIcon
+                    size={12}
+                    color="currentColor"
+                    title="Expandir menú"
                     className="w-3 h-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M6 9l6 6 6-6"></path>
-                  </svg>
+                  />
                 )}
               </SmartLink>
               {link.childs && (
@@ -147,15 +141,7 @@ export default function Header(): React.ReactElement {
             setVisible(!visible);
           }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="24px"
-            viewBox="0 -960 960 960"
-            width="24px"
-            fill="#5f6368"
-          >
-            <path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" />
-          </svg>
+          <MenuIcon size={24} color="#5f6368" title="Abrir menú" />
         </button>
       </div>
       {/* Responsive menu */}
@@ -169,20 +155,7 @@ export default function Header(): React.ReactElement {
           }}
           className="bg-gray-100 p-2 rounded-full self-end m-2"
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M6 18L18 6M6 6l12 12"
-            ></path>
-          </svg>
+          <XIcon size={24} color="currentColor" title="Cerrar menú" className="w-6 h-6" />
         </button>
         <ul className="flex flex-col w-full gap-4 px-4 text-lg">
           {isUserLoggedIn && (

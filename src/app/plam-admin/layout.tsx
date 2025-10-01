@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/firebase';
+import { ChevronRightIcon } from '@/components/Icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -53,20 +54,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="absolute -right-5 top-1/2 -z-10  bg-green-forest  rounded-r-3xl h-20 "
             onClick={() => setShowMenu(!showMenu)}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
+            <ChevronRightIcon
+              size={24}
               className="w-6 h-6 transition-all duration-500"
+              title="Toggle menu"
               style={{
                 transform: showMenu ? 'rotateY(-180deg)' : 'rotateY(0deg)',
                 perspective: '1000px',
               }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
+            />
           </button>
         </section>
       </section>
