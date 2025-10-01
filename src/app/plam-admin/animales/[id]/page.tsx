@@ -93,7 +93,7 @@ export default function AnimalPage() {
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
-      const newTransaction = {
+      const newTransaction: AnimalTransactionType = {
         id: currentId,
         name: animal.name,
         since: Date.now(),
@@ -102,7 +102,7 @@ export default function AnimalPage() {
         isDeleted: true,
         isVisible: false,
         isAvalible: false,
-      } as AnimalTransactionType;
+      };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({
@@ -143,13 +143,16 @@ export default function AnimalPage() {
     setIsLoading(true);
     try {
       const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvalible: false };
-      const newTransactionData = {
+      const newTransactionData: AnimalTransactionType = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: false,
         isVisible: false,
         isAvalible: false,
-      } as AnimalTransactionType;
+        id: currentId,
+        name: animal.name,
+        since: Date.now(),
+      };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({
