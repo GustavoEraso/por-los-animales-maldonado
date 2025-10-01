@@ -14,6 +14,7 @@ import { Modal } from '@/components/Modal';
 import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { deleteImage } from '@/lib/deleteIgame';
 import { handlePromiseToast } from '@/lib/handleToast';
+import { TrashIcon, EyeIcon, ArrowLeftIcon } from '@/components/Icons';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -269,7 +270,10 @@ export default function AnimalsPage() {
   return (
     <section className=" flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
-      <h3 className="text-2xl font-bold underline">Papelera</h3>
+      <div className="flex items-center gap-2">
+        <TrashIcon size="md" className="text-red-600" title="Papelera" />
+        <h3 className="text-2xl font-bold underline">Papelera</h3>
+      </div>
       <div className="relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -348,16 +352,22 @@ export default function AnimalsPage() {
                   <td className="px-2 py-4 text-right">
                     <Link
                       href={`/plam-admin/animales/${animal.id}`}
-                      className="font-medium text-green-600  hover:underline"
+                      className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
                     >
-                      Ver Detalles
+                      <EyeIcon size={16} title="Ver detalles" />
+                      <span className="hidden sm:inline">Ver Detalles</span>
                     </Link>
                   </td>
 
                   <td className="px-2 py-4 text-right hidden sm:table-cell">
                     <Modal
-                      buttonStyles="font-medium text-green-600  hover:underline cursor-pointer"
-                      buttonText="Restaurar"
+                      buttonStyles="font-medium text-green-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
+                      buttonText={
+                        <>
+                          <ArrowLeftIcon size={16} title="Restaurar animal" />
+                          <span className="hidden md:inline">Restaurar</span>
+                        </>
+                      }
                     >
                       <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
                         <h2 className="text-2xl font-bold">
@@ -382,8 +392,9 @@ export default function AnimalsPage() {
                             </span>
                             <button
                               onClick={() => handleRestore(animal.id)}
-                              className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300"
+                              className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
                             >
+                              <ArrowLeftIcon size={20} title="Restaurar" color="white" />
                               Sí, Restaurar
                             </button>
                           </div>
@@ -393,8 +404,13 @@ export default function AnimalsPage() {
                   </td>
                   <td className="px-2 py-4 text-right hidden sm:table-cell">
                     <Modal
-                      buttonStyles="font-medium text-red-600  hover:underline cursor-pointer"
-                      buttonText="Eliminar"
+                      buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
+                      buttonText={
+                        <>
+                          <TrashIcon size={16} title="Eliminar definitivamente" />
+                          <span className="hidden md:inline">Eliminar</span>
+                        </>
+                      }
                     >
                       <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
                         <h2 className="text-2xl font-bold">
@@ -419,8 +435,9 @@ export default function AnimalsPage() {
                             </span>
                             <button
                               onClick={() => handleHardDeleteSingleAnimal({ animal })}
-                              className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
+                              className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
                             >
+                              <TrashIcon size={20} title="Eliminar definitivamente" color="white" />
                               Eliminar definitivamente
                             </button>
                           </div>
@@ -436,8 +453,13 @@ export default function AnimalsPage() {
       </div>
 
       <Modal
-        buttonText="Vaciar Papelera"
-        buttonStyles="font-medium text-red-600  hover:underline cursor-pointer"
+        buttonText={
+          <>
+            <TrashIcon size={20} title="Vaciar papelera" />
+            <span>Vaciar Papelera</span>
+          </>
+        }
+        buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center gap-2"
       >
         <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
           <h2 className="text-2xl font-bold">¿Estás seguro de que quieres vaciar la apelera?</h2>
@@ -452,8 +474,9 @@ export default function AnimalsPage() {
           </ul>
           <button
             onClick={handleAllHardDelete}
-            className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
+            className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
           >
+            <TrashIcon size={20} title="Eliminar todo" color="white" />
             Eliminar definitivamente
           </button>
         </section>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { XIcon, PhoneIcon, WhatsAppIcon } from '../Icons';
 
 /**
  * Contact information for WhatsApp integration.
@@ -27,104 +28,7 @@ interface WhatsAppFloatProps {
  */
 type View = 'closed' | 'chatList';
 
-// SVG Icons as components
-
-/**
- * Message circle icon component for WhatsApp chat representation.
- *
- * @param {Object} props - Component props
- * @param {number} [props.size=24] - Icon size in pixels
- * @param {string} [props.className=''] - Additional CSS classes
- * @returns {React.ReactElement} The rendered message circle icon
- */
-function MessageCircleIcon({
-  size = 24,
-  className = '',
-}: {
-  size?: number;
-  className?: string;
-}): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-  );
-}
-
-/**
- * X icon component for closing dialogs and modals.
- *
- * @param {Object} props - Component props
- * @param {number} [props.size=20] - Icon size in pixels
- * @param {string} [props.className=''] - Additional CSS classes
- * @returns {React.ReactElement} The rendered X icon
- */
-function XIcon({
-  size = 20,
-  className = '',
-}: {
-  size?: number;
-  className?: string;
-}): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m18 6-12 12" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
-
-/**
- * Phone icon component for contact representation.
- *
- * @param {Object} props - Component props
- * @param {number} [props.size=16] - Icon size in pixels
- * @param {string} [props.className=''] - Additional CSS classes
- * @returns {React.ReactElement} The rendered phone icon
- */
-function PhoneIcon({
-  size = 16,
-  className = '',
-}: {
-  size?: number;
-  className?: string;
-}): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
-}
+// SVG Icons imported from centralized library
 
 /**
  * Floating WhatsApp widget component with contact list and chat functionality.
@@ -182,7 +86,7 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
         className={`relative bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
         aria-label="Abrir WhatsApp"
       >
-        <MessageCircleIcon size={24} />
+        <WhatsAppIcon size={24} color="currentColor" title="WhatsApp" />
         {contacts?.length > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
             {contacts.length}
@@ -208,7 +112,7 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
             className="hover:bg-green-700 rounded-full p-1 transition-colors"
             aria-label="Cerrar"
           >
-            <XIcon size={20} />
+            <XIcon size={20} color="currentColor" title="Cerrar" />
           </button>
         </div>
 
@@ -216,7 +120,12 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
         <div className="flex-1 overflow-y-auto">
           {contacts?.length === 0 || !contacts ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <MessageCircleIcon size={48} className="mb-4 opacity-50" />
+              <WhatsAppIcon
+                size={48}
+                color="currentColor"
+                title="Sin contactos"
+                className="mb-4 opacity-50"
+              />
               <p>No hay contactos disponibles</p>
             </div>
           ) : (
@@ -244,7 +153,7 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
 
                 {/* WhatsApp Icon */}
                 <div className="p-2 text-green-600">
-                  <PhoneIcon size={16} />
+                  <PhoneIcon size={16} color="currentColor" title="Teléfono" />
                 </div>
               </div>
             ))

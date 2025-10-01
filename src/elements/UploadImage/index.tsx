@@ -4,6 +4,7 @@ import React from 'react';
 import { CldUploadWidget } from 'next-cloudinary';
 import type { CloudinaryUploadWidgetResults, CloudinaryUploadWidgetInfo } from 'next-cloudinary';
 import { Img } from '@/types';
+import { UploadIcon } from '@/components/Icons';
 
 /**
  * Props for the UploadImages component.
@@ -106,8 +107,9 @@ export default function UploadImages({
           <button
             type="button"
             onClick={() => open?.()}
-            className="bg-caramel-deep text-white px-4 py-2 rounded hover:bg-amber-sunset"
+            className="bg-caramel-deep text-white px-4 py-2 rounded hover:bg-amber-sunset flex items-center gap-2"
           >
+            <UploadIcon size={20} title="Subir imágenes" color="white" />
             Subir imágenes
           </button>
         )}

@@ -1,41 +1,15 @@
 'use client';
 import React, { useState } from 'react';
-
-import type { SVGProps } from 'react';
+import { XCircleIcon } from '../Icons';
 
 import styles from './styles.module.css';
-
-/**
- * X Circle icon component for closing the modal.
- *
- * @param {SVGProps<SVGSVGElement>} props - SVG element props
- * @returns {React.ReactNode} The rendered X circle icon
- */
-function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="black"
-      {...props}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
 
 /**
  * Props for the Modal component.
  */
 interface ModalProps {
-  /** Text to display on the modal trigger button */
-  buttonText: string;
+  /** Text or React element to display on the modal trigger button */
+  buttonText: string | React.ReactNode;
   /** Content to render inside the modal */
   children: React.ReactNode;
   /** Optional custom CSS classes for the button styling */
@@ -52,7 +26,7 @@ interface ModalProps {
  *
  * @param {ModalProps} props - Component props
  * @param {React.ReactNode} props.children - Content to render inside the modal
- * @param {string} props.buttonText - Text to display on the modal trigger button
+ * @param {string | React.ReactNode} props.buttonText - Text or React element to display on the modal trigger button
  * @param {string} [props.buttonStyles] - Optional custom CSS classes for button styling
  * @returns {React.ReactNode} The rendered modal component
  *
@@ -72,6 +46,20 @@ interface ModalProps {
  *     <h2>Título del Modal</h2>
  *     <p>Contenido personalizado</p>
  *   </div>
+ * </Modal>
+ *
+ * @example
+ * // With icon in button
+ * <Modal
+ *   buttonText={
+ *     <>
+ *       <TrashIcon size={16} />
+ *       <span>Eliminar</span>
+ *     </>
+ *   }
+ *   buttonStyles="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
+ * >
+ *   <p>Confirmar eliminación</p>
  * </Modal>
  */
 function Modal({ children, buttonText, buttonStyles }: ModalProps): React.ReactNode {
@@ -97,7 +85,12 @@ function Modal({ children, buttonText, buttonStyles }: ModalProps): React.ReactN
           <div className={styles.interno}>
             <section className={styles.modal_header}>
               <button onClick={closeModal} className="bg-white rounded-full text-black">
-                <XCircleIcon className="h-6 w-6 text-black" />
+                <XCircleIcon
+                  size={24}
+                  color="black"
+                  title="Cerrar modal"
+                  className="h-6 w-6 text-black"
+                />
               </button>
             </section>
             <section className={styles.interno__contain}>{children}</section>

@@ -3,32 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SVGProps } from 'react';
-
-/**
- * X Circle icon component for closing the fullscreen carousel.
- *
- * @param {SVGProps<SVGSVGElement>} props - SVG element props
- * @returns {React.ReactNode} The rendered X circle icon
- */
-function XCircleIcon(props: SVGProps<SVGSVGElement>): React.ReactNode {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="black"
-      {...props}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
+import { ChevronLeftIcon, ChevronRightIcon, XCircleIcon } from '../Icons';
 
 /**
  * Props for individual carousel items.
@@ -144,7 +119,7 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
           onClick={() => setCarrouselFullSize(false)}
           className=" absolute top-2 right-2 z-50 bg-white/60 rounded-full text-black"
         >
-          <XCircleIcon className="h-12 w-12 text-black" />
+          <XCircleIcon size={48} color="black" title="Cerrar" />
         </button>
       )}
       {/* Carousel wrapper */}
@@ -192,15 +167,7 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
         className="absolute top-0 left-0 flex items-center justify-center h-full px-4 z-20"
       >
         <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
-          <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
-            <path
-              d="M5 1 1 5l4 4"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ChevronLeftIcon size={16} className="w-4 h-4 text-caramel-deep" title="Anterior" />
         </span>
       </button>
       <button
@@ -209,15 +176,7 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
         className="absolute top-0 right-0 flex items-center justify-center h-full px-4 z-20"
       >
         <span className="w-10 h-10 rounded-full bg-caramel-deep/30 hover:bg-white/50 flex items-center justify-center">
-          <svg className="w-4 h-4 text-caramel-deep" viewBox="0 0 6 10" fill="none">
-            <path
-              d="m1 9 4-4-4-4"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ChevronRightIcon size={16} className="w-4 h-4 text-caramel-deep" title="Siguiente" />
         </span>
       </button>
     </div>

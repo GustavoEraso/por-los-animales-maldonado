@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/firebase';
+import { ChevronRightIcon, HomeIcon, PetsIcon, UserIcon } from '@/components/Icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -30,21 +31,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className={` transition-all duration-300 ${!showMenu ? 'w-0' : 'w-full px-2'} overflow-hidden pt-2`}
           >
             <Link
-              className="w-full px-2 py-1 text-xl  hover:bg-cream-light hover:text-green-dark "
+              className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 text-xl  hover:bg-cream-light hover:text-green-dark "
               href={'/plam-admin/'}
             >
-              <span>MENU</span>
+              <span className="hidden md:block">MENU</span>
+              <HomeIcon size={32} className="w-8 h-8 mb-2" title="Inicio" />
             </Link>
             <ul className="flex flex-col gap-1">
-              <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
-                <Link className="w-full px-2 py-1 " href={'/plam-admin/animales'}>
-                  <span>Animales</span>
+              <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                <Link
+                  className="flex gap-1 items-center justify-between w-full px-2 py-1 "
+                  href={'/plam-admin/animales'}
+                >
+                  <span className="hidden md:block">Animales</span>
+                  <PetsIcon size={32} className="w-8 h-8 mb-2" title="Animales" />
                 </Link>
               </li>
 
               <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
-                <Link className="w-full px-2 py-1 " href={'/plam-admin/usuarios'}>
-                  <span>Usuarios</span>
+                <Link
+                  className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                  href={'/plam-admin/usuarios'}
+                >
+                  <span className="hidden md:block">Usuarios</span>
+                  <UserIcon size={32} className="w-8 h-8 mb-2" title="Usuarios" />
                 </Link>
               </li>
             </ul>
@@ -53,20 +63,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="absolute -right-5 top-1/2 -z-10  bg-green-forest  rounded-r-3xl h-20 "
             onClick={() => setShowMenu(!showMenu)}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
+            <ChevronRightIcon
+              size={24}
               className="w-6 h-6 transition-all duration-500"
+              title="Toggle menu"
               style={{
                 transform: showMenu ? 'rotateY(-180deg)' : 'rotateY(0deg)',
                 perspective: '1000px',
               }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
+            />
           </button>
         </section>
       </section>

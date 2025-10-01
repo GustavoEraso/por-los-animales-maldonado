@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
+import { PlusIcon } from '@/components/Icons';
 
 const initialAnimal: Animal = {
   id: '',
@@ -687,7 +688,11 @@ export default function CreateAnimalForm() {
             </ul>
           </div>
         )}
-        <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
+        <button
+          onClick={handleSubmit}
+          className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
+          <PlusIcon size={20} title="Crear animal" color="white" />
           Guardar animal
         </button>
       </form>
