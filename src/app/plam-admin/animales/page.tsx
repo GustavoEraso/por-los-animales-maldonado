@@ -12,6 +12,7 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
 import { handlePromiseToast } from '@/lib/handleToast';
+import { EyeIcon, EditIcon, TrashIcon, HeartIcon, FilterIcon } from '@/components/Icons';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -229,7 +230,10 @@ export default function AnimalsPage() {
   return (
     <section className=" flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
-      <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+      <div className="flex items-center gap-2">
+        <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
+        <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+      </div>
       <div className="relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -326,23 +330,30 @@ export default function AnimalsPage() {
                   <td className="px-2 py-4 text-right">
                     <Link
                       href={`/plam-admin/animales/${animal.id}`}
-                      className="font-medium text-green-600  hover:underline"
+                      className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
                     >
-                      Ver Detalles
+                      <EyeIcon size={16} title="Ver detalles" />
+                      <span className="hidden sm:inline">Ver Detalles</span>
                     </Link>
                   </td>
                   <td className="px-2 py-4 text-right  hidden sm:table-cell">
                     <Link
                       href={`/plam-admin/animales/editar/${animal.id}`}
-                      className="font-medium text-blue-600  hover:underline"
+                      className="font-medium text-blue-600 hover:underline flex items-center justify-end gap-1"
                     >
-                      Editar
+                      <EditIcon size={16} title="Editar animal" />
+                      <span className="hidden md:inline">Editar</span>
                     </Link>
                   </td>
                   <td className="px-2 py-4 text-right hidden sm:table-cell">
                     <Modal
-                      buttonStyles="font-medium text-red-600  hover:underline cursor-pointer"
-                      buttonText="Eliminar"
+                      buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
+                      buttonText={
+                        <>
+                          <TrashIcon size={16} title="Eliminar animal" />
+                          <span className="hidden md:inline">Eliminar</span>
+                        </>
+                      }
                     >
                       <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
                         <h2 className="text-2xl font-bold">
@@ -367,8 +378,9 @@ export default function AnimalsPage() {
                             </span>
                             <button
                               onClick={() => handleDelete(animal.id)}
-                              className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
+                              className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
                             >
+                              <TrashIcon size={20} title="Confirmar eliminación" color="white" />
                               Eliminar
                             </button>
                           </div>
@@ -389,17 +401,17 @@ export default function AnimalsPage() {
         />
       </div>
       <Link
-        className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300"
+        className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
         href="/plam-admin/animales/adoptados"
       >
-        {' '}
+        <HeartIcon size={20} title="Ver animales adoptados" color="white" />
         Ver Adoptados
       </Link>
       <Link
-        className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
+        className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
         href="/plam-admin/animales/papelera"
       >
-        {' '}
+        <TrashIcon size={20} title="Ver papelera" color="white" />
         Ver Papelera
       </Link>
     </section>

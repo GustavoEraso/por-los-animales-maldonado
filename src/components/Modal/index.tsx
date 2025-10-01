@@ -8,8 +8,8 @@ import styles from './styles.module.css';
  * Props for the Modal component.
  */
 interface ModalProps {
-  /** Text to display on the modal trigger button */
-  buttonText: string;
+  /** Text or React element to display on the modal trigger button */
+  buttonText: string | React.ReactNode;
   /** Content to render inside the modal */
   children: React.ReactNode;
   /** Optional custom CSS classes for the button styling */
@@ -26,7 +26,7 @@ interface ModalProps {
  *
  * @param {ModalProps} props - Component props
  * @param {React.ReactNode} props.children - Content to render inside the modal
- * @param {string} props.buttonText - Text to display on the modal trigger button
+ * @param {string | React.ReactNode} props.buttonText - Text or React element to display on the modal trigger button
  * @param {string} [props.buttonStyles] - Optional custom CSS classes for button styling
  * @returns {React.ReactNode} The rendered modal component
  *
@@ -46,6 +46,20 @@ interface ModalProps {
  *     <h2>Título del Modal</h2>
  *     <p>Contenido personalizado</p>
  *   </div>
+ * </Modal>
+ *
+ * @example
+ * // With icon in button
+ * <Modal
+ *   buttonText={
+ *     <>
+ *       <TrashIcon size={16} />
+ *       <span>Eliminar</span>
+ *     </>
+ *   }
+ *   buttonStyles="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
+ * >
+ *   <p>Confirmar eliminación</p>
  * </Modal>
  */
 function Modal({ children, buttonText, buttonStyles }: ModalProps): React.ReactNode {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircleIcon, XIcon, PhoneIcon } from '../Icons';
+import { XIcon, PhoneIcon, WhatsAppIcon } from '../Icons';
 
 /**
  * Contact information for WhatsApp integration.
@@ -86,7 +86,7 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
         className={`relative bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
         aria-label="Abrir WhatsApp"
       >
-        <MessageCircleIcon size={24} color="currentColor" title="WhatsApp" />
+        <WhatsAppIcon size={24} color="currentColor" title="WhatsApp" />
         {contacts?.length > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
             {contacts.length}
@@ -120,7 +120,7 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
         <div className="flex-1 overflow-y-auto">
           {contacts?.length === 0 || !contacts ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <MessageCircleIcon
+              <WhatsAppIcon
                 size={48}
                 color="currentColor"
                 title="Sin contactos"
