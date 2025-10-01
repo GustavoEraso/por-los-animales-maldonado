@@ -117,7 +117,7 @@ export default function AnimalsPage() {
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
 
-      const newTransaction = {
+      const newTransaction: AnimalTransactionType = {
         id: currentId,
         name: animal.name,
         since: Date.now(),
@@ -126,7 +126,7 @@ export default function AnimalsPage() {
         isDeleted: true,
         isVisible: false,
         isAvalible: false,
-      } as AnimalTransactionType;
+      };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({

@@ -56,7 +56,7 @@ export default function DonationButton({ amount }: { amount: number }): React.Re
 
   return (
     <>
-      <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md">
+      <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md z-0">
         <h4 className="text-center text-balance">Doná USD {amount}</h4>
 
         <PayPalButtons

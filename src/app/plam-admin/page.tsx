@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useReducer } from 'react';
+import React, { useEffect, useRef, useState, useReducer, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap/dist/gsap';
 import Chart from '@/components/Chart';
 import { Animal, AnimalTransactionType, UserType } from '@/types';
@@ -13,6 +13,9 @@ import {
   generateAnimalStatusData,
 } from '@/lib/animalFilters';
 import Loader from '@/components/Loader';
+import { Modal } from '@/components/Modal';
+import Image from 'next/image';
+import SmartLink from '@/lib/SmartLink';
 
 // Types for chart data
 type ChartDataState = {
@@ -102,46 +105,49 @@ export default function PlamAdmin() {
   const [chartData, dispatchChartData] = useReducer(chartDataReducer, initialChartState);
 
   // Function to regenerate chart data with new month selection
-  const regenerateCharts = (months: number) => {
-    if (animals.length === 0 || transactions.length === 0) {
-      handleToast({
-        type: 'warning',
-        title: 'Sin datos',
-        text: 'No hay datos disponibles para actualizar los gráficos',
+  const regenerateCharts = useCallback(
+    (months: number) => {
+      if (animals.length === 0 || transactions.length === 0) {
+        handleToast({
+          type: 'warning',
+          title: 'Sin datos',
+          text: 'No hay datos disponibles para actualizar los gráficos',
+        });
+        return;
+      }
+
+      const activeAnimalsData = generateActiveAnimalsChartData({
+        animals,
+        transactions,
+        months,
       });
-      return;
-    }
 
-    const activeAnimalsData = generateActiveAnimalsChartData({
-      animals,
-      transactions,
-      months,
-    });
+      const animalsInOutData = generateAnimalsInOutData({
+        animals,
+        transactions,
+        months,
+      });
 
-    const animalsInOutData = generateAnimalsInOutData({
-      animals,
-      transactions,
-      months,
-    });
+      // Now transactions by user also depends on months
+      const transactionsByUserData = generateTransactionsByUserData({
+        transactions,
+        users,
+        months, // Add month filtering
+      });
 
-    // Now transactions by user also depends on months
-    const transactionsByUserData = generateTransactionsByUserData({
-      transactions,
-      users,
-      months, // Add month filtering
-    });
-
-    // Status doesn't depend on months, so we keep it as-is
-    dispatchChartData({
-      type: 'SET_CHART_DATA',
-      payload: {
-        activeAnimals: activeAnimalsData,
-        transactionsByUser: transactionsByUserData,
-        animalsInOut: animalsInOutData,
-        status: chartData.status,
-      },
-    });
-  };
+      // Status doesn't depend on months, so we keep it as-is
+      dispatchChartData({
+        type: 'SET_CHART_DATA',
+        payload: {
+          activeAnimals: activeAnimalsData,
+          transactionsByUser: transactionsByUserData,
+          animalsInOut: animalsInOutData,
+          status: chartData.status,
+        },
+      });
+    },
+    [animals, transactions, users, chartData.status]
+  );
 
   // Handle month selection change
   const handleMonthChange = (months: number) => {
@@ -171,6 +177,9 @@ export default function PlamAdmin() {
           const fetchedAnimals = animalsData as Animal[];
           const fetchedTransactions = transactionsData as AnimalTransactionType[];
           const fetchedUsers = usersData as UserType[];
+
+          // Sort in-place to avoid creating new array
+          fetchedTransactions.sort((a, b) => b.date - a.date);
 
           setAnimals(fetchedAnimals);
           setTransactions(fetchedTransactions);
@@ -238,12 +247,20 @@ export default function PlamAdmin() {
     loadData();
   }, []); // Solo cargar una vez al inicio
 
-  // Calculate summary statistics
-  const totalAnimals = animals.length;
-  const adoptedAnimals = animals.filter((animal) => animal.status === 'adoptado').length;
-  const availableAnimals = animals.filter(
-    (animal) => animal.status !== 'adoptado' && animal.isAvalible
-  ).length;
+  // Calculate summary statistics (memoized for performance)
+  const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
+    const total = animals.length;
+    const adopted = animals.filter((animal) => animal.status === 'adoptado').length;
+    const available = animals.filter(
+      (animal) => animal.status !== 'adoptado' && animal.isAvalible
+    ).length;
+
+    return {
+      totalAnimals: total,
+      adoptedAnimals: adopted,
+      availableAnimals: available,
+    };
+  }, [animals]);
 
   // Animación de los componentes al cargar
   useEffect(() => {
@@ -303,7 +320,7 @@ export default function PlamAdmin() {
         '-=0.3' // Empezar un poco antes de que termine la animación del selector
       );
     }
-  }, [isLoading]);
+  }, [isLoading, animals.length]);
 
   if (isLoading) {
     return <Loader />;
@@ -398,6 +415,225 @@ export default function PlamAdmin() {
           </div>
 
           <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Transacciones por Usuario
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Últimos {selectedMonths} meses)
+              </span>
+            </h2>
+            {chartData.transactionsByUser.length > 0 ? (
+              <Chart
+                type="pie"
+                data={chartData.transactionsByUser}
+                colors={['#bc6c25', '#606c38', '#dda15e']}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <p>No hay datos disponibles</p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 shadow-lg row-span-2">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Ultimas transacciones
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Últimos {selectedMonths} meses)
+              </span>
+            </h2>
+            <section className="max-h-[800px] overflow-y-auto">
+              {transactions.length > 0 ? (
+                transactions.map((tx, index) => {
+                  const animal = animals.find((a) => a.id === tx.id);
+                  const user = users.find((u) => u.id === tx.modifiedBy);
+                  const keys = Object.keys(tx || {});
+                  const date = new Date(tx.date).toLocaleDateString('es-UY', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  });
+                  return (
+                    <div
+                      key={tx.id + tx.date}
+                      className="border-b border-gray-200 py-3 last:border-0 flex flex-col sm:flex-row sm:justify-between w-full"
+                    >
+                      <div className="w-full flex flex-col gap-2">
+                        <div className="flex gap-2 items-center justify-between w-full">
+                          <p className="font-semibold text-2xl text-gray-800">{animal?.name}</p>
+                          <span className="font-normal text-sm text-amber-sunset text-center text-balance">
+                            Modificado por {user?.name}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 text-center">{date} hs</p>
+                        <section className="flex flex-wrap gap-0">
+                          <p className="text-sm text-green-dark"> Modificaciones en:</p>
+
+                          <ul className="flex px-2 gap-2 flex-wrap ">
+                            {keys.map((key) => {
+                              if (
+                                key === 'id' ||
+                                key === 'modifiedBy' ||
+                                key === 'date' ||
+                                key === 'name'
+                              )
+                                return null;
+                              return (
+                                <li key={tx.id + key} className="text-sm text-amber-sunset ">
+                                  <span className="font-medium">{key}</span>{' '}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </section>
+                        <Modal
+                          buttonText="Ver Detalles"
+                          buttonStyles="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition"
+                        >
+                          <section className="bg-cream-light w-full min-h-full flex flex-col items-center justify-start p-4 rounded-3xl shadow-lg">
+                            <h2 className="text-2xl font-semibold p-2">
+                              Detalles de la modificación
+                            </h2>
+                            <div className="w-full flex items-center justify-center max-w-md">
+                              {animal?.images?.[0] && (
+                                <Image
+                                  src={animal?.images[0].imgUrl}
+                                  alt={animal?.name}
+                                  width={200}
+                                  height={100}
+                                  className="object-cover rounded-lg"
+                                />
+                              )}
+                            </div>
+                            <ul
+                              key={`${index}-${tx.date}`}
+                              className="text-xl text-start font-semibold flex flex-col gap- p-2  "
+                            >
+                              <li className="font-semibold">
+                                {' '}
+                                Fecha: <span className="font-normal">{date} hs</span>
+                              </li>
+                              {tx.modifiedBy !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Actualizado por:{' '}
+                                  <span className="font-normal">{tx.modifiedBy}</span>
+                                </li>
+                              )}
+                              {tx.name !== undefined && (
+                                <li className="font-semibold">
+                                  Nombre: <span className="font-normal">{tx.name}</span>
+                                </li>
+                              )}
+                              {tx.description !== undefined && (
+                                <li className="font-semibold">
+                                  Descripción: <span className="font-normal">{tx.description}</span>
+                                </li>
+                              )}
+                              {tx.gender !== undefined && (
+                                <li className="font-semibold">
+                                  Género: <span className="font-normal">{tx.gender}</span>
+                                </li>
+                              )}
+                              {tx.aproxBirthDate !== undefined && (
+                                <li className="font-semibold">
+                                  Fecha de nacimiento aproximada:{' '}
+                                  <span className="font-normal">{tx.aproxBirthDate}</span>
+                                </li>
+                              )}
+                              {tx.isSterilized !== undefined && (
+                                <li className="font-semibold">
+                                  Esterilizado:{' '}
+                                  <span className="font-normal">{`${tx.isSterilized ? 'Si' : 'No'}`}</span>
+                                </li>
+                              )}
+                              {tx.lifeStage !== undefined && (
+                                <li className="font-semibold">
+                                  Etapa de vida: <span className="font-normal">{tx.lifeStage}</span>
+                                </li>
+                              )}
+                              {tx.isAvalible !== undefined && (
+                                <li className="font-semibold">
+                                  Estado:{' '}
+                                  <span className="font-normal">{`${tx.isAvalible ? 'Disponible' : 'No disponible'}`}</span>
+                                </li>
+                              )}
+                              {tx.isVisible !== undefined && (
+                                <li className="font-semibold">
+                                  Mostrar:{' '}
+                                  <span className="font-normal">{`${tx.isVisible ? 'Mostrar' : 'Ocultar'}`}</span>
+                                </li>
+                              )}
+                              {tx.isDeleted !== undefined && (
+                                <li className="font-semibold">
+                                  Eliminado:{' '}
+                                  <span className="font-normal">{`${tx.isDeleted ? 'Si' : 'No'}`}</span>
+                                </li>
+                              )}
+                              {tx.status !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Situación actual: <span className="font-normal">{tx.status}</span>
+                                </li>
+                              )}
+                              {tx.size !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Tamaño: <span className="font-normal">{tx.size}</span>
+                                </li>
+                              )}
+                              {tx.species !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Especie: <span className="font-normal">{tx.species}</span>
+                                </li>
+                              )}
+                              {tx.contactName !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Contacto: <span className="font-normal">{tx.contactName}</span>
+                                </li>
+                              )}
+                              {tx.notes !== undefined && (
+                                <li className="font-semibold">
+                                  {' '}
+                                  Notas: <span className="font-normal">{tx.notes}</span>
+                                </li>
+                              )}
+                              {tx.contacts &&
+                                tx.contacts.map((contact, index) => (
+                                  <li
+                                    key={`${index}-${contact.value}`}
+                                    className="text-xl font-semibold capitalize"
+                                  >
+                                    {contact.type}:{' '}
+                                    <span className="font-normal">{contact.value}</span>
+                                  </li>
+                                ))}
+                            </ul>
+                            <SmartLink
+                              href={`/plam-admin/animales/${tx.id}`}
+                              className="mt-4 inline-block rounded bg-caramel-deep px-4 py-2 text-white hover:bg-green-forest transition"
+                            >
+                              Ver detalles
+                            </SmartLink>
+                          </section>
+                        </Modal>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex items-center justify-center h-64 text-gray-500">
+                  <p>No hay datos disponibles</p>
+                </div>
+              )}
+            </section>
+          </div>
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Estado de Animales</h2>
             {chartData.status.length > 0 ? (
               <Chart
@@ -411,10 +647,7 @@ export default function PlamAdmin() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Segundo row - Multi-line chart y bar chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Nuevos Ingresos vs Adopciones
@@ -441,26 +674,6 @@ export default function PlamAdmin() {
                     ¿Por qué no veo datos?
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Transacciones por Usuario
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                (Últimos {selectedMonths} meses)
-              </span>
-            </h2>
-            {chartData.transactionsByUser.length > 0 ? (
-              <Chart
-                type="pie"
-                data={chartData.transactionsByUser}
-                colors={['#bc6c25', '#606c38', '#dda15e']}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                <p>No hay datos disponibles</p>
               </div>
             )}
           </div>

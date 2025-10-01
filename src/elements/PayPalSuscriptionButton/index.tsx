@@ -62,7 +62,7 @@ export default function SubscriptionButton({
 
   return (
     <>
-      <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md">
+      <div className="flex flex-row gap-4 sm:gap-0 sm:flex-col items-center justify-center w-full h-full p-2 bg-blue-50 rounded-lg shadow-md z-0">
         <h4 className="text-center text-balance">Suscribite por USD {label}</h4>
 
         {isPending && <div>Cargando boton de suscripción...</div>}

@@ -117,15 +117,14 @@ export default function AnimalsPage() {
 
       const updatedAnimal = { ...animal, isVisible: active };
 
-      const newTransaction = {
-        visible: active,
+      const newTransaction: AnimalTransactionType = {
         id: currentId,
         name: animal.name,
         since: Date.now(),
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isVisible: active,
-      } as AnimalTransactionType;
+      };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({
@@ -166,14 +165,16 @@ export default function AnimalsPage() {
 
       const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
 
-      const newTransaction = {
+      const newTransaction: AnimalTransactionType = {
         date: Date.now(),
         since: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: true,
         isVisible: false,
         isAvalible: false,
-      } as AnimalTransactionType;
+        id: currentId,
+        name: animal.name,
+      };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({
