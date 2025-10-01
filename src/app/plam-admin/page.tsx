@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useReducer } from 'react';
+import React, { useEffect, useRef, useState, useReducer, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap/dist/gsap';
 import Chart from '@/components/Chart';
 import { Animal, AnimalTransactionType, UserType } from '@/types';
@@ -105,46 +105,49 @@ export default function PlamAdmin() {
   const [chartData, dispatchChartData] = useReducer(chartDataReducer, initialChartState);
 
   // Function to regenerate chart data with new month selection
-  const regenerateCharts = (months: number) => {
-    if (animals.length === 0 || transactions.length === 0) {
-      handleToast({
-        type: 'warning',
-        title: 'Sin datos',
-        text: 'No hay datos disponibles para actualizar los gráficos',
+  const regenerateCharts = useCallback(
+    (months: number) => {
+      if (animals.length === 0 || transactions.length === 0) {
+        handleToast({
+          type: 'warning',
+          title: 'Sin datos',
+          text: 'No hay datos disponibles para actualizar los gráficos',
+        });
+        return;
+      }
+
+      const activeAnimalsData = generateActiveAnimalsChartData({
+        animals,
+        transactions,
+        months,
       });
-      return;
-    }
 
-    const activeAnimalsData = generateActiveAnimalsChartData({
-      animals,
-      transactions,
-      months,
-    });
+      const animalsInOutData = generateAnimalsInOutData({
+        animals,
+        transactions,
+        months,
+      });
 
-    const animalsInOutData = generateAnimalsInOutData({
-      animals,
-      transactions,
-      months,
-    });
+      // Now transactions by user also depends on months
+      const transactionsByUserData = generateTransactionsByUserData({
+        transactions,
+        users,
+        months, // Add month filtering
+      });
 
-    // Now transactions by user also depends on months
-    const transactionsByUserData = generateTransactionsByUserData({
-      transactions,
-      users,
-      months, // Add month filtering
-    });
-
-    // Status doesn't depend on months, so we keep it as-is
-    dispatchChartData({
-      type: 'SET_CHART_DATA',
-      payload: {
-        activeAnimals: activeAnimalsData,
-        transactionsByUser: transactionsByUserData,
-        animalsInOut: animalsInOutData,
-        status: chartData.status,
-      },
-    });
-  };
+      // Status doesn't depend on months, so we keep it as-is
+      dispatchChartData({
+        type: 'SET_CHART_DATA',
+        payload: {
+          activeAnimals: activeAnimalsData,
+          transactionsByUser: transactionsByUserData,
+          animalsInOut: animalsInOutData,
+          status: chartData.status,
+        },
+      });
+    },
+    [animals, transactions, users, chartData.status]
+  );
 
   // Handle month selection change
   const handleMonthChange = (months: number) => {
@@ -175,10 +178,11 @@ export default function PlamAdmin() {
           const fetchedTransactions = transactionsData as AnimalTransactionType[];
           const fetchedUsers = usersData as UserType[];
 
-          const sortedTransactions = fetchedTransactions.sort((a, b) => b.date - a.date);
+          // Sort in-place to avoid creating new array
+          fetchedTransactions.sort((a, b) => b.date - a.date);
 
           setAnimals(fetchedAnimals);
-          setTransactions(sortedTransactions);
+          setTransactions(fetchedTransactions);
           setUsers(fetchedUsers);
 
           // Generate chart data using filter functions (pass data, don't fetch)
@@ -243,12 +247,20 @@ export default function PlamAdmin() {
     loadData();
   }, []); // Solo cargar una vez al inicio
 
-  // Calculate summary statistics
-  const totalAnimals = animals.length;
-  const adoptedAnimals = animals.filter((animal) => animal.status === 'adoptado').length;
-  const availableAnimals = animals.filter(
-    (animal) => animal.status !== 'adoptado' && animal.isAvalible
-  ).length;
+  // Calculate summary statistics (memoized for performance)
+  const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
+    const total = animals.length;
+    const adopted = animals.filter((animal) => animal.status === 'adoptado').length;
+    const available = animals.filter(
+      (animal) => animal.status !== 'adoptado' && animal.isAvalible
+    ).length;
+
+    return {
+      totalAnimals: total,
+      adoptedAnimals: adopted,
+      availableAnimals: available,
+    };
+  }, [animals]);
 
   // Animación de los componentes al cargar
   useEffect(() => {
@@ -308,7 +320,7 @@ export default function PlamAdmin() {
         '-=0.3' // Empezar un poco antes de que termine la animación del selector
       );
     }
-  }, [isLoading]);
+  }, [isLoading, animals.length]);
 
   if (isLoading) {
     return <Loader />;
@@ -446,7 +458,7 @@ export default function PlamAdmin() {
                   });
                   return (
                     <div
-                      key={tx.id + index}
+                      key={tx.id + tx.date}
                       className="border-b border-gray-200 py-3 last:border-0 flex flex-col sm:flex-row sm:justify-between w-full"
                     >
                       <div className="w-full flex flex-col gap-2">
