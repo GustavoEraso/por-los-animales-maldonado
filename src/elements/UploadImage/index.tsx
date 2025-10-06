@@ -77,15 +77,20 @@ export default function UploadImages({
       const info = result.info as CloudinaryUploadWidgetInfo;
       const { secure_url, public_id, eager } = info;
 
-      const eagerArray = eager as Array<{ format: string; secure_url: string }>;
+      // Find WebP version or fallback to original
+      let webpUrl = secure_url;
+      if (eager && Array.isArray(eager) && eager.length > 0) {
+        const webpImage = eager.find((img) => img.format === 'webp');
+        if (webpImage?.secure_url) {
+          webpUrl = webpImage.secure_url;
+        }
+      }
 
-      const webpUrl =
-        eagerArray && eagerArray.length > 0
-          ? eagerArray.find((img) => img.format === 'webp')?.secure_url || secure_url
-          : secure_url;
+      // Ensure URL doesn't have line breaks or extra whitespace
+      const cleanUrl = webpUrl.trim().replace(/\s+/g, '');
 
-      console.log('Uploaded image URL:', webpUrl);
-      onImagesAdd([{ imgUrl: webpUrl, imgId: public_id, imgAlt: 'animal image' }]);
+      console.log('Uploaded image URL:', cleanUrl);
+      onImagesAdd([{ imgUrl: cleanUrl, imgId: public_id, imgAlt: 'animal image' }]);
 
       // Reset body overflow after upload modal closes
       setTimeout(() => {
