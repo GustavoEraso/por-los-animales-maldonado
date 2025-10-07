@@ -37,8 +37,12 @@ const initialAnimal: Animal = {
 const initialPrivateInfo: PrivateInfoType = {
   id: '',
   name: '',
+  caseManager: '',
   contactName: '',
   contacts: [],
+  vaccinations: [],
+  medicalConditions: '',
+  notes: '',
 };
 
 const initialTransactionInfo: AnimalTransactionType = {
@@ -78,6 +82,8 @@ export default function EditAnimalForm() {
     value: string | number;
   }>({ type: 'celular', value: '' });
   const [showContactForm, setShowContactForm] = useState(false);
+
+  const [vaccinations, setVaccinations] = useState<{ date: number; vaccine: string }[]>([]);
 
   const [isAvalible, setIsAvalible] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
@@ -144,6 +150,7 @@ export default function EditAnimalForm() {
 
         setImages(fetchedAnimal.images || []);
         setContacts(currentTransactionInfo.contacts || []);
+        setVaccinations(fetchedPrivateInfo.vaccinations || []);
       } catch (error) {
         console.error('Error fetching animal data:', error);
         handleToast({
@@ -172,6 +179,13 @@ export default function EditAnimalForm() {
       contacts,
     }));
   }, [contacts]);
+
+  useEffect(() => {
+    setPrivateInfo((prev) => ({
+      ...prev,
+      vaccinations,
+    }));
+  }, [vaccinations]);
 
   useEffect(() => {
     setAnimal((prev) => ({
@@ -225,15 +239,6 @@ export default function EditAnimalForm() {
   ) => {
     const { name, value } = e.target;
     setPrivateInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  const handleTransactionInfoChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setTransactionInfo((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -421,7 +426,7 @@ export default function EditAnimalForm() {
             </div>
           )}
           <input
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             type="text"
             name="name"
             value={animal.name}
@@ -438,7 +443,7 @@ export default function EditAnimalForm() {
             </div>
           )}
           <textarea
-            className="outline-2 outline-gray-200 rounded p-2 field-sizing-content"
+            className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
             name="description"
             value={animal.description}
             onChange={handleChange}
@@ -448,7 +453,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Género:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="gender"
             value={animal.gender}
             onChange={handleChange}
@@ -461,7 +466,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Especie:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="species"
             value={animal.species}
             onChange={handleChange}
@@ -475,7 +480,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Etapa de vida:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="lifeStage"
             value={animal.lifeStage}
             onChange={handleChange}
@@ -489,7 +494,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Tamaño:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="size"
             value={animal.size}
             onChange={handleChange}
@@ -505,7 +510,7 @@ export default function EditAnimalForm() {
           <label className="flex gap-2 font-bold items-center ml-6">
             <span>Perros:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="dogs"
               value={animal.compatibility?.dogs || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -518,7 +523,7 @@ export default function EditAnimalForm() {
           <label className="flex gap-2 font-bold items-center ml-6">
             <span>Gatos:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="cats"
               value={animal.compatibility?.cats || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -531,7 +536,7 @@ export default function EditAnimalForm() {
           <label className="flex gap-2 font-bold items-center ml-6">
             <span>Niños:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="kids"
               value={animal.compatibility?.kids || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -546,7 +551,7 @@ export default function EditAnimalForm() {
         <label className="flex gap-2 font-bold items-center">
           <span>¿Está esterilizado?</span>
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="isSterilized"
             value={animal.isSterilized || 'no_se'}
             onChange={(e) => handleChange(e)}
@@ -560,7 +565,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Fecha de nacimiento aproximada:
           <input
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             type="date"
             name="aproxBirthDate"
             value={formatMillisForInputDate(animal.aproxBirthDate)}
@@ -576,7 +581,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Esperando desde:
           <input
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             type="date"
             name="waitingSince"
             value={formatMillisForInputDate(animal.waitingSince)}
@@ -592,7 +597,7 @@ export default function EditAnimalForm() {
         <label className="flex flex-col font-bold">
           Situación actual:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="status"
             value={animal.status}
             onChange={handleChange}
@@ -631,13 +636,23 @@ export default function EditAnimalForm() {
           <section className="bg-gray-100 p-2 rounded-lg">
             <h3 className="font-semibold text-center">Datos privados del Animal</h3>
             <label className="flex flex-col font-bold gap-1">
+              Responsable:
+              <input
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
+                type="text"
+                name="caseManager"
+                value={privateInfo.caseManager}
+                onChange={handlePrivateInfoChange}
+              />
+            </label>
+            <label className="flex flex-col font-bold gap-1">
               Nombre del contacto:
               {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
               <input
-                className="outline-2 outline-gray-200 rounded p-2"
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
                 type="text"
                 name="contactName"
-                defaultValue={transactionInfo.contactName}
+                value={privateInfo.contactName}
                 onChange={handlePrivateInfoChange}
               />
             </label>
@@ -677,7 +692,7 @@ export default function EditAnimalForm() {
                   <label className="flex flex-col font-bold">
                     Tipo de contacto:
                     <select
-                      className="outline-2 outline-gray-200 rounded p-2"
+                      className="outline-2 bg-white outline-gray-200 rounded p-2"
                       name="contactType"
                       onChange={(e) =>
                         setNewContact((prev) => ({
@@ -694,7 +709,7 @@ export default function EditAnimalForm() {
                   <label className="flex flex-col font-bold">
                     Valor del contacto:
                     <input
-                      className="outline-2 outline-gray-200 rounded p-2"
+                      className="outline-2 bg-white outline-gray-200 rounded p-2"
                       type="text"
                       name="contactValue"
                       onChange={(e) =>
@@ -722,6 +737,92 @@ export default function EditAnimalForm() {
               )}
             </section>
 
+            <section className="flex flex-col gap-4">
+              <h3 className="text-lg font-bold">Vacunas:</h3>
+
+              {vaccinations.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {vaccinations.map((vaccination, index) => (
+                    <div
+                      key={`${vaccination.vaccine}-${index}`}
+                      className="flex gap-2 items-center bg-white p-2 rounded"
+                    >
+                      <span>
+                        {new Date(vaccination.date).toLocaleDateString('es-UY', {
+                          timeZone: 'UTC',
+                        })}{' '}
+                        - {vaccination.vaccine}
+                      </span>
+                      <button
+                        className="bg-red-500 text-white px-2 py-1 rounded text-sm ml-auto"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setVaccinations((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label>
+                <span className="font-bold">Agregar Vacuna:</span>
+                <div className="flex flex-col gap-2">
+                  <input
+                    className="outline-2  bg-white outline-gray-200 rounded p-2 w-full"
+                    type="text"
+                    name="vaccineName"
+                    placeholder="Ej: Antirrabica"
+                    id="vaccineName"
+                  />
+                  <div className="flex gap-2 sm:flex-row flex-col">
+                    <input
+                      className="outline-2  bg-white outline-gray-200 rounded p-2"
+                      type="date"
+                      name="vaccineDate"
+                      id="vaccineDate"
+                      defaultValue={new Date().toLocaleDateString('en-CA')}
+                    />
+                    <button
+                      className="bg-green-500 w-full text-white px-4 py-2 rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const vaccineInput = document.getElementById(
+                          'vaccineName'
+                        ) as HTMLInputElement;
+                        const dateInput = document.getElementById(
+                          'vaccineDate'
+                        ) as HTMLInputElement;
+                        if (vaccineInput?.value && dateInput?.value) {
+                          const newVaccine = {
+                            vaccine: vaccineInput.value,
+                            date: new Date(dateInput.value).getTime(),
+                          };
+                          setVaccinations((prev) => [...prev, newVaccine]);
+                          vaccineInput.value = '';
+                          dateInput.value = new Date().toLocaleDateString('en-CA');
+                        }
+                      }}
+                    >
+                      Agregar registro
+                    </button>
+                  </div>
+                </div>
+              </label>
+            </section>
+
+            <label className="flex flex-col font-bold">
+              Patologías:
+              <textarea
+                className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                name="medicalConditions"
+                value={privateInfo.medicalConditions}
+                onChange={handlePrivateInfoChange}
+              />
+            </label>
+
             <label className="flex flex-col font-bold">
               <span>Fecha de inicio:</span>
               <p className="font-normal text-xs text-balance">
@@ -729,7 +830,7 @@ export default function EditAnimalForm() {
                 es adoptado, aca va la fecha de adopción){' '}
               </p>
               <input
-                className="outline-2 outline-gray-200 rounded p-2"
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
                 type="date"
                 name="since"
                 defaultValue={formatMillisForInputDate(transactionInfo.since)}
@@ -742,12 +843,12 @@ export default function EditAnimalForm() {
               />
             </label>
             <label className="flex flex-col font-bold">
-              Notas:
+              Notas adicionales:
               <textarea
-                className="outline-2 outline-gray-200 rounded p-2 field-sizing-content"
+                className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
                 name="notes"
-                defaultValue={transactionInfo.notes}
-                onChange={handleTransactionInfoChange}
+                value={privateInfo.notes}
+                onChange={handlePrivateInfoChange}
               />
             </label>
           </section>

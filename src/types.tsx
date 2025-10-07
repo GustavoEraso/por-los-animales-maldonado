@@ -19,8 +19,8 @@ export interface Animal {
   images: Img[];
   description: string;
   aproxBirthDate: number;
-  lifeStage: 'cachorro' | 'adulto' | 'mayor';
-  size: 'pequeño' | 'mediano' | 'grande';
+  lifeStage: 'cachorro' | 'joven' | 'adulto';
+  size: 'pequeño' | 'mediano' | 'grande' | 'no_se_sabe';
   compatibility: CompatibilityType;
   isSterilized: YesNoUnknown;
   isAvalible: boolean;
@@ -35,10 +35,18 @@ interface ContactType {
   type: 'celular' | 'email' | 'other';
   value: string | number;
 }
+interface Vaccination {
+  date: number;
+  vaccine: string;
+}
 
 export interface PrivateInfoType {
   id: string;
   name: string;
+  caseManager?: string;
+  vaccinations?: Vaccination[];
+  medicalConditions?: string;
+  notes?: string;
   contactName?: string;
   contacts?: ContactType[];
 }
