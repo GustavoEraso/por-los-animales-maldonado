@@ -10,6 +10,7 @@ import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { PlusIcon } from '@/components/Icons';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 
 const initialAnimal: Animal = {
   id: '',
@@ -35,6 +36,7 @@ const initialAnimal: Animal = {
 };
 
 const initialPrivateInfo: PrivateInfoType = {
+  caseManager: '',
   id: '',
   name: '',
   contactName: '',
@@ -52,6 +54,28 @@ const initialTransaction: AnimalTransactionType = {
   modifiedBy: '',
   since: Date.now(),
 };
+
+const dateOptions = [
+  { label: '15 días', value: 0.5 },
+  { label: '1 mes', value: 1 },
+  { label: '1 mes y medio', value: 1.5 },
+  { label: '2 meses', value: 2 },
+  { label: '3 meses', value: 3 },
+  { label: '6 meses', value: 6 },
+  { label: '1 año', value: 12 },
+  { label: '1 año y medio', value: 18 },
+  { label: '2 años', value: 24 },
+  { label: '3 años', value: 36 },
+  { label: '4 años', value: 48 },
+  { label: '5 años', value: 60 },
+  { label: '6 años', value: 72 },
+  { label: '7 años', value: 84 },
+  { label: '8 años', value: 96 },
+  { label: '9 años', value: 108 },
+  { label: '10 años', value: 120 },
+  { label: '12 años', value: 144 },
+  { label: '14 años', value: 168 },
+];
 
 export default function CreateAnimalForm() {
   const router = useRouter();
@@ -81,6 +105,25 @@ export default function CreateAnimalForm() {
   });
 
   useEffect(() => {
+    const getName = async () => {
+      const email = auth.currentUser?.email;
+      if (!email) return null;
+      const data: { name: string } | null = await getFirestoreDocById({
+        currentCollection: 'authorizedEmails',
+        id: email,
+      });
+
+      if (!data) return null;
+      const { name } = data;
+      setPrivateInfo((prev) => ({
+        ...prev,
+        caseManager: name || '',
+      }));
+    };
+    getName();
+  }, [auth.currentUser?.email]);
+
+  useEffect(() => {
     setAnimal((prev) => ({
       ...prev,
       compatibility: compatibility,
@@ -89,10 +132,9 @@ export default function CreateAnimalForm() {
 
   function formatMillisForInputDate(millis: number): string {
     const date = new Date(millis);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
@@ -120,15 +162,7 @@ export default function CreateAnimalForm() {
       [name]: value as 'si' | 'no' | 'no_se',
     }));
   };
-  const handleTransactionChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setTransaction((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+
   const handlePrivateInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -309,7 +343,7 @@ export default function CreateAnimalForm() {
             </div>
           )}
           <input
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             type="text"
             name="name"
             value={animal.name}
@@ -326,7 +360,7 @@ export default function CreateAnimalForm() {
             </div>
           )}
           <textarea
-            className="outline-2 outline-gray-200 rounded p-2 field-sizing-content"
+            className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
             name="description"
             value={animal.description}
             onChange={handleChange}
@@ -336,7 +370,7 @@ export default function CreateAnimalForm() {
         <label className="flex flex-col font-bold">
           Género:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="gender"
             value={animal.gender}
             onChange={handleChange}
@@ -349,7 +383,7 @@ export default function CreateAnimalForm() {
         <label className="flex flex-col font-bold">
           Especie:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2  bg-white outline-gray-200 rounded p-2"
             name="species"
             value={animal.species}
             onChange={handleChange}
@@ -361,23 +395,23 @@ export default function CreateAnimalForm() {
         </label>
 
         <label className="flex flex-col font-bold">
-          Etapa de vida:
+          Etapa de vida (edad):
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2  bg-white outline-gray-200 rounded p-2"
             name="lifeStage"
             value={animal.lifeStage}
             onChange={handleChange}
           >
             <option value="cachorro">Cachorro</option>
+            <option value="joven">Joven</option>
             <option value="adulto">Adulto</option>
-            <option value="mayor">Mayor</option>
           </select>
         </label>
 
         <label className="flex flex-col font-bold">
           Tamaño:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="size"
             value={animal.size}
             onChange={handleChange}
@@ -385,14 +419,15 @@ export default function CreateAnimalForm() {
             <option value="pequeño">Pequeño</option>
             <option value="mediano">Mediano</option>
             <option value="grande">Grande</option>
+            <option value="no_se_sabe">No sé sabe</option>
           </select>
         </label>
         <div className="flex flex-col gap-4">
-          <h3 className="text-lg font-bold">Compatibilidad</h3>
-          <label className="flex gap-2 font-bold items-center">
+          <h3 className="text-lg font-bold">Compatibilidad (sociable)</h3>
+          <label className="flex gap-2 font-bold items-center ml-6">
             <span>Perros:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="dogs"
               value={animal.compatibility?.dogs || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -405,7 +440,7 @@ export default function CreateAnimalForm() {
           <label className="flex gap-2 font-bold items-center ml-6">
             <span>Gatos:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="cats"
               value={animal.compatibility?.cats || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -418,7 +453,7 @@ export default function CreateAnimalForm() {
           <label className="flex gap-2 font-bold items-center ml-6">
             <span>Niños:</span>
             <select
-              className="outline-2 outline-gray-200 rounded p-2"
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
               name="kids"
               value={animal.compatibility?.kids || 'no_se'}
               onChange={(e) => handleCompatibilityChange(e)}
@@ -431,9 +466,9 @@ export default function CreateAnimalForm() {
         </div>
 
         <label className="flex gap-2 font-bold items-center ml-6">
-          <span>¿Está esterilizado?</span>
+          <span>¿Está Castrado?</span>
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="isSterilized"
             value={animal.isSterilized || 'no_se'}
             onChange={(e) => handleChange(e)}
@@ -445,11 +480,44 @@ export default function CreateAnimalForm() {
         </label>
 
         <label className="flex flex-col font-bold">
+          Edad:
+          <select
+            className="outline-2 bg-white outline-gray-200 rounded p-2 max-h-48 overflow-y-auto"
+            name="aproxBirthDate"
+            defaultValue={dateOptions[0].value}
+            size={1}
+            onChange={(e) => {
+              const monthsToSubtract = Math.floor(Number(e.target.value));
+              const fractionalPart = Number(e.target.value) % 1;
+              const currentDate = new Date();
+
+              currentDate.setMonth(currentDate.getMonth() - monthsToSubtract);
+
+              const daysToSubtract = Math.round(fractionalPart * 30.44);
+              currentDate.setDate(currentDate.getDate() - daysToSubtract);
+              console.log(currentDate.getTime());
+
+              setAnimal((prev) => ({
+                ...prev,
+                aproxBirthDate: currentDate.getTime(),
+              }));
+            }}
+          >
+            {dateOptions.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* <label className="flex flex-col font-bold">
           Fecha de nacimiento aproximada:
           <input
             className="outline-2 outline-gray-200 rounded p-2"
             type="date"
             name="aproxBirthDate"
+            disabled={true}
             value={animal.aproxBirthDate ? formatMillisForInputDate(animal.aproxBirthDate) : ''}
             onChange={(e) =>
               setAnimal((prev) => ({
@@ -458,12 +526,12 @@ export default function CreateAnimalForm() {
               }))
             }
           />
-        </label>
+        </label> */}
 
         <label className="flex flex-col font-bold">
           Esperando desde:
           <input
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             type="date"
             name="waitingSince"
             value={animal.waitingSince ? formatMillisForInputDate(animal.waitingSince) : ''}
@@ -479,12 +547,11 @@ export default function CreateAnimalForm() {
         <label className="flex flex-col font-bold">
           Situación actual:
           <select
-            className="outline-2 outline-gray-200 rounded p-2"
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
             name="status"
             value={animal.status}
             onChange={(e) => {
               handleChange(e);
-              handleTransactionChange(e);
             }}
           >
             <option value="adoptado">Adoptado</option>
@@ -518,13 +585,25 @@ export default function CreateAnimalForm() {
         </label>
 
         {animal.status && (
-          <section className="bg-gray-100 p-2 rounded-lg">
+          <section className="flex flex-col gap-4 bg-gray-100 p-2 rounded-lg">
             <h3 className="font-semibold text-center">Datos privados del Animal</h3>
             <label className="flex flex-col font-bold gap-1">
-              Nombre del contacto:
+              Responsable:
+              <input
+                className="outline-2  bg-white outline-gray-200 rounded p-2"
+                type="text"
+                name="caseManager"
+                value={privateInfo.caseManager}
+                onChange={handlePrivateInfoChange}
+                required
+              />
+            </label>
+
+            <label className="flex flex-col font-bold gap-1">
+              Nombre del contacto (transitorio/adoptante):
               {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
               <input
-                className="outline-2 outline-gray-200 rounded p-2"
+                className="outline-2  bg-white outline-gray-200 rounded p-2"
                 type="text"
                 name="contactName"
                 onChange={handlePrivateInfoChange}
@@ -566,7 +645,7 @@ export default function CreateAnimalForm() {
                   <label className="flex flex-col font-bold">
                     Tipo de contacto:
                     <select
-                      className="outline-2 outline-gray-200 rounded p-2"
+                      className="outline-2  bg-white outline-gray-200 rounded p-2"
                       name="contactType"
                       onChange={(e) =>
                         setNewContact((prev) => ({
@@ -583,7 +662,7 @@ export default function CreateAnimalForm() {
                   <label className="flex flex-col font-bold">
                     Valor del contacto:
                     <input
-                      className="outline-2 outline-gray-200 rounded p-2"
+                      className="outline-2  bg-white outline-gray-200 rounded p-2"
                       type="text"
                       name="contactValue"
                       onChange={(e) =>
@@ -614,11 +693,10 @@ export default function CreateAnimalForm() {
             <label className="flex flex-col font-bold">
               <span>Fecha de inicio:</span>
               <p className="font-normal text-xs text-balance">
-                (Esta es la fecha en la que cambio el estado. Por ejemplo si estaba en transitorio y
-                es adoptado, aca va la fecha de adopción){' '}
+                (Esta es la fecha en la que se tomo el caso){' '}
               </p>
               <input
-                className="outline-2 outline-gray-200 rounded p-2"
+                className="outline-2  bg-white outline-gray-200 rounded p-2"
                 type="date"
                 name="since"
                 defaultValue={formatMillisForInputDate(Date.now())}
@@ -630,12 +708,107 @@ export default function CreateAnimalForm() {
                 }
               />
             </label>
+            <label>
+              <span className="font-bold">Vacunas del animal:</span>
+              {privateInfo.vaccinations && privateInfo.vaccinations.length > 0 ? (
+                <ul className="list-disc list-inside">
+                  {privateInfo.vaccinations.map((vaccine, index) => (
+                    <li
+                      key={index}
+                      className="flex gap-1 p-1 rounded justify-between items-center bg-amber-50"
+                    >
+                      <span>
+                        {new Date(vaccine.date).toLocaleDateString('es-UY', { timeZone: 'UTC' })} -{' '}
+                        {vaccine.vaccine}
+                      </span>
+                      <button
+                        className="bg-red-500 text-white px-2 rounded"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const updatedVaccinations =
+                            privateInfo.vaccinations?.filter((_, i) => i !== index) || [];
+                          setPrivateInfo((prev) => ({
+                            ...prev,
+                            vaccinations: updatedVaccinations,
+                          }));
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No se han registrado vacunas.</p>
+              )}
+            </label>
+            <label>
+              <span className="font-bold">Agregar Vacuna:</span>
+              <div className="flex flex-col gap-2">
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2 w-full"
+                  type="text"
+                  name="vaccineName"
+                  placeholder="Ej: Antirrabica"
+                  id="vaccineName"
+                />
+                <div className="flex gap-2 sm:flex-row flex-col">
+                  <input
+                    className="outline-2  bg-white outline-gray-200 rounded p-2"
+                    type="date"
+                    name="vaccineDate"
+                    id="vaccineDate"
+                    defaultValue={formatMillisForInputDate(Date.now())}
+                  />
+                  <button
+                    className="bg-green-500 w-full text-white px-4 py-2 rounded"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const vaccineInput = document.getElementById(
+                        'vaccineName'
+                      ) as HTMLInputElement;
+                      const dateInput = document.getElementById('vaccineDate') as HTMLInputElement;
+                      if (vaccineInput?.value && dateInput?.value) {
+                        const newVaccine = {
+                          vaccine: vaccineInput.value,
+                          date: new Date(dateInput.value).getTime(),
+                        };
+                        setPrivateInfo((prev) => ({
+                          ...prev,
+                          vaccinations: prev.vaccinations
+                            ? [...prev.vaccinations, newVaccine]
+                            : [newVaccine],
+                        }));
+                        vaccineInput.value = '';
+                        dateInput.value = '';
+                      }
+                    }}
+                  >
+                    Agregar registro
+                  </button>
+                </div>
+              </div>
+            </label>
             <label className="flex flex-col font-bold">
-              Notas:
+              <span className="font-bold">Patologias del animal:</span>
+
               <textarea
-                className="outline-2 outline-gray-200 rounded p-2 field-sizing-content"
+                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                name="medicalConditions"
+                onChange={handlePrivateInfoChange}
+                placeholder='Ejemplo: "Diabetes, Epilepsia, si toma medicacion etc"'
+                value={privateInfo.medicalConditions || ''}
+              />
+            </label>
+
+            <label className="flex flex-col font-bold">
+              <span>Información adicional:</span>
+              <textarea
+                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
                 name="notes"
-                onChange={handleTransactionChange}
+                onChange={handlePrivateInfoChange}
+                placeholder='Ejemplo: "tiene coordinada una visita al veterinario el 15/08"'
+                value={privateInfo.notes || ''}
               />
             </label>
           </section>

@@ -18,6 +18,13 @@ import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 
+const contactLabelMap = {
+  adoptado: 'Adoptante',
+  transitorio: 'Transitorio',
+  calle: 'Contacto',
+  protectora: 'Contacto',
+};
+
 export default function AnimalPage() {
   const router = useRouter();
   const params = useParams();
@@ -310,7 +317,7 @@ export default function AnimalPage() {
     isSterilized,
   } = animal;
   const { date, modifiedBy, notes } = allAnimalTransactions[0];
-  const { contactName, contacts } = privateInfo;
+  const { contactName, contacts, caseManager, vaccinations, medicalConditions } = privateInfo;
   const img =
     images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   if (isLoading) {
@@ -376,9 +383,42 @@ export default function AnimalPage() {
                 </ul>
               </li>
             </ul>
+            {caseManager && (
+              <div className="bg-amber-sunset p-3 rounded-lg">
+                <p className="text-xl font-semibold text-green-dark">
+                  Responsable del caso: <span className="font-normal">{caseManager}</span>
+                </p>
+              </div>
+            )}
+            {(medicalConditions || (vaccinations && vaccinations.length > 0)) && (
+              <div className="bg-cream-light p-3 rounded-lg flex flex-col gap-2">
+                <h3 className="text-xl font-bold text-green-dark">Información Médica:</h3>
+                {medicalConditions && (
+                  <p className="text-lg font-semibold text-green-dark">
+                    Patologías: <span className="font-normal">{medicalConditions}</span>
+                  </p>
+                )}
+                {vaccinations && vaccinations.length > 0 && (
+                  <div>
+                    <p className="text-lg font-semibold text-green-dark">Vacunas:</p>
+                    <ul className="list-disc pl-6 text-green-dark">
+                      {vaccinations.map((vaccination, index) => (
+                        <li key={`${vaccination.vaccine}-${index}`} className="font-normal">
+                          {vaccination.vaccine} -{' '}
+                          {new Date(vaccination.date).toLocaleDateString('es-UY', {
+                            timeZone: 'UTC',
+                          })}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
             <ul className="list-none p bg-cream-light flex flex-col gap-2 px-2 rounded-lg">
               <li className="text-xl font-semibold">
-                Contacto: <span className="font-normal">{contactName}</span>
+                <span>{contactLabelMap[status]}</span>:{' '}
+                <span className="font-normal">{contactName}</span>
               </li>
               {contacts &&
                 contacts.map((contact, index) => (
@@ -504,6 +544,36 @@ export default function AnimalPage() {
                           <li className="font-semibold">
                             {' '}
                             Contacto: <span className="font-normal">{info.contactName}</span>
+                          </li>
+                        )}
+                        {info.caseManager !== undefined && (
+                          <li className="font-semibold">
+                            {' '}
+                            Responsable del caso:{' '}
+                            <span className="font-normal">{info.caseManager}</span>
+                          </li>
+                        )}
+                        {info.medicalConditions !== undefined && (
+                          <li className="font-semibold">
+                            {' '}
+                            Patologías:{' '}
+                            <span className="font-normal">{info.medicalConditions}</span>
+                          </li>
+                        )}
+                        {info.vaccinations && info.vaccinations.length > 0 && (
+                          <li className="font-semibold">
+                            {' '}
+                            Vacunas:
+                            <ul className="list-disc pl-4 font-normal">
+                              {info.vaccinations.map((vaccination, vIndex) => (
+                                <li key={`${vIndex}-${vaccination.vaccine}`}>
+                                  {vaccination.vaccine} -{' '}
+                                  {new Date(vaccination.date).toLocaleDateString('es-UY', {
+                                    timeZone: 'UTC',
+                                  })}
+                                </li>
+                              ))}
+                            </ul>
                           </li>
                         )}
                         {info.notes !== undefined && (
