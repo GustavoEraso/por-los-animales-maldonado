@@ -63,7 +63,13 @@ export default async function AnimalPage({ params }: PageProps) {
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
         <div className="flex flex-col md:flex-row gap-4 px-9 py-4 w-full max-w-7xl">
           <div className="flex flex-col gap-4 text-start text-black px-2 md:w-3/5">
-            <p className="text-green-dark text-lg font-bold">{description}</p>
+            <textarea
+              className="text-green-dark text-lg font-bold field-sizing-content resize-none"
+              value={description}
+              readOnly
+              aria-label="Descripción del animal"
+              disabled
+            />
             <ul className="list-disc pl-4 text-green-dark">
               <li className="text-xl font-semibold">
                 Estado:{' '}
