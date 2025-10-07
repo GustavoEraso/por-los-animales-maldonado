@@ -243,15 +243,6 @@ export default function EditAnimalForm() {
       [name]: value,
     }));
   };
-  const handleTransactionInfoChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setTransactionInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const [formErrors, setFormErrors] = useState({
     name: false,
