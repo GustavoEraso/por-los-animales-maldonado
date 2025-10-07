@@ -13,7 +13,7 @@ import { formatPhone } from '@/lib/formatPhone';
 import { Animal, WpContactType } from '@/types';
 import AdjustableImage from '@/elements/AdjustableImage';
 import Loader from '@/components/Loader';
-import { CheckIcon } from '@/components/Icons';
+// import { CheckIcon } from '@/components/Icons';
 
 interface ColorScheme {
   name: string;
@@ -150,17 +150,17 @@ export default function Compartir() {
     fetchData();
   }, [id]);
 
-  const handleContactToggle = (contactIndex: number) => {
-    setSelectedContacts((prev) => {
-      if (prev.includes(contactIndex)) {
-        // Si ya está seleccionado, lo removemos
-        return prev.filter((index) => index !== contactIndex);
-      } else {
-        // Si no está seleccionado, lo agregamos
-        return [...prev, contactIndex].sort(); // Sort para mantener orden
-      }
-    });
-  };
+  // const handleContactToggle = (contactIndex: number) => {
+  //   setSelectedContacts((prev) => {
+  //     if (prev.includes(contactIndex)) {
+  //       // Si ya está seleccionado, lo removemos
+  //       return prev.filter((index) => index !== contactIndex);
+  //     } else {
+  //       // Si no está seleccionado, lo agregamos
+  //       return [...prev, contactIndex].sort(); // Sort para mantener orden
+  //     }
+  //   });
+  // };
 
   // ---- Imágenes del animal ----------------------------
 
