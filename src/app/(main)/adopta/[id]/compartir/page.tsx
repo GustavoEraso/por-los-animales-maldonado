@@ -13,7 +13,7 @@ import { formatPhone } from '@/lib/formatPhone';
 import { Animal, WpContactType } from '@/types';
 import AdjustableImage from '@/elements/AdjustableImage';
 import Loader from '@/components/Loader';
-import { CheckIcon } from '@/components/Icons';
+// import { CheckIcon } from '@/components/Icons';
 
 interface ColorScheme {
   name: string;
@@ -150,17 +150,17 @@ export default function Compartir() {
     fetchData();
   }, [id]);
 
-  const handleContactToggle = (contactIndex: number) => {
-    setSelectedContacts((prev) => {
-      if (prev.includes(contactIndex)) {
-        // Si ya está seleccionado, lo removemos
-        return prev.filter((index) => index !== contactIndex);
-      } else {
-        // Si no está seleccionado, lo agregamos
-        return [...prev, contactIndex].sort(); // Sort para mantener orden
-      }
-    });
-  };
+  // const handleContactToggle = (contactIndex: number) => {
+  //   setSelectedContacts((prev) => {
+  //     if (prev.includes(contactIndex)) {
+  //       // Si ya está seleccionado, lo removemos
+  //       return prev.filter((index) => index !== contactIndex);
+  //     } else {
+  //       // Si no está seleccionado, lo agregamos
+  //       return [...prev, contactIndex].sort(); // Sort para mantener orden
+  //     }
+  //   });
+  // };
 
   // ---- Imágenes del animal ----------------------------
 
@@ -490,7 +490,7 @@ export default function Compartir() {
               </div>
             </div>
           </section>
-          <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
+          {/* <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
             <div className="space-y-3">
               <h3 className="leading-none font-semibold text-2xl">Contactos a mostrar</h3>
               <p className="text-sm text-gray-600">
@@ -526,7 +526,7 @@ export default function Compartir() {
                 </div>
               ))}
 
-              {/* Botones de selección rápida */}
+           
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setSelectedContacts(contacts.map((_, index) => index))}
@@ -542,7 +542,7 @@ export default function Compartir() {
                 </button>
               </div>
             </div>
-          </section>
+          </section> */}
         </aside>
 
         <main className="lg:col-span-2 flex flex-col gap-8 items-center w-full rounded-xl border border-amber-sunset  shadow-sm bg-amber-50 p-16">
