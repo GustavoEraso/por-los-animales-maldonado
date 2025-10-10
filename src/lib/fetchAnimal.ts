@@ -1,23 +1,46 @@
 import { Animal } from '@/types';
 
-type Filters = Partial<{
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+export type PaginatedResponse = {
+  data: Animal[];
+  pagination: PaginationMeta;
+};
+
+export type Filters = Partial<{
   id: string;
   nameIncludes: string;
-  gender: Animal['gender'];
-  species: Animal['species'];
+  gender: Animal['gender'] | Animal['gender'][];
+  species: Animal['species'] | Animal['species'][];
   aproxBirthDate: Animal['aproxBirthDate'];
-  lifeStage: Animal['lifeStage'];
-  size: Animal['size'];
+  lifeStage: Animal['lifeStage'] | Animal['lifeStage'][];
+  size: Animal['size'] | Animal['size'][];
   isAvalible: Animal['isAvalible'];
   isVisible: Animal['isVisible'];
   isDeleted: Animal['isDeleted'];
-  status: Animal['status'];
+  status: Animal['status'] | Animal['status'][];
   minWaitingSince: number;
   sortBy: keyof Pick<
     Animal,
-    'name' | 'waitingSince' | 'isAvalible' | 'aproxBirthDate' | 'gender' | 'species' | 'size'
+    | 'name'
+    | 'waitingSince'
+    | 'isAvalible'
+    | 'aproxBirthDate'
+    | 'gender'
+    | 'species'
+    | 'size'
+    | 'lifeStage'
   >;
   sortOrder: 'asc' | 'desc';
+  page: number;
+  limit: number;
 }>;
 
 /**
@@ -29,21 +52,23 @@ type Filters = Partial<{
  * Available filters:
  *   - id: string
  *   - nameIncludes: string
- *   - gender: 'male' | 'female' | ...
- *   - species: string
+ *   - gender: 'macho' | 'hembra' or ['macho', 'hembra'] (multiple)
+ *   - species: 'perro' | 'gato' | 'otros' or array (multiple)
  *   - aproxBirthDate: number
- *   - lifeStage: string
- *   - size: string
+ *   - lifeStage: 'cachorro' | 'joven' | 'adulto' or array (multiple)
+ *   - size: 'pequeño' | 'mediano' | 'grande' | 'no_se_sabe' or array (multiple)
  *   - isAvalible: boolean
  *   - isVisible: boolean
  *   - isDeleted: boolean
- *   - status: string
+ *   - status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' or array (multiple)
  *   - minWaitingSince: number
- *   - sortBy: 'name' | 'waitingSince' | 'isAvalible' | 'aproxBirthDate' | 'gender' | 'species' | 'size'
+ *   - sortBy: 'name' | 'waitingSince' | 'isAvalible' | 'aproxBirthDate' | 'gender' | 'species' | 'size' | 'lifeStage'
  *   - sortOrder: 'asc' | 'desc'
+ *   - page: number (1-indexed, for pagination)
+ *   - limit: number (results per page, max 100)
  *
  * @param {Filters} [filters={}] - Optional filters and sorting options for the query.
- * @returns {Promise<Animal[]>} A promise that resolves to an array of Animal objects.
+ * @returns {Promise<Animal[] | {data: Animal[], pagination: object}>} A promise that resolves to an array of Animal objects, or paginated response if page/limit provided.
  *
  * @example
  * // Fetch all animals
@@ -56,9 +81,23 @@ type Filters = Partial<{
  * @example
  * // Fetch animals with name including "Luna"
  * const animals = await fetchAnimals({ nameIncludes: 'Luna' });
+ *
+ * @example
+ * // Fetch cachorros OR jóvenes (multiple values for same field)
+ * const animals = await fetchAnimals({ lifeStage: ['cachorro', 'joven'] });
+ *
+ * @example
+ * // Fetch perros OR gatos that are pequeño OR mediano
+ * const animals = await fetchAnimals({ species: ['perro', 'gato'], size: ['pequeño', 'mediano'] });
+ *
+ * @example
+ * // Fetch paginated results (returns PaginatedResponse)
+ * const result = await fetchAnimals({ species: 'perro', page: 1, limit: 12 });
+ * console.log(result.data); // Animal[]
+ * console.log(result.pagination); // { page: 1, limit: 12, total: 45, totalPages: 4, ... }
  */
 
-export async function fetchAnimals(filters: Filters = {}): Promise<Animal[]> {
+export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | PaginatedResponse> {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
@@ -102,5 +141,28 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[]> {
 
 5) Fetch animals with a minimum waiting time
    const animals = await fetchAnimals({ minWaitingSince: 1680000000000 });
+
+6) Fetch cachorros OR jóvenes (multiple values for same field)
+   const animals = await fetchAnimals({ lifeStage: ['cachorro', 'joven'] });
+
+7) Fetch perros OR gatos that are pequeño OR mediano
+   const animals = await fetchAnimals({ 
+     species: ['perro', 'gato'], 
+     size: ['pequeño', 'mediano'] 
+   });
+
+8) Fetch machos that are in transitorio OR adoptado status
+   const animals = await fetchAnimals({ 
+     gender: 'macho',
+     status: ['transitorio', 'adoptado'] 
+   });
+
+9) Fetch paginated results - page 1, 12 per page
+   const result = await fetchAnimals({ 
+     species: 'perro',
+     page: 1,
+     limit: 12 
+   });
+   // result = { data: Animal[], pagination: { page, limit, total, totalPages, ... } }
 
 ──────────────────────────────────────────────────────────────────────────── */
