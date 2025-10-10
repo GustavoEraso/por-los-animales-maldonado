@@ -18,7 +18,7 @@ export const generateMetadata = (): Metadata => {
       url: 'https://www.porlosanimalesmaldonado.com/donaciones',
       images: [
         {
-          url: 'https://www.porlosanimalesmaldonado.com/og/cachorritos.webp',
+          url: 'https://www.porlosanimalesmaldonado.com/og/cachorritos.jpg',
           width: 1200,
           height: 630,
           alt: 'imagen de cachorritos',

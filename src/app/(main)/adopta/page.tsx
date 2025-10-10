@@ -5,6 +5,27 @@ import SearchBox from '@/components/SearchBox';
 import Pagination from '@/components/Pagination';
 import { buildFiltersFromSearchParams } from '@/lib/searchParamsUtils';
 import { Animal } from '@/types';
+import { Metadata } from 'next';
+
+export const generateMetadata = (): Metadata => {
+  return {
+    openGraph: {
+      title: 'Adopta una mascota 🐾',
+      description:
+        'Conoce a nuestros animales en adopción. Perros, gatos y otros animales esperan encontrar un hogar lleno de amor.',
+      url: 'https://www.porlosanimalesmaldonado.com/adopta',
+      images: [
+        {
+          url: 'https://www.porlosanimalesmaldonado.com/og/cachorritos.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Animales en adopción',
+        },
+      ],
+      type: 'website',
+    },
+  };
+};
 
 interface AdoptaProps {
   searchParams: Promise<{
