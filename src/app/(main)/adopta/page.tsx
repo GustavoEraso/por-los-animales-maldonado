@@ -5,6 +5,27 @@ import SearchBox from '@/components/SearchBox';
 import Pagination from '@/components/Pagination';
 import { buildFiltersFromSearchParams } from '@/lib/searchParamsUtils';
 import { Animal } from '@/types';
+import { Metadata } from 'next';
+
+export const generateMetadata = (): Metadata => {
+  return {
+    openGraph: {
+      title: 'Adopta una mascota 🐾',
+      description:
+        'Conoce a nuestros animales en adopción. Perros, gatos y otros animales esperan encontrar un hogar lleno de amor.',
+      url: 'https://www.porlosanimalesmaldonado.com/adopta',
+      images: [
+        {
+          url: 'https://www.porlosanimalesmaldonado.com/og/cachorritos.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Animales en adopción',
+        },
+      ],
+      type: 'website',
+    },
+  };
+};
 
 interface AdoptaProps {
   searchParams: Promise<{
@@ -29,9 +50,14 @@ export default async function Adopta({ searchParams }: AdoptaProps) {
   const animals: Animal[] = Array.isArray(result) ? result : result.data;
   const pagination = Array.isArray(result) ? null : result.pagination;
 
+  const currentRandomAnimal = animals[Math.floor(Math.random() * animals.length)];
+  const cover = currentRandomAnimal?.images.length
+    ? currentRandomAnimal.images[0].imgUrl
+    : undefined;
+
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
-      <Hero title="Animales en adopción" />
+      <Hero imgURL={cover} title="Animales en adopción" />
       <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl justify-center items-center">
         <SearchBox />
         <div className="w-full">
