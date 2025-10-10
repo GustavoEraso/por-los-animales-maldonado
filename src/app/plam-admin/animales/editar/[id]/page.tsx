@@ -486,8 +486,8 @@ export default function EditAnimalForm() {
             onChange={handleChange}
           >
             <option value="cachorro">Cachorro</option>
+            <option value="joven">Joven</option>
             <option value="adulto">Adulto</option>
-            <option value="mayor">Mayor</option>
           </select>
         </label>
 
@@ -502,6 +502,7 @@ export default function EditAnimalForm() {
             <option value="pequeño">Pequeño</option>
             <option value="mediano">Mediano</option>
             <option value="grande">Grande</option>
+            <option value="no_se_sabe">No se sabe</option>
           </select>
         </label>
         <div className="flex flex-col gap-4">
