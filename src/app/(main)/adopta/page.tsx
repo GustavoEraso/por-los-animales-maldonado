@@ -50,9 +50,14 @@ export default async function Adopta({ searchParams }: AdoptaProps) {
   const animals: Animal[] = Array.isArray(result) ? result : result.data;
   const pagination = Array.isArray(result) ? null : result.pagination;
 
+  const currentRandomAnimal = animals[Math.floor(Math.random() * animals.length)];
+  const cover = currentRandomAnimal?.images.length
+    ? currentRandomAnimal.images[0].imgUrl
+    : undefined;
+
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
-      <Hero title="Animales en adopción" />
+      <Hero imgURL={cover} title="Animales en adopción" />
       <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl justify-center items-center">
         <SearchBox />
         <div className="w-full">
