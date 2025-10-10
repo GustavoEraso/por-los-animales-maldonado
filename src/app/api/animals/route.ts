@@ -75,6 +75,7 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  * @param {NextRequest} req - Request object containing filter criteria in JSON body
  *
  * @body {Object} filters - Filter criteria object
+ * @body {string | string[]} [filters.id] - Filter by ID(s) - single ID or array of IDs (never paginated)
  * @body {string | string[]} [filters.species] - Filter by species: "perro" | "gato" | "otros" (supports array for OR filtering)
  * @body {string | string[]} [filters.gender] - Filter by gender: "macho" | "hembra" (supports array for OR filtering)
  * @body {string | string[]} [filters.status] - Filter by status: "calle" | "protectora" | "transitorio" | "adoptado" (supports array for OR filtering)
@@ -104,6 +105,24 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  *     isAvalible: true,
  *     sortBy: 'name',
  *     sortOrder: 'asc'
+ *   })
+ * });
+ *
+ * // Filter by single ID (no pagination)
+ * const response = await fetch('/api/animals', {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({
+ *     id: 'abc123'
+ *   })
+ * });
+ *
+ * // Filter by multiple IDs (no pagination)
+ * const response = await fetch('/api/animals', {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({
+ *     id: ['abc123', 'def456', 'ghi789']
  *   })
  * });
  *
@@ -153,6 +172,7 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  * - Text searches are accent-insensitive and case-insensitive.
  * - Automatically excludes deleted animals (isDeleted: true).
  * - Array filters perform OR logic: ['perro', 'gato'] matches perro OR gato.
+ * - ID filtering never returns paginated response (always returns array).
  * - Size and lifeStage sorting use logical ordering (small→large, young→old)
  *   instead of alphabetical ordering.
  * - Retrocompatible: existing code using single values will continue to work.
@@ -265,6 +285,12 @@ export async function POST(req: NextRequest) {
 
         return 0;
       });
+    }
+
+    // IMPORTANT: Don't paginate when filtering by ID (specific animal lookup)
+    // ID filtering is used for single animal pages and should always return array
+    if (filters.id) {
+      return NextResponse.json(finalResults);
     }
 
     // Apply pagination if requested

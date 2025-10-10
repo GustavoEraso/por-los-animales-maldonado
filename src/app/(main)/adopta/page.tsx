@@ -1,6 +1,6 @@
 import Hero from '@/components/Hero';
 import CardContainer from '@/containers/CardContainer';
-import { fetchAnimals, PaginatedResponse } from '@/lib/fetchAnimal';
+import { fetchAnimals } from '@/lib/fetchAnimal';
 import SearchBox from '@/components/SearchBox';
 import Pagination from '@/components/Pagination';
 import { buildFiltersFromSearchParams } from '@/lib/searchParamsUtils';

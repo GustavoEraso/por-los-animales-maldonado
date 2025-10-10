@@ -15,7 +15,7 @@ export type PaginatedResponse = {
 };
 
 export type Filters = Partial<{
-  id: string;
+  id: string | string[];
   nameIncludes: string;
   gender: Animal['gender'] | Animal['gender'][];
   species: Animal['species'] | Animal['species'][];
@@ -50,7 +50,7 @@ export type Filters = Partial<{
  * Returns an array of Animal objects.
  *
  * Available filters:
- *   - id: string
+ *   - id: string | string[] (supports multiple IDs for bulk lookup)
  *   - nameIncludes: string
  *   - gender: 'macho' | 'hembra' or ['macho', 'hembra'] (multiple)
  *   - species: 'perro' | 'gato' | 'otros' or array (multiple)
@@ -75,6 +75,15 @@ export type Filters = Partial<{
  * const animals = await fetchAnimals();
  *
  * @example
+ * // Fetch single animal by ID (returns Animal[])
+ * const animals = await fetchAnimals({ id: 'abc123' });
+ * const [animal] = animals; // Get first (and only) result
+ *
+ * @example
+ * // Fetch multiple animals by IDs (returns Animal[])
+ * const animals = await fetchAnimals({ id: ['abc123', 'def456'] });
+ *
+ * @example
  * // Fetch only available dogs, sorted by name
  * const animals = await fetchAnimals({ species: 'perro', isAvalible: true, sortBy: 'name', sortOrder: 'asc' });
  *
@@ -96,6 +105,13 @@ export type Filters = Partial<{
  * console.log(result.data); // Animal[]
  * console.log(result.pagination); // { page: 1, limit: 12, total: 45, totalPages: 4, ... }
  */
+
+// Function overloads for type safety
+export async function fetchAnimals(filters: Filters & { id: string | string[] }): Promise<Animal[]>;
+export async function fetchAnimals(
+  filters: Filters & { page: number; limit: number }
+): Promise<PaginatedResponse>;
+export async function fetchAnimals(filters?: Filters): Promise<Animal[] | PaginatedResponse>;
 
 export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | PaginatedResponse> {
   const baseUrl =
@@ -125,7 +141,14 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
 1) Fetch all animals
    const animals = await fetchAnimals();
 
-2) Fetch only available dogs, sorted by name
+2) Fetch single animal by ID (always returns Animal[], never paginated)
+   const animals = await fetchAnimals({ id: 'abc123' });
+   const [animal] = animals; // Destructure first result
+
+3) Fetch multiple animals by IDs (always returns Animal[], never paginated)
+   const animals = await fetchAnimals({ id: ['abc123', 'def456', 'ghi789'] });
+
+4) Fetch only available dogs, sorted by name
    const animals = await fetchAnimals({
      species: 'perro',
      isAvalible: true,
@@ -133,31 +156,31 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
      sortOrder: 'asc'
    });
 
-3) Fetch animals with name including "Luna"
+5) Fetch animals with name including "Luna"
    const animals = await fetchAnimals({ nameIncludes: 'Luna' });
 
-4) Fetch animals that are visible and not deleted
+6) Fetch animals that are visible and not deleted
    const animals = await fetchAnimals({ isVisible: true, isDeleted: false });
 
-5) Fetch animals with a minimum waiting time
+7) Fetch animals with a minimum waiting time
    const animals = await fetchAnimals({ minWaitingSince: 1680000000000 });
 
-6) Fetch cachorros OR jóvenes (multiple values for same field)
+8) Fetch cachorros OR jóvenes (multiple values for same field)
    const animals = await fetchAnimals({ lifeStage: ['cachorro', 'joven'] });
 
-7) Fetch perros OR gatos that are pequeño OR mediano
+9) Fetch perros OR gatos that are pequeño OR mediano
    const animals = await fetchAnimals({ 
      species: ['perro', 'gato'], 
      size: ['pequeño', 'mediano'] 
    });
 
-8) Fetch machos that are in transitorio OR adoptado status
+10) Fetch machos that are in transitorio OR adoptado status
    const animals = await fetchAnimals({ 
      gender: 'macho',
      status: ['transitorio', 'adoptado'] 
    });
 
-9) Fetch paginated results - page 1, 12 per page
+11) Fetch paginated results - page 1, 12 per page
    const result = await fetchAnimals({ 
      species: 'perro',
      page: 1,
