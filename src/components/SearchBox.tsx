@@ -1,8 +1,17 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronDownIcon, SearchIcon } from '@/components/Icons';
+
+interface SearchBoxProps {
+  /**
+   * Optional custom path to navigate to when searching.
+   * If not provided, uses the current pathname automatically.
+   * @default usePathname() (current page)
+   */
+  targetPath?: string;
+}
 
 /**
  * SearchBox Component
@@ -18,6 +27,7 @@ import { ChevronDownIcon, SearchIcon } from '@/components/Icons';
  *   - Active filter count badge
  *   - Loading state during transitions
  *   - Auto-collapse after search
+ *   - Automatic pathname detection (or custom via prop)
  *
  * Search Parameters (SEO-friendly Spanish):
  *   - nombre: string - Animal name search
@@ -28,9 +38,20 @@ import { ChevronDownIcon, SearchIcon } from '@/components/Icons';
  *   - ordenarPor: string - 'name' | 'aproxBirthDate' | 'size' | 'lifeStage' | 'waitingSince'
  *   - orden: string - 'asc' | 'desc'
  *
+ * @param {SearchBoxProps} props - Component props
+ * @param {string} [props.targetPath] - Custom path to navigate to (defaults to current pathname)
+ *
  * @example
- * // Basic usage in a page
+ * // Basic usage - automatically uses current pathname
  * <SearchBox />
+ *
+ * @example
+ * // With custom target path
+ * <SearchBox targetPath="/adopta" />
+ *
+ * @example
+ * // In admin panel, navigate to adopta page
+ * <SearchBox targetPath="/adopta" />
  *
  * @example
  * // URL with filters: /adopta?especies=perro,gato&tamanos=pequeño&ordenarPor=name&orden=asc
@@ -38,10 +59,14 @@ import { ChevronDownIcon, SearchIcon } from '@/components/Icons';
  *
  * @returns {JSX.Element} The SearchBox component
  */
-export default function SearchBox() {
+export default function SearchBox({ targetPath }: SearchBoxProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+
+  // Use targetPath if provided, otherwise use current pathname
+  const navigationPath = targetPath || pathname;
 
   const [nombre, setNombre] = useState(searchParams.get('nombre') || '');
 
@@ -92,7 +117,7 @@ export default function SearchBox() {
     params.set('pagina', '1');
 
     startTransition(() => {
-      router.push(`/adopta?${params.toString()}`);
+      router.push(`${navigationPath}?${params.toString()}`);
     });
 
     setIsOpen(false);
@@ -107,7 +132,7 @@ export default function SearchBox() {
     setOrdenarPor('');
     setOrden('asc');
     startTransition(() => {
-      router.push('/adopta');
+      router.push(navigationPath);
     });
 
     setIsOpen(false);
@@ -406,35 +431,52 @@ export default function SearchBox() {
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
 
-1) Basic usage in adoption page
+1) Basic usage - automatically uses current pathname
+   In /adopta page:
    <SearchBox />
+   → Navigates to /adopta?especies=perro
 
-2) URL structure with multiple filters (comma-separated values)
+2) In admin panel using current pathname
+   In /plam-admin/animales page:
+   <SearchBox />
+   → Navigates to /plam-admin/animales?especies=perro
+
+3) With custom target path
+   In any page:
+   <SearchBox targetPath="/adopta" />
+   → Always navigates to /adopta?especies=perro
+
+4) Admin panel redirecting to public adopta page
+   In /plam-admin/dashboard:
+   <SearchBox targetPath="/adopta" />
+   → Navigates to /adopta?especies=perro (useful for preview)
+
+5) URL structure with multiple filters (comma-separated values)
    /adopta?especies=perro,gato&tamanos=pequeño,mediano
    Result: Shows dogs OR cats that are small OR medium
 
-3) Search by name with sorting
+6) Search by name with sorting
    /adopta?nombre=Luna&ordenarPor=aproxBirthDate&orden=asc
    Result: Animals named "Luna" sorted by age (youngest first)
 
-4) Multiple life stages filter
+7) Multiple life stages filter
    /adopta?etapasVida=cachorro,joven
    Result: Shows puppies OR young animals
 
-5) Complex filter combination
+8) Complex filter combination
    /adopta?especies=perro&generos=hembra&tamanos=pequeño,mediano&ordenarPor=waitingSince&orden=desc
    Result: Female dogs that are small or medium, sorted by waiting time (longest first)
 
-6) Gender filter only
+9) Gender filter only
    /adopta?generos=macho
    Result: All male animals
 
-7) Size and species combination
-   /adopta?especies=gato&tamanos=pequeño
-   Result: Small cats only
+10) Size and species combination
+    /adopta?especies=gato&tamanos=pequeño
+    Result: Small cats only
 
-8) Clear all filters
-   Click "Limpiar" button → redirects to /adopta (no params)
+11) Clear all filters
+    Click "Limpiar" button → redirects to navigationPath (no params)
 
 NOTES:
 - All searchParams use Spanish values for SEO
@@ -443,5 +485,7 @@ NOTES:
 - Active filter count badge shows total number of active filters
 - Dynamic sort labels change based on selected sortBy field
 - Press Enter in name input to trigger search
+- If targetPath is not provided, component uses current pathname automatically
+- Perfect for reusing the same SearchBox in different contexts
 
 ──────────────────────────────────────────────────────────────────────────── */
