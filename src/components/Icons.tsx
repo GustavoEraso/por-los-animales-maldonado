@@ -318,6 +318,22 @@ function LanguageIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
   );
 }
 
+function GridViewIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M120-520v-320h320v320H120Zm0 400v-320h320v320H120Zm400-400v-320h320v320H520Zm0 400v-320h320v320H520ZM200-600h160v-160H200v160Zm400 0h160v-160H600v160Zm0 400h160v-160H600v160Zm-400 0h160v-160H200v160Zm400-400Zm0 240Zm-240 0Zm0-240Z" />
+    </SvgBase>
+  );
+}
+
+function TableViewIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M320-80q-33 0-56.5-23.5T240-160v-480q0-33 23.5-56.5T320-720h480q33 0 56.5 23.5T880-640v480q0 33-23.5 56.5T800-80H320Zm0-80h200v-120H320v120Zm280 0h200v-120H600v120ZM80-240v-560q0-33 23.5-56.5T160-880h560v80H160v560H80Zm240-120h200v-120H320v120Zm280 0h200v-120H600v120ZM320-560h480v-80H320v80Z" />
+    </SvgBase>
+  );
+}
+
 function SvgBase({ title, size, color, viewBox, children, ...props }: IconProps) {
   const iconSize = typeof size === 'string' ? sizeMap[size] || DEFAULT_SIZE : size || DEFAULT_SIZE;
 
@@ -376,4 +392,6 @@ export {
   UploadIcon,
   HeartIcon,
   LanguageIcon,
+  GridViewIcon,
+  TableViewIcon,
 };
