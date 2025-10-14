@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Loader from '@/components/Loader';
@@ -13,9 +13,11 @@ import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { EyeIcon, EditIcon, TrashIcon, HeartIcon, FilterIcon } from '@/components/Icons';
+import SearchBox from '@/components/SearchBox';
 
 export default function AnimalsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -34,12 +36,117 @@ export default function AnimalsPage() {
     const start = Date.now();
 
     const fetchData = async () => {
+      // Fetch ALL animals (excluding deleted by default)
+      // Apply all filters client-side to avoid Firestore index issues
       await getFirestoreData({
         currentCollection: 'animals',
-        filter: [['status', 'not-in', ['adoptado']]],
+        filter: [['status', 'not-in', ['adoptado']]], // Only basic filter to avoid index requirements
       })
         .then((data) => {
-          setAnimalsToShow(data as Animal[]);
+          let filteredData = data as Animal[];
+
+          // Get all search params
+          const id = searchParams.get('id');
+          const nombre = searchParams.get('nombre');
+          const estados = searchParams.get('estados');
+          const esVisible = searchParams.get('esVisible');
+          const estaDisponible = searchParams.get('estaDisponible');
+          const estaCastrado = searchParams.get('estaCastrado');
+          const especies = searchParams.get('especies');
+          const tamanos = searchParams.get('tamanos');
+          const generos = searchParams.get('generos');
+          const etapasVida = searchParams.get('etapasVida');
+          const compatibleConPerros = searchParams.get('compatibleConPerros');
+          const compatibleConGatos = searchParams.get('compatibleConGatos');
+          const compatibleConNinos = searchParams.get('compatibleConNinos');
+
+          // Apply all filters client-side
+
+          // ID filter
+          if (id) {
+            filteredData = filteredData.filter((animal) => animal.id === id);
+          }
+
+          // Name filter (partial match, case-insensitive)
+          if (nombre) {
+            const nombreLower = nombre.toLowerCase();
+            filteredData = filteredData.filter((animal) =>
+              animal.name.toLowerCase().includes(nombreLower)
+            );
+          }
+
+          // Status filter (estados) - overrides default if specified
+          if (estados) {
+            const estadosArray = estados.split(',');
+            filteredData = filteredData.filter((animal) => estadosArray.includes(animal.status));
+          }
+
+          // Visibility filter
+          if (esVisible) {
+            const isVisible = esVisible === 'si';
+            filteredData = filteredData.filter((animal) => animal.isVisible === isVisible);
+          }
+
+          // Available filter
+          if (estaDisponible) {
+            const isAvailable = estaDisponible === 'si';
+            filteredData = filteredData.filter((animal) => animal.isAvalible === isAvailable);
+          }
+
+          // Sterilized filter
+          if (estaCastrado && estaCastrado !== 'no_se') {
+            filteredData = filteredData.filter((animal) => animal.isSterilized === estaCastrado);
+          }
+
+          // Species filter
+          if (especies) {
+            const especiesArray = especies.split(',');
+            filteredData = filteredData.filter((animal) => especiesArray.includes(animal.species));
+          }
+
+          // Size filter
+          if (tamanos) {
+            const tamanosArray = tamanos.split(',');
+            filteredData = filteredData.filter((animal) => tamanosArray.includes(animal.size));
+          }
+
+          // Gender filter
+          if (generos) {
+            const generosArray = generos.split(',');
+            filteredData = filteredData.filter((animal) => generosArray.includes(animal.gender));
+          }
+
+          // Life stage filter
+          if (etapasVida) {
+            const etapasVidaArray = etapasVida.split(',');
+            filteredData = filteredData.filter((animal) =>
+              etapasVidaArray.includes(animal.lifeStage)
+            );
+          }
+
+          // Compatibility filters
+          if (compatibleConPerros) {
+            const perrosArray = compatibleConPerros.split(',');
+            filteredData = filteredData.filter((animal) =>
+              perrosArray.includes(animal.compatibility?.dogs || 'no_se')
+            );
+          }
+
+          if (compatibleConGatos) {
+            const gatosArray = compatibleConGatos.split(',');
+            filteredData = filteredData.filter((animal) =>
+              gatosArray.includes(animal.compatibility?.cats || 'no_se')
+            );
+          }
+
+          if (compatibleConNinos) {
+            const ninosArray = compatibleConNinos.split(',');
+            filteredData = filteredData.filter((animal) =>
+              ninosArray.includes(animal.compatibility?.kids || 'no_se')
+            );
+          }
+
+          setAnimalsToShow(filteredData);
         })
         .catch((error) => {
           console.error('Error fetching Animals:', error);
@@ -56,50 +163,77 @@ export default function AnimalsPage() {
         setLoading(false);
       }
     });
-  }, [refresh]);
+  }, [refresh, searchParams]);
 
   useEffect(() => {
     if (!animalsToShow) {
       return;
     }
 
-    const ref = sortReference as keyof Animal;
-    const order = sortOrder;
-    let response;
-
     if (animalsToShow.length < 1) {
       return;
     }
 
-    if (typeof animalsToShow[0][ref] === 'boolean') {
-      response = animalsToShow.slice().sort((a, b) => {
-        if (order == '<') {
-          return a[ref] === b[ref] ? 0 : a[ref] ? 1 : -1;
-        } else {
-          return a[ref] === b[ref] ? 0 : a[ref] ? -1 : 1;
-        }
-      });
-    } else if (typeof animalsToShow[0][ref] === 'number') {
-      response = animalsToShow.slice().sort((a, b) => {
-        if (order == '<') {
-          return Number(a[ref]) - Number(b[ref]);
-        } else {
-          return Number(b[ref]) - Number(a[ref]);
-        }
-      });
-    } else if (typeof animalsToShow[0][ref] === 'string') {
-      response = animalsToShow.slice().sort((a, b) => {
-        const aVal = a[ref] as string;
-        const bVal = b[ref] as string;
+    // Check if there's sorting from searchParams
+    const ordenarPor = searchParams.get('ordenarPor');
+    const orden = searchParams.get('orden') || 'asc';
 
-        return order === '<' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    let sortedData = [...animalsToShow];
+
+    if (ordenarPor) {
+      // Use searchParams sorting
+      const sortKey = ordenarPor as keyof Animal;
+
+      sortedData.sort((a, b) => {
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
+
+        if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+          if (orden === 'asc') {
+            return aVal === bVal ? 0 : aVal ? 1 : -1;
+          } else {
+            return aVal === bVal ? 0 : aVal ? -1 : 1;
+          }
+        } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return orden === 'asc' ? aVal - bVal : bVal - aVal;
+        } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return orden === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        return 0;
       });
     } else {
-      return;
+      // Use table header sorting
+      const ref = sortReference as keyof Animal;
+      const order = sortOrder;
+
+      if (typeof animalsToShow[0][ref] === 'boolean') {
+        sortedData = animalsToShow.slice().sort((a, b) => {
+          if (order == '<') {
+            return a[ref] === b[ref] ? 0 : a[ref] ? 1 : -1;
+          } else {
+            return a[ref] === b[ref] ? 0 : a[ref] ? -1 : 1;
+          }
+        });
+      } else if (typeof animalsToShow[0][ref] === 'number') {
+        sortedData = animalsToShow.slice().sort((a, b) => {
+          if (order == '<') {
+            return Number(a[ref]) - Number(b[ref]);
+          } else {
+            return Number(b[ref]) - Number(a[ref]);
+          }
+        });
+      } else if (typeof animalsToShow[0][ref] === 'string') {
+        sortedData = animalsToShow.slice().sort((a, b) => {
+          const aVal = a[ref] as string;
+          const bVal = b[ref] as string;
+
+          return order === '<' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+      }
     }
 
-    setSortedAnimals(response);
-  }, [animalsToShow, sortOrder, sortReference]);
+    setSortedAnimals(sortedData);
+  }, [animalsToShow, sortOrder, sortReference, searchParams]);
 
   const sortAnimalBy = ({ reference }: { reference: string | boolean }) => {
     if (sortReference === reference) {
@@ -228,13 +362,14 @@ export default function AnimalsPage() {
   };
 
   return (
-    <section className=" flex flex-col gap-2  items-center pb-28">
+    <section className=" bg-gradient-to-tr from-cream-light to-amber-sunset w-full px-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
       <div className="flex items-center gap-2">
         <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
         <h3 className="text-2xl font-bold underline">Animales Activos</h3>
       </div>
-      <div className="relative overflow-x-auto shadow-md rounded-lg ">
+      <SearchBox dashboardMode />
+      <div className="  w-full relative overflow-x-auto shadow-md rounded-lg ">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
@@ -286,7 +421,7 @@ export default function AnimalsPage() {
               <th scope="col" className=" py-3">
                 <span className="sr-only">Editar</span>
               </th>
-              <th scope="col hidden sm:table-cell" className=" py-3">
+              <th scope="col hidden md:table-cell" className=" py-3">
                 <span className="sr-only">Elimiar</span>
               </th>
             </tr>
@@ -333,25 +468,25 @@ export default function AnimalsPage() {
                       className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
                     >
                       <EyeIcon size={16} title="Ver detalles" />
-                      <span className="hidden sm:inline">Ver Detalles</span>
+                      <span className="hidden lg:inline">Ver Detalles</span>
                     </Link>
                   </td>
-                  <td className="px-2 py-4 text-right  hidden sm:table-cell">
+                  <td className="px-2 py-4 text-right ">
                     <Link
                       href={`/plam-admin/animales/editar/${animal.id}`}
                       className="font-medium text-blue-600 hover:underline flex items-center justify-end gap-1"
                     >
                       <EditIcon size={16} title="Editar animal" />
-                      <span className="hidden md:inline">Editar</span>
+                      <span className="hidden lg:inline">Editar</span>
                     </Link>
                   </td>
-                  <td className="px-2 py-4 text-right hidden sm:table-cell">
+                  <td className="px-2 py-4 text-right">
                     <Modal
                       buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
                       buttonText={
                         <>
                           <TrashIcon size={16} title="Eliminar animal" />
-                          <span className="hidden md:inline">Eliminar</span>
+                          <span className="hidden xl:inline">Eliminar</span>
                         </>
                       }
                     >
