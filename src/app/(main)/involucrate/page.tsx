@@ -251,11 +251,11 @@ export default function INVOLUCRATE() {
                   <strong>FELINAS</strong> a cargo de la Intendencia. Consultar información al
                   <a
                     className="text-blue-600 underline hover:text-blue-800 transition duration-300 ease-in-out mx-2 "
-                    href="tel:+59899542753"
+                    href="tel:+59842244897"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    099 542 753
+                    4224 4897
                   </a>
                   .
                 </li>
