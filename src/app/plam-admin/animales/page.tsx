@@ -1,23 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Loader from '@/components/Loader';
-import { Animal, AnimalTransactionType } from '@/types';
+import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
 import { handlePromiseToast } from '@/lib/handleToast';
-import { EyeIcon, EditIcon, TrashIcon, HeartIcon, FilterIcon } from '@/components/Icons';
+import {
+  EyeIcon,
+  EditIcon,
+  TrashIcon,
+  HeartIcon,
+  FilterIcon,
+  GridViewIcon,
+  TableViewIcon,
+} from '@/components/Icons';
 import SearchBox from '@/components/SearchBox';
+import AdminAnimalCard from '@/components/AdminAnimalCard';
+import { gsap } from 'gsap';
 
 export default function AnimalsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -26,7 +37,24 @@ export default function AnimalsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const MIN_LOADING_TIME = 600;
 
+  // Initialize infoModeRender from localStorage
+  const [infoModeRender, setInfoModeRender] = useState<'table' | 'grid'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('animalViewMode');
+      return saved === 'table' || saved === 'grid' ? saved : 'grid';
+    }
+    return 'grid';
+  });
+
+  // Save to localStorage when view mode changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('animalViewMode', infoModeRender);
+    }
+  }, [infoModeRender]);
+
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([]);
+  const [privateInfoMap, setPrivateInfoMap] = useState<Map<string, PrivateInfoType>>(new Map());
   const [sortReference, setSortReference] = useState<string | boolean>('name');
   const [sortOrder, setSortOrder] = useState('>');
   const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([]);
@@ -36,6 +64,14 @@ export default function AnimalsPage() {
     const start = Date.now();
 
     const fetchData = async () => {
+      // Fetch private info and create Map for O(1) lookup
+      await getFirestoreData({ currentCollection: 'animalPrivateInfo' }).then((data) => {
+        const infoMap = new Map<string, PrivateInfoType>();
+        (data as PrivateInfoType[]).forEach((info) => {
+          infoMap.set(info.id, info);
+        });
+        setPrivateInfoMap(infoMap);
+      });
       // Fetch ALL animals (excluding deleted by default)
       // Apply all filters client-side to avoid Firestore index issues
       await getFirestoreData({
@@ -235,6 +271,34 @@ export default function AnimalsPage() {
     setSortedAnimals(sortedData);
   }, [animalsToShow, sortOrder, sortReference, searchParams]);
 
+  // GSAP animation for grid
+  useEffect(() => {
+    if (gridRef.current && sortedAnimals.length > 0 && !loading && infoModeRender === 'grid') {
+      const cards = gridRef.current.children;
+
+      // Set initial state immediately
+      gsap.set(cards, {
+        opacity: 0,
+        y: 500,
+        scale: 0.8,
+      });
+
+      // Animate to final state
+      gsap.to(cards, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.5,
+        stagger: {
+          amount: 1,
+          grid: 'auto',
+          from: 'random',
+        },
+        ease: 'power2.out',
+      });
+    }
+  }, [sortedAnimals, loading, infoModeRender]);
+
   const sortAnimalBy = ({ reference }: { reference: string | boolean }) => {
     if (sortReference === reference) {
       setSortOrder(() => (sortOrder == '>' ? '<' : '>'));
@@ -362,179 +426,219 @@ export default function AnimalsPage() {
   };
 
   return (
-    <section className=" bg-gradient-to-tr from-cream-light to-amber-sunset w-full px-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
+    <section className=" bg-gradient-to-tr from-cream-light to-amber-sunset w-full p-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
       {loading && <Loader />}
-      <div className="flex items-center gap-2">
-        <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
-        <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
+          <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+        </div>
+
+        {/* View Toggle Buttons */}
+        <div className="flex items-center gap-1 bg-cream-light rounded-lg p-1 shadow-sm">
+          <button
+            onClick={() => setInfoModeRender('grid')}
+            className={`p-2 rounded transition-colors ${
+              infoModeRender === 'grid'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Vista de cuadrícula"
+          >
+            <GridViewIcon size={24} />
+          </button>
+          <button
+            onClick={() => setInfoModeRender('table')}
+            className={`p-2 rounded transition-colors ${
+              infoModeRender === 'table'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="Vista de tabla"
+          >
+            <TableViewIcon size={24} />
+          </button>
+        </div>
       </div>
       <SearchBox dashboardMode />
-      <div className="  w-full relative overflow-x-auto shadow-md rounded-lg ">
-        <table className="w-full text-sm text-left rtl:text-right text-gray-500">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-            <tr>
-              <th className="w-fit" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'id' })}
-                >{`ID ${renderDirection('id')}`}</button>
-              </th>
-              <th className="w-fit" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'name' })}
-                >{`NOMBRE ${renderDirection('name')}`}</button>
-              </th>
-              <th className="w-fit hidden sm:table-cell" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'gender' })}
-                >{`GENERO ${renderDirection('gender')}`}</button>
-              </th>
-              <th className="w-fit hidden md:table-cell" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'species' })}
-                >{`ESPECIE ${renderDirection('species')}`}</button>
-              </th>
-              <th className="w-fit hidden md:table-cell" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'lifeStage' })}
-                >{`EDAD ${renderDirection('lifeStage')}`}</button>
-              </th>
-              <th className="w-fit" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'status' })}
-                >{`SITUACIÓN ${renderDirection('status')}`}</button>
-              </th>
-              <th className="w-fit hidden sm:table-cell" scope="col">
-                <button
-                  className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start hover:bg-gray-300"
-                  onClick={() => sortAnimalBy({ reference: 'isAvalible' })}
-                >{`VISIBLE ${renderDirection('isAvalible')}`}</button>
-              </th>
-              <th scope="col" className=" py-3">
-                <span className="sr-only">Ver Detalles</span>
-              </th>
-              <th scope="col" className=" py-3">
-                <span className="sr-only">Editar</span>
-              </th>
-              <th scope="col hidden md:table-cell" className=" py-3">
-                <span className="sr-only">Elimiar</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {animalsToShow.length > 0 &&
-              sortedAnimals?.map((animal) => (
-                <tr key={animal.id} className="bg-white border-b hover:bg-gray-50">
-                  <th
-                    scope="row"
-                    className="px-2 py-4 outline-1 outline-slate-200 font-medium text-gray-900 whitespace-nowrap text-center"
-                  >
-                    {animal.id}
-                  </th>
-                  <td className="px-2 py-4 outline-1 outline-slate-200">{animal.name}</td>
-                  <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell">
-                    {animal.gender}
-                  </td>
-                  <td className="px-2 py-4 outline-1 outline-slate-200 hidden md:table-cell ">
-                    {animal.species}
-                  </td>
-                  <td className="px-2 py-4 outline-1 outline-slate-200 hidden md:table-cell">
-                    {animal.lifeStage}
-                  </td>
-                  <td className="px-2 py-4 outline-1 outline-slate-200 text-nowrap">
-                    {animal.status}
-                  </td>
-                  <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell ">
-                    <label className="flex justify-center items-center cursor-pointer w-full">
-                      <input
-                        type="checkbox"
-                        onChange={() =>
-                          handleVisible({ currentId: animal.id, active: !animal.isVisible })
+      {infoModeRender === 'grid' && (
+        <div
+          ref={gridRef}
+          className="w-full grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4"
+        >
+          {sortedAnimals.map((animal) => (
+            <AdminAnimalCard
+              key={animal.id}
+              animal={animal}
+              privateInfo={privateInfoMap.get(animal.id)}
+              onVisible={(id, active) => handleVisible({ currentId: id, active })}
+              onDelete={(id) => handleDelete(id)}
+            />
+          ))}
+        </div>
+      )}
+      {infoModeRender === 'table' && (
+        <div className="  w-full relative overflow-x-auto shadow-md rounded-lg ">
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th className="w-fit" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'id' })}
+                  >{`ID ${renderDirection('id')}`}</button>
+                </th>
+                <th className="w-fit" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'name' })}
+                  >{`NOMBRE ${renderDirection('name')}`}</button>
+                </th>
+                <th className="w-fit hidden sm:table-cell" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'gender' })}
+                  >{`GENERO ${renderDirection('gender')}`}</button>
+                </th>
+                <th className="w-fit hidden md:table-cell" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'species' })}
+                  >{`ESPECIE ${renderDirection('species')}`}</button>
+                </th>
+                <th className="w-fit hidden md:table-cell" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'lifeStage' })}
+                  >{`EDAD ${renderDirection('lifeStage')}`}</button>
+                </th>
+                <th className="w-fit" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start  hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'status' })}
+                  >{`SITUACIÓN ${renderDirection('status')}`}</button>
+                </th>
+                <th className="w-fit hidden sm:table-cell" scope="col">
+                  <button
+                    className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start hover:bg-gray-300"
+                    onClick={() => sortAnimalBy({ reference: 'isAvalible' })}
+                  >{`VISIBLE ${renderDirection('isAvalible')}`}</button>
+                </th>
+                <th scope="col" className=" py-3">
+                  <span className="sr-only">Ver Detalles</span>
+                </th>
+                <th scope="col" className=" py-3">
+                  <span className="sr-only">Editar</span>
+                </th>
+                <th scope="col hidden md:table-cell" className=" py-3">
+                  <span className="sr-only">Elimiar</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {animalsToShow.length > 0 &&
+                sortedAnimals?.map((animal) => (
+                  <tr key={animal.id} className="bg-white border-b hover:bg-gray-50">
+                    <th
+                      scope="row"
+                      className="px-2 py-4 outline-1 outline-slate-200 font-medium text-gray-900 whitespace-nowrap text-center"
+                    >
+                      {animal.id}
+                    </th>
+                    <td className="px-2 py-4 outline-1 outline-slate-200">{animal.name}</td>
+                    <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell">
+                      {animal.gender}
+                    </td>
+                    <td className="px-2 py-4 outline-1 outline-slate-200 hidden md:table-cell ">
+                      {animal.species}
+                    </td>
+                    <td className="px-2 py-4 outline-1 outline-slate-200 hidden md:table-cell">
+                      {animal.lifeStage}
+                    </td>
+                    <td className="px-2 py-4 outline-1 outline-slate-200 text-nowrap">
+                      {animal.status}
+                    </td>
+                    <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell ">
+                      <label className="flex justify-center items-center cursor-pointer w-full">
+                        <input
+                          type="checkbox"
+                          onChange={() =>
+                            handleVisible({ currentId: animal.id, active: !animal.isVisible })
+                          }
+                          className="sr-only peer"
+                          checked={animal.isVisible}
+                        />
+                        <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-blue-600" />
+                      </label>
+                    </td>
+                    <td className="px-2 py-4 text-right">
+                      <Link
+                        href={`/plam-admin/animales/${animal.id}`}
+                        className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
+                      >
+                        <EyeIcon size={16} title="Ver detalles" />
+                        <span className="hidden lg:inline">Ver Detalles</span>
+                      </Link>
+                    </td>
+                    <td className="px-2 py-4 text-right ">
+                      <Link
+                        href={`/plam-admin/animales/editar/${animal.id}`}
+                        className="font-medium text-blue-600 hover:underline flex items-center justify-end gap-1"
+                      >
+                        <EditIcon size={16} title="Editar animal" />
+                        <span className="hidden lg:inline">Editar</span>
+                      </Link>
+                    </td>
+                    <td className="px-2 py-4 text-right">
+                      <Modal
+                        buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
+                        buttonText={
+                          <>
+                            <TrashIcon size={16} title="Eliminar animal" />
+                            <span className="hidden xl:inline">Eliminar</span>
+                          </>
                         }
-                        className="sr-only peer"
-                        checked={animal.isVisible}
-                      />
-                      <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-blue-600" />
-                    </label>
-                  </td>
-                  <td className="px-2 py-4 text-right">
-                    <Link
-                      href={`/plam-admin/animales/${animal.id}`}
-                      className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
-                    >
-                      <EyeIcon size={16} title="Ver detalles" />
-                      <span className="hidden lg:inline">Ver Detalles</span>
-                    </Link>
-                  </td>
-                  <td className="px-2 py-4 text-right ">
-                    <Link
-                      href={`/plam-admin/animales/editar/${animal.id}`}
-                      className="font-medium text-blue-600 hover:underline flex items-center justify-end gap-1"
-                    >
-                      <EditIcon size={16} title="Editar animal" />
-                      <span className="hidden lg:inline">Editar</span>
-                    </Link>
-                  </td>
-                  <td className="px-2 py-4 text-right">
-                    <Modal
-                      buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
-                      buttonText={
-                        <>
-                          <TrashIcon size={16} title="Eliminar animal" />
-                          <span className="hidden xl:inline">Eliminar</span>
-                        </>
-                      }
-                    >
-                      <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
-                        <h2 className="text-2xl font-bold">
-                          ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
-                        </h2>
-                        <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
-                          <div className="aspect-square">
-                            <Image
-                              className="w-full h-full object-cover bg-white"
-                              src={animal.images[0].imgUrl}
-                              alt={animal.images[0].imgAlt}
-                              width={300}
-                              height={300}
-                            />
-                          </div>
-                          <div className="flex flex-col items-center justify-between gap-1 p-2">
-                            <span className="uppercase text-2xl text-center font-extrabold">
-                              Nombre: {animal.name}
-                            </span>
-                            <span className="uppercase text-2xl text-center font-extrabold">
-                              Id :{animal.id}
-                            </span>
-                            <button
-                              onClick={() => handleDelete(animal.id)}
-                              className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
-                            >
-                              <TrashIcon size={20} title="Confirmar eliminación" color="white" />
-                              Eliminar
-                            </button>
-                          </div>
-                        </article>
-                      </section>
-                    </Modal>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-        {animalsToShow.length < 1 && <p className="text-center">No hay animales que mostar</p>}
-        <FloatButton
-          buttonStyle="add"
-          action={() => {
-            router.replace('/plam-admin/animales/crear');
-          }}
-        />
-      </div>
+                      >
+                        <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
+                          <h2 className="text-2xl font-bold">
+                            ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
+                          </h2>
+                          <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
+                            <div className="aspect-square">
+                              <Image
+                                className="w-full h-full object-cover bg-white"
+                                src={animal.images[0].imgUrl}
+                                alt={animal.images[0].imgAlt}
+                                width={300}
+                                height={300}
+                              />
+                            </div>
+                            <div className="flex flex-col items-center justify-between gap-1 p-2">
+                              <span className="uppercase text-2xl text-center font-extrabold">
+                                Nombre: {animal.name}
+                              </span>
+                              <span className="uppercase text-2xl text-center font-extrabold">
+                                Id :{animal.id}
+                              </span>
+                              <button
+                                onClick={() => handleDelete(animal.id)}
+                                className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
+                              >
+                                <TrashIcon size={20} title="Confirmar eliminación" color="white" />
+                                Eliminar
+                              </button>
+                            </div>
+                          </article>
+                        </section>
+                      </Modal>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {animalsToShow.length < 1 && <p className="text-center">No hay animales que mostar</p>}
       <Link
         className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
         href="/plam-admin/animales/adoptados"
@@ -549,6 +653,12 @@ export default function AnimalsPage() {
         <TrashIcon size={20} title="Ver papelera" color="white" />
         Ver Papelera
       </Link>
+      <FloatButton
+        buttonStyle="add"
+        action={() => {
+          router.replace('/plam-admin/animales/crear');
+        }}
+      />
     </section>
   );
 }
