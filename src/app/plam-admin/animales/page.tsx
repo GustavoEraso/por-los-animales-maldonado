@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,7 +25,7 @@ import SearchBox from '@/components/SearchBox';
 import AdminAnimalCard from '@/components/AdminAnimalCard';
 import { gsap } from 'gsap';
 
-export default function AnimalsPage() {
+function AnimalsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -660,5 +660,13 @@ export default function AnimalsPage() {
         }}
       />
     </section>
+  );
+}
+
+export default function AnimalsPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <AnimalsPageContent />
+    </Suspense>
   );
 }

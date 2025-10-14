@@ -1,6 +1,7 @@
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 60; // Cache response for 60 seconds
 
 /**
