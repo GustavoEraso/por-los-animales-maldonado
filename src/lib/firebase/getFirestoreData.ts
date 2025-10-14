@@ -7,13 +7,14 @@ import {
   type QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { Animal, WpContactType, AnimalTransactionType, UserType } from '@/types';
+import { Animal, WpContactType, AnimalTransactionType, UserType, PrivateInfoType } from '@/types';
 
 interface CollectionsMap {
   animals: Animal;
   authorizedEmails: UserType;
   contacts: WpContactType;
   animalTransactions: AnimalTransactionType;
+  animalPrivateInfo: PrivateInfoType;
 }
 
 type FirestoreSimpleValue = string | number | boolean | null;
