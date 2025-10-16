@@ -78,5 +78,18 @@ export interface CollectionsType {
     | 'authorizedEmails'
     | 'contacts'
     | 'animalTransactions'
-    | 'animalPrivateInfo';
+    | 'animalPrivateInfo'
+    | 'banners';
+}
+
+export interface BannerType {
+  id: string;
+  showTitle?: boolean;
+  title?: string;
+  showDescription?: boolean;
+  description?: string;
+  showButton?: boolean;
+  buttonText?: string;
+  buttonUrl?: string;
+  image: Img;
 }

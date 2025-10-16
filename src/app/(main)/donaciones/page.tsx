@@ -388,10 +388,10 @@ export default function Donaciones() {
                     4222-3864
                   </a>
                   <a
-                    href="tel:+59899811905"
+                    href="tel:+59891929271"
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition"
                   >
-                    099 811 905
+                    091 929 271
                   </a>
                 </div>
               </section>
@@ -456,10 +456,10 @@ export default function Donaciones() {
                     4222-3864
                   </a>
                   <a
-                    href="tel:+59899811905"
+                    href="tel:+59891929271"
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition"
                   >
-                    099 811 905
+                    091 929 271
                   </a>
                 </div>
               </section>
