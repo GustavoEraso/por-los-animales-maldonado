@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/firebase';
-import { ChevronRightIcon, HomeIcon, PetsIcon, UserIcon } from '@/components/Icons';
+import { ChevronRightIcon, HomeIcon, ImageIcon, PetsIcon, UserIcon } from '@/components/Icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -55,6 +55,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   <span className="hidden md:block">Usuarios</span>
                   <UserIcon size={32} className="w-8 h-8 mb-2" title="Usuarios" />
+                </Link>
+              </li>
+
+              <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                <Link
+                  className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                  href={'/plam-admin/banners'}
+                >
+                  <span className="hidden md:block">banners</span>
+                  <ImageIcon size={32} className="w-8 h-8 mb-2" title="banners" />
                 </Link>
               </li>
             </ul>
