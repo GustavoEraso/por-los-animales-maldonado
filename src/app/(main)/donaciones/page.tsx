@@ -44,14 +44,14 @@ export default function Donaciones() {
       <section className=" w-full flex flex-col items-center justify-center  bg-cream-light py-6">
         {/* MENSIONES */}
         <h3 id="mensiones" className="text-2xl font-bold text-green-dark text-center">
-          MENSIONANOS Y AYUDANOS!!!
+          MENCIONANOS Y AYUDANOS!!!
         </h3>
         <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4 text-green-dark">
           <article className="flex flex-col items-center justify-between bg-white rounded-lg shadow-lg w-full py-8 px-4 gap-6">
             {/* Header */}
             <header className="flex flex-col items-center gap-4 w-full">
               <h3 className="font-bold text-2xl text-center text-balance text-green-dark">
-                Mensionanos en Costa Mascotas
+                Mencionanos en Costa Mascotas
               </h3>
               <Image
                 className="rounded-xl"
@@ -122,7 +122,7 @@ export default function Donaciones() {
             {/* Header */}
             <header className="flex flex-col items-center gap-4 w-full">
               <h3 className="font-bold text-2xl text-center text-balance text-green-dark">
-                Mensionanos en Consentidos
+                Mencionanos en Consentidos
               </h3>
               <Image
                 className="rounded-xl"
