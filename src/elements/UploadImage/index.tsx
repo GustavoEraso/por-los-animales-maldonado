@@ -14,6 +14,8 @@ interface UploadImagesProps {
   onImagesAdd: (images: Img[]) => void;
   /** Maximum number of files that can be uploaded (default: 5) */
   maxFiles?: number;
+  /** Current folder in Cloudinary to upload images to */
+  currentFolder?: 'animals' | 'banners' | 'others';
 }
 
 /**
@@ -22,25 +24,30 @@ interface UploadImagesProps {
  * the upload process with proper error handling and UI feedback.
  *
  * @param {UploadImagesProps} props - Component props
- * @param {function} props.onImagesAdd - Callback function called when images are successfully uploaded
+ * @param {function} props.onImagesAdd - Callback function called when images are successfully uploaded with Img[] format
  * @param {number} [props.maxFiles=5] - Maximum number of files that can be uploaded
+ * @param {'animals'|'banners'|'others'} [props.currentFolder='animals'] - Cloudinary folder/preset to use for uploads
  * @returns {React.ReactElement} Upload widget with button and file limits display
  *
  * @example
  * ```tsx
- * // Basic usage with callback
+ * // Basic usage for animal images
  * const [images, setImages] = useState<Img[]>([]);
  *
  * const handleImagesAdd = (newImages: Img[]) => {
  *   setImages(prev => [...prev, ...newImages]);
  * };
  *
- * <UploadImages onImagesAdd={handleImagesAdd} />
- *
- * // Custom file limit
  * <UploadImages
  *   onImagesAdd={handleImagesAdd}
- *   maxFiles={3}
+ *   currentFolder="animals"
+ * />
+ *
+ * // Upload banner images with custom limit
+ * <UploadImages
+ *   onImagesAdd={handleBannerUpload}
+ *   currentFolder="banners"
+ *   maxFiles={1}
  * />
  *
  * // In a form for animal registration
@@ -49,29 +56,50 @@ interface UploadImagesProps {
  *     <label>Fotos del animal</label>
  *     <UploadImages
  *       onImagesAdd={handleAnimalImages}
+ *       currentFolder="animals"
  *       maxFiles={5}
  *     />
  *   </div>
  * </form>
  *
- * // With image preview
+ * // With image preview grid
  * <div className="upload-section">
  *   <UploadImages onImagesAdd={handleImagesAdd} />
- *   <div className="image-grid mt-4">
+ *   <div className="image-grid mt-4 grid grid-cols-3 gap-4">
  *     {images.map(img => (
- *       <img key={img.imgId} src={img.imgUrl} alt={img.imgAlt} />
+ *       <div key={img.imgId} className="relative aspect-square">
+ *         <img
+ *           src={img.imgUrl}
+ *           alt={img.imgAlt}
+ *           className="w-full h-full object-cover rounded-lg"
+ *         />
+ *       </div>
  *     ))}
  *   </div>
  * </div>
  * ```
  *
- * @note Requires NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET environment variable.
+ * @note Requires environment variables:
+ * - NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_ANIMALS
+ * - NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_BANNERS
+ * - NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_OTHERS
+ *
  * Images are automatically optimized to WebP format when available.
+ * Uploaded images return an Img object with: { imgUrl, imgId, imgAlt }
  */
 export default function UploadImages({
+  currentFolder = 'animals',
   onImagesAdd,
   maxFiles,
 }: UploadImagesProps): React.ReactElement {
+  const presetMap: { [key: string]: string } = {
+    animals: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_ANIMALS || '',
+    banners: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_BANNERS || '',
+    others: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_OTHERS || '',
+  };
+
+  const uploadPreset = presetMap[currentFolder] || presetMap['others'];
+
   const handleUpload = (result: CloudinaryUploadWidgetResults) => {
     if (result.event === 'success' && typeof result.info !== 'string' && result.info) {
       const info = result.info as CloudinaryUploadWidgetInfo;
@@ -104,7 +132,7 @@ export default function UploadImages({
     <section className="flex flex-col gap-6 justify-center items-center w-full">
       <span className="text-xl font-bold">maximo 5 imagenes</span>
       <CldUploadWidget
-        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET! || ''}
+        uploadPreset={uploadPreset}
         options={{ multiple: true, maxFiles: maxFiles || 5 }}
         onSuccess={handleUpload}
       >
