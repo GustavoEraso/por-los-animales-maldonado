@@ -32,12 +32,28 @@ type AdjustableImageProps = HTMLAttributes<HTMLDivElement> & {
  * Advanced image viewer component with zoom, pan, and navigation capabilities.
  *
  * Provides an interactive image viewing experience with the following features:
- * - Zoom in/out functionality with percentage control
- * - Pan/drag to adjust image position within the container
- * - Navigation between multiple images with preloading
- * - Responsive design that adapts to container size changes
- * - Image caching for smooth transitions
- * - Cover sizing to ensure images fill the container appropriately
+ * - **Zoom in/out functionality** - Scale images with percentage control while maintaining aspect ratio
+ * - **Native scroll-based panning** - Drag to adjust image position using browser's native scroll mechanics
+ * - **Automatic boundary constraints** - Browser-native scroll limits prevent images from moving outside the viewport
+ * - **Multi-image navigation** - Switch between multiple images with preloading for instant transitions
+ * - **Responsive design** - Adapts to container size changes automatically
+ * - **Image caching** - Preloads and caches images for smooth, flicker-free experience
+ * - **Cover sizing algorithm** - Intelligently calculates image dimensions to fill container appropriately
+ * - **Hidden scrollbars** - Clean UI with invisible but functional scrollbars
+ * - **Smooth transitions** - Animated zoom changes for better user experience
+ *
+ * **Technical Implementation:**
+ * The component uses a scroll-based positioning system for panning combined with direct
+ * width/height manipulation for zoom. When zoomed in, the image wrapper becomes larger than
+ * its container, enabling native scroll behavior. The drag gesture modifies `scrollLeft` and
+ * `scrollTop` properties for smooth, performant panning with automatic boundary constraints
+ * handled by the browser.
+ *
+ * **Important: html2canvas Compatibility:**
+ * Zoom is applied by directly modifying width/height (width * scale, height * scale) rather
+ * than using CSS transform: scale(). This is critical for html2canvas compatibility, as CSS
+ * transforms are visual-only and don't affect the actual DOM layout that html2canvas captures.
+ * Direct dimension manipulation ensures the zoomed state is correctly captured in the generated image.
  *
  * **Special Use Case - Poster/Canvas Generation:**
  * This component is designed to work seamlessly with html2canvas and similar libraries
@@ -90,7 +106,8 @@ export default function AdjustableImage({
   height = '100%',
   className,
 }: AdjustableImageProps): React.ReactElement {
-  const imgRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Cache for already decoded images
   const cache = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -98,23 +115,18 @@ export default function AdjustableImage({
   // Visual state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [src, setSrc] = useState<string | null>(null);
+  const [imgSize, setImgSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
 
-  // Base (intrinsic) and rendered (px) sizes
-  const sizesRef = useRef({ w: 0, h: 0 }); // naturalWidth/Height of current image
-  const [bgSize, setBgSize] = useState({ w: 0, h: 0 });
+  // Zoom state
+  const [scale, setScale] = useState(1);
 
-  // Pan/zoom state
-  const [x, setX] = useState(10);
-  const [y, setY] = useState(10);
-  const [size, setSize] = useState(100);
-
-  // Container size tracking state
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  // Helper functions
-  const clamp = (v: number) => Math.max(0, Math.min(100, v));
-
-  // Loads and caches an image
+  /**
+   * Loads and caches an image for instant display.
+   * Uses the Image.decode() API when available for better performance.
+   */
   const loadImage = (url: string) =>
     new Promise<HTMLImageElement>((resolve) => {
       if (cache.current.has(url)) return resolve(cache.current.get(url)!);
@@ -133,62 +145,11 @@ export default function AdjustableImage({
       }
     });
 
-  // Computes cover size to fill container while maintaining aspect ratio
-  const computeCoverSize = (Wc: number, Hc: number, Wi: number, Hi: number) => {
-    const r = Wi / Hi;
-    const hIfFitWidth = Wc / r; // height if fit by width
-    const wIfFitHeight = Hc * r; // width if fit by height
-    // cover => the one that covers more
-    if (hIfFitWidth < Hc) return { w: wIfFitHeight, h: Hc };
-    return { w: Wc, h: hIfFitWidth };
-  };
-
-  // Function to recalculate bgSize based on current container
-  const recalculateBgSize = () => {
-    if (!imgRef.current || !sizesRef.current.w || !sizesRef.current.h) return;
-
-    const Wc = imgRef.current.offsetWidth;
-    const Hc = imgRef.current.offsetHeight;
-
-    if (Wc && Hc) {
-      const cover = computeCoverSize(Wc, Hc, sizesRef.current.w, sizesRef.current.h);
-
-      // Apply current zoom factor
-      const zoomFactor = size / 100;
-      setBgSize({
-        w: cover.w * zoomFactor,
-        h: cover.h * zoomFactor,
-      });
-
-      setContainerSize({ width: Wc, height: Hc });
-    }
-  };
-
-  // ResizeObserver for container size changes
-  useEffect(() => {
-    if (!imgRef.current) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-
-        // Only recalculate if size actually changed
-        if (width !== containerSize.width || height !== containerSize.height) {
-          requestAnimationFrame(() => {
-            recalculateBgSize();
-          });
-        }
-      }
-    });
-
-    resizeObserver.observe(imgRef.current);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [containerSize.width, containerSize.height, size]);
-
-  // Preload and instant swap
+  /**
+   * Effect to preload and display the current image.
+   * Calculates the cover-sized dimensions to fill the container.
+   * Also preloads neighboring images for instant navigation.
+   */
   useEffect(() => {
     let alive = true;
     const url = imageUrls[currentImageIndex];
@@ -199,23 +160,34 @@ export default function AdjustableImage({
 
     loadImage(url).then((img) => {
       if (!alive) return;
-
       // Update visible source
       setSrc(url);
 
-      // Store intrinsic size
-      sizesRef.current = { w: img.naturalWidth, h: img.naturalHeight };
+      const containerSize = containerRef.current?.getBoundingClientRect();
+      if (!containerSize) return;
 
-      // Calculate cover in px relative to container
-      const el = imgRef.current;
-      const Wc = el?.offsetWidth ?? 0;
-      const Hc = el?.offsetHeight ?? 0;
-      if (Wc && Hc) {
-        const cover = computeCoverSize(Wc, Hc, img.naturalWidth, img.naturalHeight);
-        setBgSize(cover);
-        setSize(100);
-        setContainerSize({ width: Wc, height: Hc });
+      // Calculate image size for cover behavior
+      const containerRatio = containerSize.width / containerSize.height;
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      let displayWidth = 0;
+      let displayHeight = 0;
+
+      if (imgRatio > containerRatio) {
+        // Image is wider than container - match height and overflow width
+        displayHeight = containerSize.height;
+        displayWidth = img.naturalWidth * (containerSize.height / img.naturalHeight);
+      } else {
+        // Image is taller than container - match width and overflow height
+        displayWidth = containerSize.width;
+        displayHeight = img.naturalHeight * (containerSize.width / img.naturalWidth);
       }
+
+      // Set calculated image dimensions
+      setImgSize({
+        width: displayWidth,
+        height: displayHeight,
+      });
+      setScale(1);
     });
 
     // Preload neighbors so next change is immediate
@@ -233,121 +205,143 @@ export default function AdjustableImage({
     };
   }, [imageUrls, currentImageIndex]);
 
-  // Zoom functionality (based on stored intrinsic size)
-  const handleSize = (percentage: number) => {
-    if (!imgRef.current) return;
-    const elementWidth = imgRef.current.offsetWidth || 0;
-    const elementHeight = imgRef.current.offsetHeight || 0;
-
-    const newSize = size + percentage;
-    const zoomFactor = newSize / 100;
-
-    // Calcular el tamaño base (cover) para el contenedor actual
-    const baseCover = computeCoverSize(
-      elementWidth,
-      elementHeight,
-      sizesRef.current.w,
-      sizesRef.current.h
-    );
-
-    const newW = baseCover.w * zoomFactor;
-    const newH = baseCover.h * zoomFactor;
-
-    // Don't allow shrinking below container size
-    if (newW < elementWidth || newH < elementHeight) return;
-
-    setSize(newSize);
-    setBgSize({ w: newW, h: newH });
-  };
-
-  // Drag (pan) functionality
+  /**
+   * Drag (pan) functionality using native scroll.
+   * Instead of manipulating CSS position, we modify the scrollLeft/scrollTop
+   * of the container, providing smooth panning with automatic boundary constraints.
+   */
   const dragging = useRef(false);
   const dragData = useRef<{
     startX: number;
     startY: number;
     originX: number;
     originY: number;
-    width: number;
-    height: number;
   } | null>(null);
 
+  /**
+   * Initiates drag operation and stores initial scroll position.
+   */
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
     dragData.current = {
       startX: e.clientX,
       startY: e.clientY,
-      originX: x,
-      originY: y,
-      width: rect.width,
-      height: rect.height,
+      originX: containerRef.current?.scrollLeft || 0,
+      originY: containerRef.current?.scrollTop || 0,
     };
     dragging.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  /**
+   * Handles pointer movement during drag.
+   * Updates scroll position in the opposite direction of the drag delta
+   * to create natural panning behavior.
+   */
+  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging.current || !dragData.current) return;
-    const { startX, startY, originX, originY, width, height } = dragData.current;
-    const dxPx = e.clientX - startX;
-    const dyPx = e.clientY - startY;
 
-    const factor = size >= 100 ? -1 : 1;
+    const { startX, startY, originX, originY } = dragData.current;
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
 
-    setX(clamp(originX + factor * (dxPx / width) * 100));
-    setY(clamp(originY + factor * (dyPx / height) * 100));
+    containerRef.current?.scrollTo({
+      left: originX - deltaX,
+      top: originY - deltaY,
+      behavior: 'auto',
+    });
   };
 
+  /**
+   * Ends drag operation and releases pointer capture.
+   */
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     dragging.current = false;
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
-  // Component UI
+  /**
+   * Handles zoom in/out operations.
+   * Prevents zooming out below the container size to maintain coverage.
+   * Applies zoom by directly modifying width/height dimensions (not CSS transforms)
+   * to ensure html2canvas correctly captures the zoomed state.
+   *
+   * @param {number} porcentaje - Percentage to adjust zoom (positive to zoom in, negative to zoom out)
+   */
+  const manejadorZoom = (porcentaje: number) => {
+    const mainContainer = mainRef.current?.getBoundingClientRect();
+    const containerSize = containerRef.current?.getBoundingClientRect();
+
+    if (!containerSize || !mainContainer) return;
+
+    const newScale = scale + porcentaje / 100;
+
+    if (
+      porcentaje < 0 &&
+      containerSize.width * newScale < mainContainer.width &&
+      containerSize.height * newScale < mainContainer.height
+    )
+      return;
+
+    if (newScale < 0.1) return;
+    setScale(newScale);
+  };
+
   return (
     <div
-      ref={imgRef}
-      className={`${styles.main} ${className ?? ''}`}
-      style={{
-        backgroundImage: src ? `url(${src})` : 'none',
-        backgroundPosition: `${x}% ${y}%`,
-        backgroundSize: `${bgSize.w}px ${bgSize.h}px`,
-        width: toCss(width),
-        height: toCss(height),
-      }}
+      ref={mainRef}
+      className={styles.mainContainer}
+      style={{ width: toCss(width), height: toCss(height) }}
     >
-      <section data-html2canvas-ignore className={styles.controlerContainer}>
-        <button onClick={() => handleSize(-5)}>&#x2796;&#xFE0E;</button>
-        <span>zoom {size}%</span>
-        <button onClick={() => handleSize(5)}>&#x2795;&#xFE0E;</button>
-      </section>
-
-      <section
-        data-html2canvas-ignore
-        className={styles.dragContainer}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        <span>arrastra para ajustar la imagen</span>
-      </section>
-
-      {imageUrls.length > 1 && (
-        <section data-html2canvas-ignore className={styles.controlerContainer}>
-          <button
-            onClick={() =>
-              setCurrentImageIndex((i) => (i - 1 + imageUrls.length) % imageUrls.length)
-            }
+      <div ref={containerRef} className={`${styles.imgContainer} ${className ?? ''}`}>
+        {src && (
+          <div
+            className={styles.imgWrapper}
+            style={{
+              width: imgSize.width * scale + 'px',
+              height: imgSize.height * scale + 'px',
+              objectFit: 'contain',
+              position: 'absolute',
+            }}
           >
-            &#x2770;
-          </button>
-          <span>imagen</span>
-          <button onClick={() => setCurrentImageIndex((i) => (i + 1) % imageUrls.length)}>
-            &#x2771;
-          </button>
+            <img src={src} alt="" className={styles.imgElement} />
+          </div>
+        )}
+      </div>
+      <div className={styles.mainControlerContainer}>
+        <section data-html2canvas-ignore className={styles.controlerContainer}>
+          <button onClick={() => manejadorZoom(-5)}>&#x2796;&#xFE0E;</button>
+          <span>zoom {Math.round(scale * 100)}%</span>
+          <button onClick={() => manejadorZoom(5)}>&#x2795;&#xFE0E;</button>
         </section>
-      )}
+
+        <section
+          data-html2canvas-ignore
+          className={styles.dragContainer}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handleMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
+          <span>arrastra para ajustar la imagen</span>
+        </section>
+
+        {imageUrls.length > 1 && (
+          <section data-html2canvas-ignore className={styles.controlerContainer}>
+            <button
+              onClick={() =>
+                setCurrentImageIndex((i) => (i - 1 + imageUrls.length) % imageUrls.length)
+              }
+            >
+              &#x2770;
+            </button>
+            <span>imagen</span>
+            <button onClick={() => setCurrentImageIndex((i) => (i + 1) % imageUrls.length)}>
+              &#x2771;
+            </button>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

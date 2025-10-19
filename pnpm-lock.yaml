@@ -33,8 +33,8 @@ importers:
         specifier: ^3.13.0
         version: 3.13.0
       html2canvas-pro:
-        specifier: ^1.5.11
-        version: 1.5.11
+        specifier: 1.5.12
+        version: 1.5.12
       next:
         specifier: ^15.4.1
         version: 15.5.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -1787,8 +1787,8 @@ packages:
   hi-base32@0.5.1:
     resolution: {integrity: sha512-EmBBpvdYh/4XxsnUybsPag6VikPYnN30td+vQk+GI3qpahVEG9+gTkG0aXVxTjBqQ5T6ijbWIu77O+C5WFWsnA==}
 
-  html2canvas-pro@1.5.11:
-    resolution: {integrity: sha512-W4pEeKLG8+9a54RDOSiEKq7gRXXDzt0ORMaLXX+l6a3urSKbmnkmyzcRDCtgTOzmHLaZTLG2wiTQMJqKLlSh3w==}
+  html2canvas-pro@1.5.12:
+    resolution: {integrity: sha512-egtJIe6YXMKSLX/ls400OJD6tzEVtATJOE++mnXmxMWyqcu9HDXDoLiWeXnGv45QW2ZaIiDlXw46Gxqrqw6SEw==}
     engines: {node: '>=16.0.0'}
 
   http-parser-js@0.5.10:
@@ -4607,7 +4607,7 @@ snapshots:
 
   hi-base32@0.5.1: {}
 
-  html2canvas-pro@1.5.11:
+  html2canvas-pro@1.5.12:
     dependencies:
       css-line-break: 2.1.0
       text-segmentation: 1.0.3

@@ -19,7 +19,7 @@
     "d3": "^7.9.0",
     "firebase": "^11.8.1",
     "gsap": "^3.13.0",
-    "html2canvas-pro": "^1.5.11",
+    "html2canvas-pro": "1.5.12",
     "next": "^15.4.1",
     "next-cloudinary": "^6.16.0",
     "react": "^19.0.0",
