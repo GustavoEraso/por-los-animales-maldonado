@@ -1,14 +1,72 @@
-.main {
-  background-repeat: no-repeat;
+/**
+ * AdjustableImage Component Styles
+ * 
+ * Implements a scroll-based image viewer with zoom and pan capabilities.
+ * Uses native browser scroll with hidden scrollbars for smooth UX.
+ */
+
+/* Main wrapper container */
+.mainContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Scrollable image container with hidden scrollbars */
+.imgContainer {
+  width: 100%;
+  height: 100%;
   touch-action: none;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
-  transition-property: background-size, opacity, transform;
-  transition-duration: 0.2s;
-  transition-timing-function: ease-in-out;
+
+  position: relative;
+  overflow: scroll;
+  /* Hide scrollbars while maintaining scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
+/* Hide scrollbars in Webkit browsers (Chrome, Safari, Opera) */
+.imgContainer::-webkit-scrollbar {
+  display: none;
+}
+
+/* Image wrapper - handles zoom with smooth dimension transitions */
+.imgWrapper {
+  position: absolute;
+  /* Smooth transitions for width/height changes during zoom */
+  /* Note: Using dimension changes instead of transform: scale() for html2canvas compatibility */
+  transition:
+    width 0.2s ease-in-out,
+    height 0.2s ease-in-out;
+}
+
+/* Image element styles - non-interactive, fills wrapper */
+.imgElement {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures image covers the entire wrapper */
+  user-select: none; /* Prevent text/image selection during drag */
+  pointer-events: none; /* Pass through pointer events to parent */
+  touch-action: none; /* Disable browser touch gestures */
+  display: block; /* Remove inline spacing */
+}
+
+/* Overlay container for controls - positioned absolutely over the image */
+.mainControlerContainer {
+  padding: 0.5rem;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Button control sections (zoom, navigation) */
 .controlerContainer {
   display: flex;
   justify-content: stretch;
@@ -17,6 +75,7 @@
   background-color: rgba(222, 222, 210, 0.4);
   border-radius: 999px;
   margin-bottom: 8px;
+  z-index: 100;
 }
 
 .controlerContainer button {
@@ -30,6 +89,7 @@
   font-size: 14px;
 }
 
+/* Drag instruction area - shows grab cursor and hint text */
 .dragContainer {
   display: flex;
   width: 100%;
@@ -37,6 +97,7 @@
   justify-content: center;
   align-items: center;
   cursor: grab;
+  z-index: 10;
 
   &:active {
     cursor: grabbing;
