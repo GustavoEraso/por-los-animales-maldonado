@@ -10,6 +10,8 @@
   width: 100%;
   height: 100%;
   position: relative;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 /* Scrollable image container with hidden scrollbars */
@@ -17,14 +19,15 @@
   width: 100%;
   height: 100%;
   touch-action: none;
-  display: flex;
-  flex-direction: column;
 
   position: relative;
-  overflow: scroll;
+  overflow: scroll; /* Keep scroll to enable scrollTo() functionality */
   /* Hide scrollbars while maintaining scroll functionality */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+
+  /* Prevent pull-to-refresh and other browser gestures */
+  overscroll-behavior: contain;
 }
 
 /* Hide scrollbars in Webkit browsers (Chrome, Safari, Opera) */
@@ -34,12 +37,16 @@
 
 /* Image wrapper - handles zoom with smooth dimension transitions */
 .imgWrapper {
-  position: absolute;
+  /* Using relative positioning to create scrollable area */
+  position: relative;
   /* Smooth transitions for width/height changes during zoom */
   /* Note: Using dimension changes instead of transform: scale() for html2canvas compatibility */
   transition:
     width 0.2s ease-in-out,
     height 0.2s ease-in-out;
+  /* Ensure wrapper takes up space in the scroll container */
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* Image element styles - non-interactive, fills wrapper */
@@ -64,6 +71,7 @@
   position: absolute;
   top: 0;
   left: 0;
+  pointer-events: none; /* Allow events to pass through to imgContainer below */
 }
 
 /* Button control sections (zoom, navigation) */
@@ -76,16 +84,20 @@
   border-radius: 999px;
   margin-bottom: 8px;
   z-index: 100;
+  pointer-events: auto; /* Re-enable pointer events for buttons */
 }
 
 .controlerContainer button {
   width: 100%;
   cursor: pointer;
+  pointer-events: auto; /* Ensure buttons receive clicks */
+  padding-block: 15px;
 }
 
 .controlerContainer span {
   width: 100%;
   text-align: center;
+  margin: auto;
   font-size: 14px;
 }
 
@@ -96,8 +108,8 @@
   height: 100%;
   justify-content: center;
   align-items: center;
-  cursor: grab;
-  z-index: 10;
+  z-index: 5;
+  pointer-events: none; /* Allow touch events to pass through to imgContainer */
 
   &:active {
     cursor: grabbing;
@@ -109,4 +121,5 @@
   text-align: center;
   text-wrap: balance;
   padding: 0.5rem;
+  pointer-events: none; /* Ensure text doesn't block events */
 }

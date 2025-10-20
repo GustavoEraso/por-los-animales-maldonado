@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import type { HTMLAttributes } from 'react';
 import { useState, useEffect, useRef } from 'react';
@@ -33,14 +34,20 @@ type AdjustableImageProps = HTMLAttributes<HTMLDivElement> & {
  *
  * Provides an interactive image viewing experience with the following features:
  * - **Zoom in/out functionality** - Scale images with percentage control while maintaining aspect ratio
- * - **Native scroll-based panning** - Drag to adjust image position using browser's native scroll mechanics
+ * - **Cross-device panning** - Desktop mouse drag (pointer events) and mobile single-finger drag (touch events)
+ * - **Native scroll-based panning** - Uses browser's native scroll mechanics for smooth movement
  * - **Automatic boundary constraints** - Browser-native scroll limits prevent images from moving outside the viewport
  * - **Multi-image navigation** - Switch between multiple images with preloading for instant transitions
- * - **Responsive design** - Adapts to container size changes automatically
+ * - **Responsive design** - Adapts to container size changes automatically via ResizeObserver
  * - **Image caching** - Preloads and caches images for smooth, flicker-free experience
  * - **Cover sizing algorithm** - Intelligently calculates image dimensions to fill container appropriately
  * - **Hidden scrollbars** - Clean UI with invisible but functional scrollbars
  * - **Smooth transitions** - Animated zoom changes for better user experience
+ *
+ * **Interaction Methods:**
+ * - Desktop: Click and drag with mouse to pan, use zoom buttons to scale
+ * - Mobile: Single-finger drag to pan (multi-touch gestures not supported), tap zoom buttons to scale
+ * - Prevents page scrolling on mobile during interaction via non-passive touch listeners
  *
  * **Technical Implementation:**
  * The component uses a scroll-based positioning system for panning combined with direct
@@ -64,8 +71,8 @@ type AdjustableImageProps = HTMLAttributes<HTMLDivElement> & {
  *
  * @param {AdjustableImageProps} props - Component props
  * @param {string[]} props.imageUrls - Array of image URLs to display
- * @param {CSSLength} [props.width='60%'] - Width of the image container
- * @param {CSSLength} [props.height='100%'] - Height of the image container
+ * @param {CSSLength} [props.width] - Width of the image container (optional, inherits from parent by default)
+ * @param {CSSLength} [props.height] - Height of the image container (optional, inherits from parent by default)
  * @param {string} [props.className] - Additional CSS classes
  * @returns {React.ReactElement} The rendered adjustable image component
  *
@@ -206,6 +213,77 @@ export default function AdjustableImage({
   }, [imageUrls, currentImageIndex]);
 
   /**
+   * Setup native touch event listeners with { passive: false } to allow preventDefault.
+   * This is necessary to prevent page scrolling during single-finger touch interactions on mobile.
+   * Note: Multi-touch gestures (like pinch-to-zoom) are not supported in this implementation.
+   */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const preventScroll = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    // Add non-passive touch listeners to prevent default scrolling
+    container.addEventListener('touchstart', preventScroll, { passive: false });
+    container.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', preventScroll);
+      container.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
+
+  /**
+   * Effect to recalculate image size when mainRef container changes dimensions.
+   * Uses ResizeObserver to detect size changes and adjust the image to maintain cover behavior.
+   */
+  useEffect(() => {
+    const mainContainer = mainRef.current;
+    if (!mainContainer || !src) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+
+        // Only recalculate if we have a loaded image
+        const cachedImg = cache.current.get(imageUrls[currentImageIndex]);
+        if (!cachedImg) return;
+
+        // Calculate image size for cover behavior
+        const containerRatio = width / height;
+        const imgRatio = cachedImg.naturalWidth / cachedImg.naturalHeight;
+        let displayWidth = 0;
+        let displayHeight = 0;
+
+        if (imgRatio > containerRatio) {
+          // Image is wider than container - match height and overflow width
+          displayHeight = height;
+          displayWidth = cachedImg.naturalWidth * (height / cachedImg.naturalHeight);
+        } else {
+          // Image is taller than container - match width and overflow height
+          displayWidth = width;
+          displayHeight = cachedImg.naturalHeight * (width / cachedImg.naturalWidth);
+        }
+
+        // Update image dimensions
+        setImgSize({
+          width: displayWidth,
+          height: displayHeight,
+        });
+      }
+    });
+
+    resizeObserver.observe(mainContainer);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [src, imageUrls, currentImageIndex]);
+
+  /**
    * Drag (pan) functionality using native scroll.
    * Instead of manipulating CSS position, we modify the scrollLeft/scrollTop
    * of the container, providing smooth panning with automatic boundary constraints.
@@ -220,29 +298,48 @@ export default function AdjustableImage({
 
   /**
    * Initiates drag operation and stores initial scroll position.
+   * Shared handler for both pointer events (desktop) and touch events (mobile).
+   *
+   * @param {number} clientX - X coordinate of the pointer/touch
+   * @param {number} clientY - Y coordinate of the pointer/touch
    */
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleStart = (clientX: number, clientY: number) => {
     dragData.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       originX: containerRef.current?.scrollLeft || 0,
       originY: containerRef.current?.scrollTop || 0,
     };
     dragging.current = true;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    handleStart(e.clientX, e.clientY);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Only handle single-finger touch for panning
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handleStart(touch.clientX, touch.clientY);
+    }
   };
 
   /**
-   * Handles pointer movement during drag.
+   * Handles pointer/touch movement during drag operation.
    * Updates scroll position in the opposite direction of the drag delta
    * to create natural panning behavior.
+   *
+   * @param {number} clientX - Current X coordinate of the pointer/touch
+   * @param {number} clientY - Current Y coordinate of the pointer/touch
    */
-  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleMovement = (clientX: number, clientY: number) => {
     if (!dragging.current || !dragData.current) return;
 
     const { startX, startY, originX, originY } = dragData.current;
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
 
     containerRef.current?.scrollTo({
       left: originX - deltaX,
@@ -251,12 +348,35 @@ export default function AdjustableImage({
     });
   };
 
+  const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    handleMovement(e.clientX, e.clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Ignore multi-touch gestures
+    if (e.touches.length !== 1) return;
+    if (!dragging.current) return;
+
+    const touch = e.touches[0];
+    handleMovement(touch.clientX, touch.clientY);
+  };
+
   /**
    * Ends drag operation and releases pointer capture.
    */
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleEnd = () => {
     dragging.current = false;
+    dragData.current = null;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
+    handleEnd();
+  };
+
+  const handleTouchEnd = () => {
+    handleEnd();
   };
 
   /**
@@ -267,7 +387,7 @@ export default function AdjustableImage({
    *
    * @param {number} porcentaje - Percentage to adjust zoom (positive to zoom in, negative to zoom out)
    */
-  const manejadorZoom = (porcentaje: number) => {
+  const handleZoom = (porcentaje: number) => {
     const mainContainer = mainRef.current?.getBoundingClientRect();
     const containerSize = containerRef.current?.getBoundingClientRect();
 
@@ -289,18 +409,28 @@ export default function AdjustableImage({
   return (
     <div
       ref={mainRef}
-      className={styles.mainContainer}
+      className={styles.mainContainer + (className ? ` ${className}` : '')}
       style={{ width: toCss(width), height: toCss(height) }}
     >
-      <div ref={containerRef} className={`${styles.imgContainer} ${className ?? ''}`}>
+      <div
+        ref={containerRef}
+        className={styles.imgContainer}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handleMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
         {src && (
           <div
             className={styles.imgWrapper}
             style={{
               width: imgSize.width * scale + 'px',
               height: imgSize.height * scale + 'px',
-              objectFit: 'contain',
-              position: 'absolute',
             }}
           >
             <img src={src} alt="" className={styles.imgElement} />
@@ -309,20 +439,12 @@ export default function AdjustableImage({
       </div>
       <div className={styles.mainControlerContainer}>
         <section data-html2canvas-ignore className={styles.controlerContainer}>
-          <button onClick={() => manejadorZoom(-5)}>&#x2796;&#xFE0E;</button>
+          <button onClick={() => handleZoom(-5)}>&#x2796;&#xFE0E;</button>
           <span>zoom {Math.round(scale * 100)}%</span>
-          <button onClick={() => manejadorZoom(5)}>&#x2795;&#xFE0E;</button>
+          <button onClick={() => handleZoom(5)}>&#x2795;&#xFE0E;</button>
         </section>
 
-        <section
-          data-html2canvas-ignore
-          className={styles.dragContainer}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handleMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
+        <section data-html2canvas-ignore className={styles.dragContainer}>
           <span>arrastra para ajustar la imagen</span>
         </section>
 
