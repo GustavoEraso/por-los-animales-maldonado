@@ -572,11 +572,11 @@ export default function Compartir() {
                   backgroundColor: selectedColorScheme.secondary,
                   color: selectedColorScheme.secondaryText,
                 }}
-                className="flex bg-green-forest text-cream-light w-full h-full overflow-y-hidden"
+                className=" relative grid grid-cols-7 bg-green-forest text-cream-light w-full overflow-hidden flex-1 min-h-0"
               >
                 {/* Seccion izquierda */}
                 <div
-                  className={`w-3/7 flex flex-col items-stretch justify-around  p-1 relative ${selectedFormat.key === 'story' ? 'py-8' : ''}`}
+                  className={`col-span-3  flex flex-col items-stretch justify-around p-1 relative overflow-hidden ${selectedFormat.key === 'story' ? 'py-8' : ''}`}
                 >
                   {animalDataToShow.name && (
                     <h3
@@ -589,7 +589,7 @@ export default function Compartir() {
 
                   <ul
                     style={{ fontSize: `${itemsSize}px` }}
-                    className="flex flex-col h-full justify-around p-1 "
+                    className="flex flex-col h-full justify-around  "
                   >
                     {animalDataToShow.gender && <li className="  capitalize"> {animal.gender}</li>}
                     {animalDataToShow.aproxBirthDate && (
@@ -635,7 +635,14 @@ export default function Compartir() {
                   </div>
                 </div>
 
-                <AdjustableImage imageUrls={currentImages} className="text-green-dark" />
+                <div className="col-span-4 overflow-hidden min-h-0">
+                  <AdjustableImage
+                    imageUrls={currentImages}
+                    width="100%"
+                    height="100%"
+                    className="text-green-dark"
+                  />
+                </div>
               </section>
 
               <footer
