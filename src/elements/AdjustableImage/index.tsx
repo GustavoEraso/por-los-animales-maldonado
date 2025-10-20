@@ -46,8 +46,9 @@ type AdjustableImageProps = HTMLAttributes<HTMLDivElement> & {
  *
  * **Interaction Methods:**
  * - Desktop: Click and drag with mouse to pan, use zoom buttons to scale
- * - Mobile: Single-finger drag to pan (multi-touch gestures not supported), tap zoom buttons to scale
+ * - Mobile: Single-finger drag to pan, two-finger pinch to zoom, tap zoom buttons to scale
  * - Prevents page scrolling on mobile during interaction via non-passive touch listeners
+ * - Smooth transition between single-finger pan and two-finger pinch gestures
  *
  * **Technical Implementation:**
  * The component uses a scroll-based positioning system for panning combined with direct
@@ -214,8 +215,8 @@ export default function AdjustableImage({
 
   /**
    * Setup native touch event listeners with { passive: false } to allow preventDefault.
-   * This is necessary to prevent page scrolling during single-finger touch interactions on mobile.
-   * Note: Multi-touch gestures (like pinch-to-zoom) are not supported in this implementation.
+   * This is necessary to prevent page scrolling during touch interactions on mobile.
+   * Supports both single-finger panning and two-finger pinch-to-zoom gestures.
    */
   useEffect(() => {
     const container = containerRef.current;
@@ -297,6 +298,18 @@ export default function AdjustableImage({
   } | null>(null);
 
   /**
+   * Pinch-to-zoom state for multi-touch gestures.
+   * Tracks the initial distance between two fingers and the starting scale.
+   */
+  const pinching = useRef(false);
+  const pinchData = useRef<{
+    initialDistance: number;
+    initialScale: number;
+    centerX: number;
+    centerY: number;
+  } | null>(null);
+
+  /**
    * Initiates drag operation and stores initial scroll position.
    * Shared handler for both pointer events (desktop) and touch events (mobile).
    *
@@ -318,11 +331,55 @@ export default function AdjustableImage({
     handleStart(e.clientX, e.clientY);
   };
 
+  /**
+   * Calculates the distance between two touch points.
+   *
+   * @param {React.Touch} touch1 - First touch point
+   * @param {React.Touch} touch2 - Second touch point
+   * @returns {number} Distance in pixels
+   */
+  const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  /**
+   * Calculates the center point between two touches.
+   *
+   * @param {React.Touch} touch1 - First touch point
+   * @param {React.Touch} touch2 - Second touch point
+   * @returns {{ x: number; y: number }} Center point coordinates
+   */
+  const getTouchCenter = (touch1: React.Touch, touch2: React.Touch) => {
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
+    };
+  };
+
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    // Only handle single-finger touch for panning
     if (e.touches.length === 1) {
+      // Single finger: Start panning
       const touch = e.touches[0];
       handleStart(touch.clientX, touch.clientY);
+      pinching.current = false;
+    } else if (e.touches.length === 2) {
+      // Two fingers: Start pinch-to-zoom
+      dragging.current = false;
+      pinching.current = true;
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = getTouchDistance(touch1, touch2);
+      const center = getTouchCenter(touch1, touch2);
+
+      pinchData.current = {
+        initialDistance: distance,
+        initialScale: scale,
+        centerX: center.x,
+        centerY: center.y,
+      };
     }
   };
 
@@ -354,12 +411,40 @@ export default function AdjustableImage({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    // Ignore multi-touch gestures
-    if (e.touches.length !== 1) return;
-    if (!dragging.current) return;
+    if (e.touches.length === 1 && dragging.current) {
+      // Single finger panning
+      const touch = e.touches[0];
+      handleMovement(touch.clientX, touch.clientY);
+    } else if (e.touches.length === 2 && pinching.current && pinchData.current) {
+      // Two finger pinch-to-zoom
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDistance = getTouchDistance(touch1, touch2);
 
-    const touch = e.touches[0];
-    handleMovement(touch.clientX, touch.clientY);
+      // Calculate scale based on distance change
+      const scaleMultiplier = currentDistance / pinchData.current.initialDistance;
+      const newScale = pinchData.current.initialScale * scaleMultiplier;
+
+      // Apply constraints
+      const mainContainer = mainRef.current?.getBoundingClientRect();
+      const containerSize = containerRef.current?.getBoundingClientRect();
+
+      if (!containerSize || !mainContainer) return;
+
+      // Prevent zooming out below container size
+      if (
+        containerSize.width * newScale < mainContainer.width &&
+        containerSize.height * newScale < mainContainer.height
+      ) {
+        return;
+      }
+
+      // Prevent zooming out too much
+      if (newScale < 0.1) return;
+
+      // Apply the new scale
+      setScale(newScale);
+    }
   };
 
   /**
@@ -375,8 +460,19 @@ export default function AdjustableImage({
     handleEnd();
   };
 
-  const handleTouchEnd = () => {
-    handleEnd();
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 0) {
+      // All fingers lifted - reset both states
+      handleEnd();
+      pinching.current = false;
+      pinchData.current = null;
+    } else if (e.touches.length === 1 && pinching.current) {
+      // Went from 2 fingers to 1 - switch from pinch to pan
+      pinching.current = false;
+      pinchData.current = null;
+      const touch = e.touches[0];
+      handleStart(touch.clientX, touch.clientY);
+    }
   };
 
   /**
