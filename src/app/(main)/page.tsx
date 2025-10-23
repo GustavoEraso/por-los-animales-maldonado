@@ -5,7 +5,6 @@ import RevealSection from '@/components/RevealSection';
 import LogoCarousel from '@/components/LogoCaurosel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
-import Bingo from '@/components/Bingo';
 
 export default function Home() {
   const logos = [
