@@ -5,7 +5,6 @@ import RevealSection from '@/components/RevealSection';
 import LogoCarousel from '@/components/LogoCaurosel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
-import Bingo from '@/components/Bingo';
 
 export default function Home() {
   const logos = [
@@ -31,7 +30,6 @@ export default function Home() {
       <HeroCarrousel />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
-        <Bingo />
         <section className="flex flex-col items-center justify-center w-full bg-white px-6">
           <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl py-16">
             <div className="bg-cream-light rounded-full w-full max-w-lg aspect-square flex items-center justify-center">
