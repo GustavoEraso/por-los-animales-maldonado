@@ -193,10 +193,11 @@ export function generateTransactionsByUserData({
  * Generates comparison data for new animals vs adoptions per month
  *
  * Creates a multi-line chart showing the flow of animals:
- * - Ingresos: New animals that arrived each month (based on waitingSince date)
- * - Adopciones: Animals that were adopted each month (based on transaction date)
+ * - Ingresos: Unique animals that arrived each month (based on waitingSince date)
+ * - Adopciones: Unique animals that were adopted each month (based on status change in transactions)
  *
- * Uses animal.id === transaction.id for reliable data relationships.
+ * Important: Counts unique animals per month, not transaction volume.
+ * An animal is only counted once even if it has multiple transactions in the same month.
  *
  * @param params - Parameters object
  * @param params.animals - Array of all animals in the system
@@ -209,8 +210,8 @@ export function generateTransactionsByUserData({
  * // Returns: [{
  * //   label: "ene",
  * //   datasets: [
- * //     { name: "Ingresos", value: 8 },
- * //     { name: "Adopciones", value: 5 }
+ * //     { name: "Ingresos", value: 8 },    // 8 unique animals arrived
+ * //     { name: "Adopciones", value: 5 }   // 5 unique animals adopted
  * //   ]
  * // }, ...]
  */
@@ -238,27 +239,32 @@ export function generateAnimalsInOutData({
     const startOfMonth = new Date(year, month, 1);
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-    // Animals that arrived this month
+    // Animals that arrived this month (unique animals by ID)
     const newAnimals = animals.filter((animal) => {
       const animalCreated = new Date(animal.waitingSince);
       return animalCreated >= startOfMonth && animalCreated <= endOfMonth;
     });
 
-    // Adoptions this month
-    const adoptionsInMonth = transactions.filter((transaction) => {
+    // Adoptions this month - Count unique animals that were adopted
+    // Find transactions in this month that changed status to 'adoptado'
+    const adoptedAnimalIds = new Set<string>();
+    transactions.forEach((transaction) => {
       const transactionDate = new Date(transaction.date);
-      return (
+      // Check if this transaction happened this month and has status = 'adoptado'
+      if (
         transactionDate >= startOfMonth &&
         transactionDate <= endOfMonth &&
-        animals.some((animal) => animal.id === transaction.id && animal.status === 'adoptado') // Using ID for data integrity
-      );
+        transaction.status === 'adoptado'
+      ) {
+        adoptedAnimalIds.add(transaction.id);
+      }
     });
 
     chartData.push({
       label: targetDate.toLocaleDateString('es-ES', { month: 'short' }),
       datasets: [
         { name: 'Ingresos', value: newAnimals.length },
-        { name: 'Adopciones', value: adoptionsInMonth.length },
+        { name: 'Adopciones', value: adoptedAnimalIds.size }, // Count unique animals
       ],
     });
   }
