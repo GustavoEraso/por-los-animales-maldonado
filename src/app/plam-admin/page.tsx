@@ -247,11 +247,30 @@ export default function PlamAdmin() {
     loadData();
   }, []); // Solo cargar una vez al inicio
 
-  // Calculate summary statistics (memoized for performance)
+  // Calculate summary statistics filtered by selected time period (memoized for performance)
   const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
-    const total = animals.length;
-    const adopted = animals.filter((animal) => animal.status === 'adoptado').length;
-    const available = animals.filter(
+    // Calculate cutoff date based on selected months
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - selectedMonths);
+
+    // Filter animals based on transactions in the selected period
+    const animalsInPeriod = animals.filter((animal) => {
+      // Check if animal has any transaction in the selected period
+      const hasRecentTransaction = transactions.some((transaction) => {
+        const transactionDate = new Date(transaction.date);
+        return transaction.id === animal.id && transactionDate >= cutoffDate;
+      });
+
+      // Also include animals created in this period (even without transactions)
+      const animalCreated = new Date(animal.waitingSince);
+      const createdInPeriod = animalCreated >= cutoffDate;
+
+      return hasRecentTransaction || createdInPeriod;
+    });
+
+    const total = animalsInPeriod.length;
+    const adopted = animalsInPeriod.filter((animal) => animal.status === 'adoptado').length;
+    const available = animalsInPeriod.filter(
       (animal) => animal.status !== 'adoptado' && animal.isAvalible
     ).length;
 
@@ -260,7 +279,7 @@ export default function PlamAdmin() {
       adoptedAnimals: adopted,
       availableAnimals: available,
     };
-  }, [animals]);
+  }, [animals, transactions, selectedMonths]);
 
   // Animación de los componentes al cargar
   useEffect(() => {
@@ -368,17 +387,19 @@ export default function PlamAdmin() {
           <div className="bg-green-dark rounded-3xl p-6 pb-2 shadow-lg">
             <h3 className="text-lg  text-white mb-2">Total Animales</h3>
             <p className="text-7xl  text-white">{totalAnimals}</p>
-            <p className="text-sm text-cream-light mt-1">Registrados en el sistema</p>
+            <p className="text-sm text-cream-light mt-1">
+              Con actividad en últimos {selectedMonths} {selectedMonths === 1 ? 'mes' : 'meses'}
+            </p>
           </div>
           <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
             <h3 className="text-lg  text-green-dark mb-2">Adoptados</h3>
             <p className="text-7xl  text-green-dark">{adoptedAnimals}</p>
-            <p className="text-sm text-green-dark mt-1">Animales con familia</p>
+            <p className="text-sm text-green-dark mt-1">Con familia en este período</p>
           </div>
           <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg">
             <h3 className="text-lg  text-white mb-2">Disponibles</h3>
             <p className="text-7xl  text-white">{availableAnimals}</p>
-            <p className="text-sm text-cream-light mt-1">Buscando hogar</p>
+            <p className="text-sm text-cream-light mt-1">Buscando hogar actualmente</p>
           </div>
         </div>
 
