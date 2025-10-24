@@ -3,25 +3,50 @@
 import Link from 'next/link';
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/firebase';
 import { ChevronRightIcon, HomeIcon, ImageIcon, PetsIcon, UserIcon } from '@/components/Icons';
+import { useAuth } from '@/contexts/AuthContext';
+import Loader from '@/components/Loader';
 
+/**
+ * Dashboard layout component with role-based access control.
+ * Only allows access to users with admin or superadmin roles.
+ */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { firebaseUser, currentUser, isLoadingAuth, checkIsAdmin } = useAuth();
+  const [showMenu, setShowMenu] = useState<boolean>(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.replace('/login'); // 🔐 redirige si no hay sesión
-      }
-    });
+    // Wait for auth to load before checking permissions
+    if (isLoadingAuth) return;
 
-    return () => unsubscribe();
-  }, [router]);
+    // Redirect if not authenticated
+    if (!firebaseUser) {
+      router.replace('/login');
+      return;
+    }
 
-  const [showMenu, setShowMenu] = useState<boolean>(true);
+    // Redirect if user doesn't have admin privileges
+    if (!checkIsAdmin()) {
+      router.replace('/');
+      return;
+    }
+  }, [firebaseUser, currentUser, isLoadingAuth, checkIsAdmin, router]);
+
+  // Show loading state while checking authentication
+  if (isLoadingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader />
+      </div>
+    );
+  }
+
+  // Don't render admin content if not authorized
+  if (!firebaseUser || !checkIsAdmin()) {
+    return null;
+  }
 
   return (
     <section className=" relative flex w-full min-h-screen ">

@@ -4,6 +4,10 @@ import { db } from '@/firebase'; // Firestore client instance
 
 export const revalidate = 300; // Cache response for 5 minutes
 
+// In-memory cache for development
+let cachedData: { users: any[]; timestamp: number } | null = null;
+const CACHE_DURATION = 300000; // 5 minutes in milliseconds
+
 /**
  * GET /api/authorized-emails - Retrieve authorized user emails from Firestore
  *
@@ -47,11 +51,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const now = Date.now();
+
+    // Check if we have cached data and it's still valid
+    if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
+      return NextResponse.json(cachedData.users);
+    }
+
     const snapshot = await getDocs(collection(db, 'authorizedEmails'));
     const users = snapshot.docs.map((doc) => ({
       email: doc.id,
       ...doc.data(),
     }));
+
+    // Update cache
+    cachedData = {
+      users,
+      timestamp: now,
+    };
+
     return NextResponse.json(users);
   } catch (err) {
     console.error('Error fetching authorized emails:', err);

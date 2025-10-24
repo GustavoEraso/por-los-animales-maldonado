@@ -1,25 +1,24 @@
-import { signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { auth } from '@/firebase';
-import { handleToast } from '../handleToast';
 
 /**
- * Authenticates a user with Google using Firebase and checks if the user's email is authorized.
+ * Authenticates a user with Google using Firebase.
  *
- * Shows a toast notification with error.webp icon if the user's email is not authorized.
- * The user is automatically signed out and an error toast is displayed before throwing the error.
+ * Authorization is handled automatically by AuthContext after login.
+ * If the user is not authorized, they will be signed out automatically
+ * and a toast notification will be displayed.
  *
- * @returns {Promise<User>} A promise that resolves to the authenticated Firebase user if authorized.
- * @throws {Error} If the user's email is not authorized, displays an error toast, signs out the user, and throws an error.
+ * @returns {Promise<User>} A promise that resolves to the authenticated Firebase user.
+ * @throws {Error} If the Google sign-in popup fails or is cancelled.
  *
  * @example
- * // Log in with Google and get the user object
+ * // Log in with Google
  * try {
  *   const user = await loginWithGoogle();
  *   console.log('Logged in user:', user);
- *   // User is authorized, proceed with app logic
+ *   // AuthContext will verify authorization automatically
  * } catch (error) {
- *   console.error(error.message);
- *   // Error toast is already displayed automatically
+ *   console.error('Login failed:', error);
  * }
  */
 export const loginWithGoogle = async (): Promise<User> => {
@@ -27,40 +26,21 @@ export const loginWithGoogle = async (): Promise<User> => {
   const result = await signInWithPopup(auth, provider);
   const user = result.user;
 
-  // Llamamos a la API protegida desde el cliente
-  const res = await fetch('/api/check-user', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email: user.email }),
-  });
-
-  const data = await res.json();
-
-  if (!data.authorized) {
-    await signOut(auth);
-    handleToast({
-      type: 'error',
-      title: 'Acceso denegado',
-      text: 'Tu correo no está autorizado para acceder.',
-    });
-    throw new Error('Tu correo no está autorizado para acceder.');
-  }
-
+  // Authorization check is now handled by AuthContext
+  // No need to check here - just return the user
   return user;
 };
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
 
-1) Basic login with automatic error handling
+1) Basic login - Authorization handled automatically by AuthContext
    try {
      const user = await loginWithGoogle();
      console.log('Logged in user:', user);
-     // User is authorized, proceed with app logic
+     // AuthContext will check authorization in background
+     // If not authorized, user will be signed out automatically
    } catch (error) {
-     console.error(error.message);
-     // Error toast is already displayed automatically if email not authorized
+     console.error('Login popup failed:', error);
    }
 
 2) Login in a React component with loading state
@@ -70,27 +50,27 @@ export const loginWithGoogle = async (): Promise<User> => {
      setIsLoading(true);
      try {
        const user = await loginWithGoogle();
-       // User authenticated and authorized
+       // User authenticated
+       // Wait for AuthContext to verify authorization
        router.push('/plam-admin');
      } catch (error) {
-       // Error toast already displayed, just handle the error state
-       console.error('Authentication failed');
+       console.error('Authentication failed:', error);
      } finally {
        setIsLoading(false);
      }
    };
 
-3) Login with additional success handling
-   try {
-     const user = await loginWithGoogle();
-     
-     // Optional: Add your own success logic/toast
-     console.log('Welcome:', user.displayName);
-     // Navigate or update state as needed
-     
-   } catch (error) {
-     // Unauthorized error toast is automatically shown by loginWithGoogle
-     // Just handle any additional error logic here
-   }
+3) Using with AuthContext to check authorization status
+   const { isAuthorized, currentUser } = useAuth();
+   
+   const handleLogin = async () => {
+     try {
+       await loginWithGoogle();
+       // Wait a moment for AuthContext to update
+       // Then check isAuthorized or currentUser to confirm access
+     } catch (error) {
+       console.error('Login failed:', error);
+     }
+   };
 
 ──────────────────────────────────────────────────────────────────────────── */

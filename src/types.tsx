@@ -60,10 +60,22 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   since: number;
 }
 
+/**
+ * User role types defining access levels in the system.
+ * - superadmin: Full system access, can manage all admins and users
+ * - admin: Can manage rescuers and all content
+ * - rescuer: Can manage animals and adoptions
+ * - user: Basic read-only access
+ */
+export type UserRole = 'superadmin' | 'admin' | 'rescuer' | 'user';
+
+/**
+ * User interface representing authenticated users in the system.
+ */
 export interface UserType {
   id: string;
   name: string;
-  role: string;
+  role: UserRole;
 }
 
 export interface WpContactType {

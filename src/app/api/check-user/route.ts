@@ -1,4 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { UserRole } from '@/types';
+
+/**
+ * Response type for unauthorized user check.
+ */
+interface UnauthorizedResponse {
+  authorized: false;
+}
+
+/**
+ * Response type for authorized user check.
+ */
+interface AuthorizedResponse {
+  authorized: true;
+  role: UserRole;
+  name: string;
+}
+
+/**
+ * Response type for error cases.
+ */
+interface ErrorResponse {
+  error: string;
+}
+
+/**
+ * User data structure from authorized emails collection.
+ */
+interface AuthorizedUserData {
+  email: string;
+  name?: string;
+  role?: UserRole;
+}
 
 /**
  * POST /api/check-user - Verify if user email is authorized and get user details
@@ -7,15 +40,15 @@ import { NextRequest, NextResponse } from 'next/server';
  * users list and returns authorization status along with user role and name.
  * Used by authentication flows to determine user permissions and access levels.
  *
- * @param {NextRequest} req - Request object containing user email in JSON body
+ * @param {NextRequest} request - Request object containing user email in JSON body
  *
  * @body {Object} requestBody - Request body object
  * @body {string} requestBody.email - Email address to check for authorization
  *
- * @returns {NextResponse<{authorized: false}>} User not authorized
- * @returns {NextResponse<{authorized: true, role: string, name: string}>} User authorized with details
- * @returns {NextResponse<{error: string}>} 400 error if email is missing
- * @returns {NextResponse<{error: string}>} 500 error if authorization check fails
+ * @returns {NextResponse<UnauthorizedResponse>} User not authorized
+ * @returns {NextResponse<AuthorizedResponse>} User authorized with details
+ * @returns {NextResponse<ErrorResponse>} 400 error if email is missing
+ * @returns {NextResponse<ErrorResponse>} 500 error if authorization check fails
  *
  * @example
  * ```typescript
@@ -52,45 +85,47 @@ import { NextRequest, NextResponse } from 'next/server';
  * ```
  *
  * @note Uses internal /api/authorized-emails endpoint to fetch current user list.
- * Returns role "viewer" as default if no specific role is assigned.
+ * Returns role "user" as default if no specific role is assigned.
  * This endpoint does not require authentication as it only returns authorization status.
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
       : 'https://www.porlosanimalesmaldonado.com';
 
-  const { email } = await req.json();
+  const { email } = await request.json();
 
   if (!email) {
     return NextResponse.json({ error: 'Email required' }, { status: 400 });
   }
 
   try {
-    const res = await fetch(`${baseUrl}/api/authorized-emails`, {
+    const response = await fetch(`${baseUrl}/api/authorized-emails`, {
       headers: {
         'x-internal-token': process.env.INTERNAL_API_SECRET!,
       },
     });
 
-    if (!res.ok) throw new Error('Failed to fetch authorized emails');
+    if (!response.ok) {
+      throw new Error('Failed to fetch authorized emails');
+    }
 
-    const users: { email: string; name?: string; role?: string }[] = await res.json();
+    const authorizedUsers: AuthorizedUserData[] = await response.json();
 
-    const user = users.find((u) => u.email === email);
+    const authorizedUser = authorizedUsers.find((userData) => userData.email === email);
 
-    if (!user) {
+    if (!authorizedUser) {
       return NextResponse.json({ authorized: false });
     }
 
     return NextResponse.json({
       authorized: true,
-      role: user.role || 'viewer',
-      name: user.name || '',
+      role: authorizedUser.role || 'user',
+      name: authorizedUser.name || '',
     });
-  } catch (err) {
-    console.error('Error verifying user:', err);
+  } catch (error) {
+    console.error('Error verifying user:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
