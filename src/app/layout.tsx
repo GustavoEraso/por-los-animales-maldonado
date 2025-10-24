@@ -9,6 +9,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { AuthProvider } from '@/contexts/AuthContext';
+import UnauthorizedAlert from '@/components/UnauthorizedAlert';
 
 const roboto = Roboto({
   variable: '--font-roboto',
@@ -46,11 +48,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={` antialiased  ${roboto.variable}`}>
-        <Header />
-        {children}
-        <Analytics />
-        <Footer />
-        <ToastContainer position="bottom-right" theme="colored" />
+        <AuthProvider>
+          <UnauthorizedAlert />
+          <Header />
+          {children}
+          <Analytics />
+          <Footer />
+          <ToastContainer position="bottom-right" theme="colored" />
+        </AuthProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_ANALYTICS_ID ?? ''} />
     </html>
