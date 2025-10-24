@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDocs, collection } from 'firebase/firestore';
 import { db } from '@/firebase'; // Firestore client instance
+import { UserRole } from '@/types';
 
 export const revalidate = 300; // Cache response for 5 minutes
 
+/**
+ * User data structure from Firestore authorizedEmails collection
+ */
+interface AuthorizedUser {
+  email: string;
+  name?: string;
+  role?: UserRole;
+  [key: string]: unknown;
+}
+
 // In-memory cache for development
-let cachedData: { users: any[]; timestamp: number } | null = null;
+let cachedData: { users: AuthorizedUser[]; timestamp: number } | null = null;
 const CACHE_DURATION = 300000; // 5 minutes in milliseconds
 
 /**
@@ -59,7 +70,7 @@ export async function GET(req: NextRequest) {
     }
 
     const snapshot = await getDocs(collection(db, 'authorizedEmails'));
-    const users = snapshot.docs.map((doc) => ({
+    const users: AuthorizedUser[] = snapshot.docs.map((doc) => ({
       email: doc.id,
       ...doc.data(),
     }));

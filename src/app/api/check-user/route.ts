@@ -2,29 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserRole } from '@/types';
 
 /**
- * Response type for unauthorized user check.
- */
-interface UnauthorizedResponse {
-  authorized: false;
-}
-
-/**
- * Response type for authorized user check.
- */
-interface AuthorizedResponse {
-  authorized: true;
-  role: UserRole;
-  name: string;
-}
-
-/**
- * Response type for error cases.
- */
-interface ErrorResponse {
-  error: string;
-}
-
-/**
  * User data structure from authorized emails collection.
  */
 interface AuthorizedUserData {
@@ -45,10 +22,7 @@ interface AuthorizedUserData {
  * @body {Object} requestBody - Request body object
  * @body {string} requestBody.email - Email address to check for authorization
  *
- * @returns {NextResponse<UnauthorizedResponse>} User not authorized
- * @returns {NextResponse<AuthorizedResponse>} User authorized with details
- * @returns {NextResponse<ErrorResponse>} 400 error if email is missing
- * @returns {NextResponse<ErrorResponse>} 500 error if authorization check fails
+ * @returns User not authorized or authorized with user details
  *
  * @example
  * ```typescript
