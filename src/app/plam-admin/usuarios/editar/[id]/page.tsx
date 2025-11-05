@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { UserRole, UserType } from '@/types';
+import { UserType } from '@/types';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
