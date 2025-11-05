@@ -63,11 +63,11 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
 /**
  * User role types defining access levels in the system.
  * - superadmin: Full system access, can manage all admins and users
- * - admin: Can manage rescuers and all content
- * - rescuer: Can manage animals and adoptions
+ * - admin: Can manage rescatistas and all content
+ * - rescatista: Can manage animals and adoptions
  * - user: Basic read-only access
  */
-export type UserRole = 'superadmin' | 'admin' | 'rescuer' | 'user';
+export type UserRole = 'superadmin' | 'admin' | 'rescatista' | 'user';
 
 /**
  * User interface representing authenticated users in the system.
@@ -76,6 +76,36 @@ export interface UserType {
   id: string;
   name: string;
   role: UserRole;
+}
+
+/**
+ * Types of entities that can be audited in the system
+ */
+export type AuditLogType = 'user' | 'banner' | 'contact' | 'animal' | 'config';
+
+/**
+ * Actions that can be performed on entities
+ */
+export type AuditAction = 'create' | 'update' | 'delete';
+
+/**
+ * System audit log entry
+ * Used to track all changes made to entities in the system
+ */
+export interface SystemAuditLog {
+  id: string;
+  type: AuditLogType;
+  action: AuditAction;
+  entityId: string;
+  entityName?: string;
+  modifiedBy: string;
+  modifiedByName?: string;
+  date: number;
+  changes?: {
+    before?: Record<string, unknown>;
+    after?: Record<string, unknown>;
+  };
+  metadata?: Record<string, unknown>;
 }
 
 export interface WpContactType {
