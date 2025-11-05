@@ -37,7 +37,7 @@ interface ProtectedRouteProps {
  * ```tsx
  * // With custom redirect and loading
  * <ProtectedRoute
- *   requiredRole="rescuer"
+ *   requiredRole="rescatista"
  *   redirectPath="/login"
  *   loadingComponent={<Spinner />}
  * >

@@ -4,7 +4,7 @@ import { UserRole } from '@/types';
  * Role hierarchy definition.
  * Higher index = higher privileges.
  */
-const ROLE_HIERARCHY: UserRole[] = ['user', 'rescuer', 'admin', 'superadmin'];
+const ROLE_HIERARCHY: UserRole[] = ['user', 'rescatista', 'admin', 'superadmin'];
 
 /**
  * Checks if a user role has at least the required permission level.
@@ -14,8 +14,8 @@ const ROLE_HIERARCHY: UserRole[] = ['user', 'rescuer', 'admin', 'superadmin'];
  * @returns true if the user has sufficient permissions
  *
  * @example
- * hasPermission('admin', 'rescuer') // returns true
- * hasPermission('rescuer', 'admin') // returns false
+ * hasPermission('admin', 'rescatista') // returns true
+ * hasPermission('rescatista', 'admin') // returns false
  */
 export function hasPermission(userRole: UserRole | undefined, requiredRole: UserRole): boolean {
   if (!userRole) return false;
@@ -47,19 +47,19 @@ export function isSuperAdmin(userRole: UserRole | undefined): boolean {
 }
 
 /**
- * Checks if a user can manage animals (rescuer or higher).
+ * Checks if a user can manage animals (rescatista or higher).
  *
  * @param userRole - The role of the current user
  * @returns true if the user can manage animals
  */
 export function canManageAnimals(userRole: UserRole | undefined): boolean {
-  return hasPermission(userRole, 'rescuer');
+  return hasPermission(userRole, 'rescatista');
 }
 
 /**
  * Checks if a user can manage other users.
  * Only superadmins can manage admins.
- * Admins can manage rescuers and users.
+ * Admins can manage rescatistas and users.
  *
  * @param userRole - The role of the current user
  * @param targetUserRole - The role of the user being managed
@@ -71,9 +71,9 @@ export function canManageUser(userRole: UserRole | undefined, targetUserRole: Us
   // Superadmins can manage everyone
   if (isSuperAdmin(userRole)) return true;
 
-  // Admins can manage rescuers and users, but not other admins
+  // Admins can manage rescatistas and users, but not other admins
   if (userRole === 'admin') {
-    return targetUserRole === 'rescuer' || targetUserRole === 'user';
+    return targetUserRole === 'rescatista' || targetUserRole === 'user';
   }
 
   return false;
@@ -89,11 +89,11 @@ export function getAssignableRoles(userRole: UserRole | undefined): UserRole[] {
   if (!userRole) return [];
 
   if (isSuperAdmin(userRole)) {
-    return ['superadmin', 'admin', 'rescuer', 'user'];
+    return ['superadmin', 'admin', 'rescatista'];
   }
 
   if (userRole === 'admin') {
-    return ['rescuer', 'user'];
+    return ['rescatista'];
   }
 
   return [];

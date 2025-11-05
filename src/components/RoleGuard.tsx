@@ -32,8 +32,8 @@ interface RoleGuardProps {
  * ```tsx
  * // Show different content based on role
  * <RoleGuard
- *   requiredRole="rescuer"
- *   fallback={<p>You need rescuer access to manage animals</p>}
+ *   requiredRole="rescatista"
+ *   fallback={<p>You need rescatista access to manage animals</p>}
  * >
  *   <AnimalManagementPanel />
  * </RoleGuard>
