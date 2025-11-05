@@ -65,6 +65,7 @@ export default function CreateUserPage() {
       });
       return existingUser !== null;
     } catch (error) {
+      console.error('Error checking email existence:', error);
       // If document doesn't exist, getFirestoreDocById throws error
       return false;
     }
