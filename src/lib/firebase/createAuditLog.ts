@@ -53,7 +53,7 @@ export async function createAuditLog({
 }): Promise<string> {
   try {
     // Build audit log data, only including fields that are defined
-    const auditLogData: Record<string, unknown> = {
+    const auditLogData: Partial<Omit<SystemAuditLog, 'id'>> = {
       type,
       action,
       entityId,
