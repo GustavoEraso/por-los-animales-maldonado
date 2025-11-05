@@ -16,7 +16,7 @@ import RoleGuard from '@/components/RoleGuard';
 
 export default function PlamAdminUsers() {
   const router = useRouter();
-  const { currentUser, checkCanManageUser, checkIsSuperAdmin } = useAuth();
+  const { currentUser, checkCanManageUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
