@@ -3,14 +3,13 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import Loader from '@/components/Loader';
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
-import { Modal } from '@/components/Modal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import {
   EyeIcon,
@@ -60,6 +59,7 @@ function AnimalsPageContent() {
   const [sortOrder, setSortOrder] = useState('>');
   const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([]);
   const [refresh, setRefresh] = useState<boolean>(false);
+  const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null);
 
   useEffect(() => {
     const start = Date.now();
@@ -357,13 +357,26 @@ function AnimalsPageContent() {
   };
 
   const handleDelete = async (currentId: string) => {
+    const animal = sortedAnimals.find((animal) => animal.id === currentId);
+    if (!animal) return;
+
+    setAnimalToDelete(animal);
+  };
+
+  const confirmDelete = async () => {
+    if (!animalToDelete) return;
+
     const start = Date.now();
     setLoading(true);
-    try {
-      const animal = sortedAnimals.find((animal) => animal.id === currentId);
-      if (!animal) throw new Error(`Animal with id ${currentId} not found`);
+    setAnimalToDelete(null);
 
-      const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
+    try {
+      const updatedAnimal = {
+        ...animalToDelete,
+        isDeleted: true,
+        isVisible: false,
+        isAvalible: false,
+      };
 
       const newTransaction: AnimalTransactionType = {
         date: Date.now(),
@@ -372,45 +385,38 @@ function AnimalsPageContent() {
         isDeleted: true,
         isVisible: false,
         isAvalible: false,
-        id: currentId,
-        name: animal.name,
+        id: animalToDelete.id,
+        name: animalToDelete.name,
       };
 
       const promises = Promise.all([
         postFirestoreData<Animal>({
           data: updatedAnimal,
           currentCollection: 'animals',
-          id: currentId,
+          id: animalToDelete.id,
         }),
         postFirestoreData<AnimalTransactionType>({
           data: newTransaction,
           currentCollection: 'animalTransactions',
         }),
       ]);
+
       await handlePromiseToast(promises, {
         messages: {
           pending: {
             title: 'Enviando a la papelera...',
-            text: `Por favor espera mientras enviamos a la papelera a ${animal.name}`,
+            text: `Por favor espera mientras enviamos a la papelera a ${animalToDelete.name}`,
           },
           success: {
             title: 'Enviado a la papelera',
-            text: `${animal.name} fue enviado a la papelera exitosamente`,
+            text: `${animalToDelete.name} fue enviado a la papelera exitosamente`,
           },
-          error: { title: 'Error', text: `Hubo un error al eliminar a ${animal.name}` },
+          error: { title: 'Error', text: `Hubo un error al eliminar a ${animalToDelete.name}` },
         },
       });
-      router.replace('/plam-admin/animales');
+
+      setRefresh(!refresh);
     } catch (error) {
-      const elapsed = Date.now() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
-          setLoading(false);
-        }, remaining);
-      } else {
-        setLoading(false);
-      }
       console.error('Error al cambiar el estado del animal:', error);
     } finally {
       const elapsed = Date.now() - start;
@@ -422,7 +428,6 @@ function AnimalsPageContent() {
       } else {
         setLoading(false);
       }
-      setRefresh(!refresh);
     }
   };
 
@@ -592,51 +597,13 @@ function AnimalsPageContent() {
                         </Link>
                       </td>
                       <td className="px-2 py-4 text-right">
-                        <Modal
-                          buttonStyles="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
-                          buttonText={
-                            <>
-                              <TrashIcon size={16} title="Eliminar animal" />
-                              <span className="hidden xl:inline">Eliminar</span>
-                            </>
-                          }
+                        <button
+                          onClick={() => handleDelete(animal.id)}
+                          className="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
                         >
-                          <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center text-black ">
-                            <h2 className="text-2xl font-bold">
-                              ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
-                            </h2>
-                            <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
-                              <div className="aspect-square">
-                                <Image
-                                  className="w-full h-full object-cover bg-white"
-                                  src={animal.images[0].imgUrl}
-                                  alt={animal.images[0].imgAlt}
-                                  width={300}
-                                  height={300}
-                                />
-                              </div>
-                              <div className="flex flex-col items-center justify-between gap-1 p-2">
-                                <span className="uppercase text-2xl text-center font-extrabold">
-                                  Nombre: {animal.name}
-                                </span>
-                                <span className="uppercase text-2xl text-center font-extrabold">
-                                  Id :{animal.id}
-                                </span>
-                                <button
-                                  onClick={() => handleDelete(animal.id)}
-                                  className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
-                                >
-                                  <TrashIcon
-                                    size={20}
-                                    title="Confirmar eliminación"
-                                    color="white"
-                                  />
-                                  Eliminar
-                                </button>
-                              </div>
-                            </article>
-                          </section>
-                        </Modal>
+                          <TrashIcon size={16} title="Eliminar animal" />
+                          <span className="hidden xl:inline">Eliminar</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -645,6 +612,18 @@ function AnimalsPageContent() {
           </div>
         )}
         {animalsToShow.length < 1 && <p className="text-center">No hay animales que mostar</p>}
+
+        <ConfirmDialog
+          isOpen={animalToDelete !== null}
+          title="Eliminar Animal"
+          message={`¿Estás seguro de que quieres eliminar a ${animalToDelete?.name}?\n\nID: ${animalToDelete?.id}\n\nEsta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          variant="danger"
+          onConfirm={confirmDelete}
+          onCancel={() => setAnimalToDelete(null)}
+        />
+
         <Link
           className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
           href="/plam-admin/animales/adoptados"
