@@ -11,6 +11,7 @@ import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { PlusIcon } from '@/components/Icons';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const initialAnimal: Animal = {
   id: '',
@@ -324,194 +325,195 @@ export default function CreateAnimalForm() {
   };
 
   return (
-    <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
-      <h1 className="text-4xl font-bold">Crear Animal</h1>
-      <p>Aquí puedes crear un nuevo animal para la base de datos.</p>
-      <form
-        action="#"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-        autoComplete="off"
-        className="flex flex-col gap-4 max-w-xl w-full"
-      >
-        <label className="flex flex-col font-bold gap-1">
-          Nombre:
-          {formErrors.name && (
-            <div className="bg-red-500 text-white text-sm rounded px-2">
-              {fieldErrorMessagesRecord.name}
-            </div>
-          )}
-          <input
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            type="text"
-            name="name"
-            value={animal.name}
-            onChange={handleChange}
-            required
-          />
-        </label>
+    <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
+      <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <h1 className="text-4xl font-bold">Crear Animal</h1>
+        <p>Aquí puedes crear un nuevo animal para la base de datos.</p>
+        <form
+          action="#"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+          autoComplete="off"
+          className="flex flex-col gap-4 max-w-xl w-full"
+        >
+          <label className="flex flex-col font-bold gap-1">
+            Nombre:
+            {formErrors.name && (
+              <div className="bg-red-500 text-white text-sm rounded px-2">
+                {fieldErrorMessagesRecord.name}
+              </div>
+            )}
+            <input
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              type="text"
+              name="name"
+              value={animal.name}
+              onChange={handleChange}
+              required
+            />
+          </label>
 
-        <label className="flex flex-col font-bold gap-1">
-          Descripción:
-          {formErrors.description && (
-            <div className="bg-red-500 text-white text-sm rounded px-2">
-              {fieldErrorMessagesRecord.description}
-            </div>
-          )}
-          <textarea
-            className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-            name="description"
-            value={animal.description}
-            onChange={handleChange}
-          />
-        </label>
+          <label className="flex flex-col font-bold gap-1">
+            Descripción:
+            {formErrors.description && (
+              <div className="bg-red-500 text-white text-sm rounded px-2">
+                {fieldErrorMessagesRecord.description}
+              </div>
+            )}
+            <textarea
+              className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+              name="description"
+              value={animal.description}
+              onChange={handleChange}
+            />
+          </label>
 
-        <label className="flex flex-col font-bold">
-          Género:
-          <select
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            name="gender"
-            value={animal.gender}
-            onChange={handleChange}
-          >
-            <option value="macho">Macho</option>
-            <option value="hembra">Hembra</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col font-bold">
-          Especie:
-          <select
-            className="outline-2  bg-white outline-gray-200 rounded p-2"
-            name="species"
-            value={animal.species}
-            onChange={handleChange}
-          >
-            <option value="perro">Perro</option>
-            <option value="gato">Gato</option>
-            <option value="otros">Otros</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col font-bold">
-          Etapa de vida (edad):
-          <select
-            className="outline-2  bg-white outline-gray-200 rounded p-2"
-            name="lifeStage"
-            value={animal.lifeStage}
-            onChange={handleChange}
-          >
-            <option value="cachorro">Cachorro</option>
-            <option value="joven">Joven</option>
-            <option value="adulto">Adulto</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col font-bold">
-          Tamaño:
-          <select
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            name="size"
-            value={animal.size}
-            onChange={handleChange}
-          >
-            <option value="pequeño">Pequeño</option>
-            <option value="mediano">Mediano</option>
-            <option value="grande">Grande</option>
-            <option value="no_se_sabe">No sé sabe</option>
-          </select>
-        </label>
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg font-bold">Compatibilidad (sociable)</h3>
-          <label className="flex gap-2 font-bold items-center ml-6">
-            <span>Perros:</span>
+          <label className="flex flex-col font-bold">
+            Género:
             <select
               className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="dogs"
-              value={animal.compatibility?.dogs || 'no_se'}
-              onChange={(e) => handleCompatibilityChange(e)}
+              name="gender"
+              value={animal.gender}
+              onChange={handleChange}
+            >
+              <option value="macho">Macho</option>
+              <option value="hembra">Hembra</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col font-bold">
+            Especie:
+            <select
+              className="outline-2  bg-white outline-gray-200 rounded p-2"
+              name="species"
+              value={animal.species}
+              onChange={handleChange}
+            >
+              <option value="perro">Perro</option>
+              <option value="gato">Gato</option>
+              <option value="otros">Otros</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col font-bold">
+            Etapa de vida (edad):
+            <select
+              className="outline-2  bg-white outline-gray-200 rounded p-2"
+              name="lifeStage"
+              value={animal.lifeStage}
+              onChange={handleChange}
+            >
+              <option value="cachorro">Cachorro</option>
+              <option value="joven">Joven</option>
+              <option value="adulto">Adulto</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col font-bold">
+            Tamaño:
+            <select
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              name="size"
+              value={animal.size}
+              onChange={handleChange}
+            >
+              <option value="pequeño">Pequeño</option>
+              <option value="mediano">Mediano</option>
+              <option value="grande">Grande</option>
+              <option value="no_se_sabe">No sé sabe</option>
+            </select>
+          </label>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold">Compatibilidad (sociable)</h3>
+            <label className="flex gap-2 font-bold items-center ml-6">
+              <span>Perros:</span>
+              <select
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
+                name="dogs"
+                value={animal.compatibility?.dogs || 'no_se'}
+                onChange={(e) => handleCompatibilityChange(e)}
+              >
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+            <label className="flex gap-2 font-bold items-center ml-6">
+              <span>Gatos:</span>
+              <select
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
+                name="cats"
+                value={animal.compatibility?.cats || 'no_se'}
+                onChange={(e) => handleCompatibilityChange(e)}
+              >
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+            <label className="flex gap-2 font-bold items-center ml-6">
+              <span>Niños:</span>
+              <select
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
+                name="kids"
+                value={animal.compatibility?.kids || 'no_se'}
+                onChange={(e) => handleCompatibilityChange(e)}
+              >
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="no_se">No sé</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="flex gap-2 font-bold items-center ml-6">
+            <span>¿Está Castrado?</span>
+            <select
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              name="isSterilized"
+              value={animal.isSterilized || 'no_se'}
+              onChange={(e) => handleChange(e)}
             >
               <option value="si">Sí</option>
               <option value="no">No</option>
               <option value="no_se">No sé</option>
             </select>
           </label>
-          <label className="flex gap-2 font-bold items-center ml-6">
-            <span>Gatos:</span>
+
+          <label className="flex flex-col font-bold">
+            Edad:
             <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="cats"
-              value={animal.compatibility?.cats || 'no_se'}
-              onChange={(e) => handleCompatibilityChange(e)}
+              className="outline-2 bg-white outline-gray-200 rounded p-2 max-h-48 overflow-y-auto"
+              name="aproxBirthDate"
+              defaultValue={dateOptions[0].value}
+              size={1}
+              onChange={(e) => {
+                const monthsToSubtract = Math.floor(Number(e.target.value));
+                const fractionalPart = Number(e.target.value) % 1;
+                const currentDate = new Date();
+
+                currentDate.setMonth(currentDate.getMonth() - monthsToSubtract);
+
+                const daysToSubtract = Math.round(fractionalPart * 30.44);
+                currentDate.setDate(currentDate.getDate() - daysToSubtract);
+                console.log(currentDate.getTime());
+
+                setAnimal((prev) => ({
+                  ...prev,
+                  aproxBirthDate: currentDate.getTime(),
+                }));
+              }}
             >
-              <option value="si">Sí</option>
-              <option value="no">No</option>
-              <option value="no_se">No sé</option>
+              {dateOptions.map((option) => (
+                <option key={option.label} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
-          <label className="flex gap-2 font-bold items-center ml-6">
-            <span>Niños:</span>
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="kids"
-              value={animal.compatibility?.kids || 'no_se'}
-              onChange={(e) => handleCompatibilityChange(e)}
-            >
-              <option value="si">Sí</option>
-              <option value="no">No</option>
-              <option value="no_se">No sé</option>
-            </select>
-          </label>
-        </div>
 
-        <label className="flex gap-2 font-bold items-center ml-6">
-          <span>¿Está Castrado?</span>
-          <select
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            name="isSterilized"
-            value={animal.isSterilized || 'no_se'}
-            onChange={(e) => handleChange(e)}
-          >
-            <option value="si">Sí</option>
-            <option value="no">No</option>
-            <option value="no_se">No sé</option>
-          </select>
-        </label>
-
-        <label className="flex flex-col font-bold">
-          Edad:
-          <select
-            className="outline-2 bg-white outline-gray-200 rounded p-2 max-h-48 overflow-y-auto"
-            name="aproxBirthDate"
-            defaultValue={dateOptions[0].value}
-            size={1}
-            onChange={(e) => {
-              const monthsToSubtract = Math.floor(Number(e.target.value));
-              const fractionalPart = Number(e.target.value) % 1;
-              const currentDate = new Date();
-
-              currentDate.setMonth(currentDate.getMonth() - monthsToSubtract);
-
-              const daysToSubtract = Math.round(fractionalPart * 30.44);
-              currentDate.setDate(currentDate.getDate() - daysToSubtract);
-              console.log(currentDate.getTime());
-
-              setAnimal((prev) => ({
-                ...prev,
-                aproxBirthDate: currentDate.getTime(),
-              }));
-            }}
-          >
-            {dateOptions.map((option) => (
-              <option key={option.label} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* <label className="flex flex-col font-bold">
+          {/* <label className="flex flex-col font-bold">
           Fecha de nacimiento aproximada:
           <input
             className="outline-2 outline-gray-200 rounded p-2"
@@ -528,348 +530,351 @@ export default function CreateAnimalForm() {
           />
         </label> */}
 
-        <label className="flex flex-col font-bold">
-          Esperando desde:
-          <input
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            type="date"
-            name="waitingSince"
-            value={animal.waitingSince ? formatMillisForInputDate(animal.waitingSince) : ''}
-            onChange={(e) =>
-              setAnimal((prev) => ({
-                ...prev,
-                waitingSince: e.target.value ? new Date(e.target.value).getTime() : 0,
-              }))
-            }
-          />
-        </label>
+          <label className="flex flex-col font-bold">
+            Esperando desde:
+            <input
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              type="date"
+              name="waitingSince"
+              value={animal.waitingSince ? formatMillisForInputDate(animal.waitingSince) : ''}
+              onChange={(e) =>
+                setAnimal((prev) => ({
+                  ...prev,
+                  waitingSince: e.target.value ? new Date(e.target.value).getTime() : 0,
+                }))
+              }
+            />
+          </label>
 
-        <label className="flex flex-col font-bold">
-          Situación actual:
-          <select
-            className="outline-2 bg-white outline-gray-200 rounded p-2"
-            name="status"
-            value={animal.status}
-            onChange={(e) => {
-              handleChange(e);
-            }}
-          >
-            <option value="adoptado">Adoptado</option>
-            <option value="calle">Calle</option>
-            <option value="protectora">Protectora</option>
-            <option value="transitorio">Transitorio</option>
-          </select>
-        </label>
+          <label className="flex flex-col font-bold">
+            Situación actual:
+            <select
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              name="status"
+              value={animal.status}
+              onChange={(e) => {
+                handleChange(e);
+              }}
+            >
+              <option value="adoptado">Adoptado</option>
+              <option value="calle">Calle</option>
+              <option value="protectora">Protectora</option>
+              <option value="transitorio">Transitorio</option>
+            </select>
+          </label>
 
-        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Disponible para adoptar:</span>
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            defaultChecked={animal.isAvalible}
-            name="isAvalible"
-            onChange={(e) => setIsAvalible(e.target.checked)}
-          />
-          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-        </label>
-        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Mostar:</span>
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            defaultChecked={animal.isAvalible}
-            name="isVisible"
-            onChange={(e) => setIsVisible(e.target.checked)}
-          />
-          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-        </label>
+          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+            <span>Disponible para adoptar:</span>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              defaultChecked={animal.isAvalible}
+              name="isAvalible"
+              onChange={(e) => setIsAvalible(e.target.checked)}
+            />
+            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+          </label>
+          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+            <span>Mostar:</span>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              defaultChecked={animal.isAvalible}
+              name="isVisible"
+              onChange={(e) => setIsVisible(e.target.checked)}
+            />
+            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+          </label>
 
-        {animal.status && (
-          <section className="flex flex-col gap-4 bg-gray-100 p-2 rounded-lg">
-            <h3 className="font-semibold text-center">Datos privados del Animal</h3>
-            <label className="flex flex-col font-bold gap-1">
-              Responsable:
-              <input
-                className="outline-2  bg-white outline-gray-200 rounded p-2"
-                type="text"
-                name="caseManager"
-                value={privateInfo.caseManager}
-                onChange={handlePrivateInfoChange}
-                required
-              />
-            </label>
+          {animal.status && (
+            <section className="flex flex-col gap-4 bg-gray-100 p-2 rounded-lg">
+              <h3 className="font-semibold text-center">Datos privados del Animal</h3>
+              <label className="flex flex-col font-bold gap-1">
+                Responsable:
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2"
+                  type="text"
+                  name="caseManager"
+                  value={privateInfo.caseManager}
+                  onChange={handlePrivateInfoChange}
+                  required
+                />
+              </label>
 
-            <label className="flex flex-col font-bold gap-1">
-              Nombre del contacto (transitorio/adoptante):
-              {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
-              <input
-                className="outline-2  bg-white outline-gray-200 rounded p-2"
-                type="text"
-                name="contactName"
-                onChange={handlePrivateInfoChange}
-              />
-            </label>
-            <section className="flex flex-col gap-4">
-              <h2 className="text-lg font-bold">Contactos:</h2>
-              {/* {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>} */}
+              <label className="flex flex-col font-bold gap-1">
+                Nombre del contacto (transitorio/adoptante):
+                {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2"
+                  type="text"
+                  name="contactName"
+                  onChange={handlePrivateInfoChange}
+                />
+              </label>
+              <section className="flex flex-col gap-4">
+                <h2 className="text-lg font-bold">Contactos:</h2>
+                {/* {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>} */}
 
-              {contacts.length > 0 &&
-                contacts.map((contact, index) => (
-                  <div key={`${contact.value}-${index}`} className="flex gap-2 flex-wrap">
-                    <span className="font-bold">{contact.type}:</span>
-                    <span>{contact.value}</span>
-                    <button
-                      className="bg-red-500 text-white px-2 rounded"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setContacts((prev) => prev.filter((_, i) => i !== index));
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-
-              <button
-                className={`${!showContactForm ? 'bg-green-400' : 'bg-red-400'} text-white px-4 py-2 rounded`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowContactForm((prev) => !prev);
-                }}
-              >
-                {`${!showContactForm ? 'Agregar contacto' : 'Cerrar'} `}
-              </button>
-              {showContactForm && (
-                <section className="flex flex-col gap-1 bg-cream-light w-full h-full px-2">
-                  <h3 className="text-lg font-semibold">Agregar Contacto</h3>
-                  <label className="flex flex-col font-bold">
-                    Tipo de contacto:
-                    <select
-                      className="outline-2  bg-white outline-gray-200 rounded p-2"
-                      name="contactType"
-                      onChange={(e) =>
-                        setNewContact((prev) => ({
-                          ...prev,
-                          type: e.target.value as 'celular' | 'email' | 'other',
-                        }))
-                      }
-                    >
-                      <option value="celular">Celular</option>
-                      <option value="email">Email</option>
-                      <option value="other">Otro</option>
-                    </select>
-                  </label>
-                  <label className="flex flex-col font-bold">
-                    Valor del contacto:
-                    <input
-                      className="outline-2  bg-white outline-gray-200 rounded p-2"
-                      type="text"
-                      name="contactValue"
-                      onChange={(e) =>
-                        setNewContact((prev) => ({
-                          ...prev,
-                          value: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <button
-                    className="bg-green-500 text-white px-4 py-2 rounded"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (newContact.value) {
-                        setContacts((prev) => [...prev, newContact]);
-                        setNewContact({ type: 'email', value: '' });
-                        setShowContactForm((prev) => !prev);
-                      }
-                    }}
-                  >
-                    Agregar contacto
-                  </button>
-                </section>
-              )}
-            </section>
-
-            <label className="flex flex-col font-bold">
-              <span>Fecha de inicio:</span>
-              <p className="font-normal text-xs text-balance">
-                (Esta es la fecha en la que se tomo el caso){' '}
-              </p>
-              <input
-                className="outline-2  bg-white outline-gray-200 rounded p-2"
-                type="date"
-                name="since"
-                defaultValue={formatMillisForInputDate(Date.now())}
-                onChange={(e) =>
-                  setTransaction((prev) => ({
-                    ...prev,
-                    since: e.target.value ? new Date(e.target.value).getTime() : 0,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              <span className="font-bold">Vacunas del animal:</span>
-              {privateInfo.vaccinations && privateInfo.vaccinations.length > 0 ? (
-                <ul className="list-disc list-inside">
-                  {privateInfo.vaccinations.map((vaccine, index) => (
-                    <li
-                      key={index}
-                      className="flex gap-1 p-1 rounded justify-between items-center bg-amber-50"
-                    >
-                      <span>
-                        {new Date(vaccine.date).toLocaleDateString('es-UY', { timeZone: 'UTC' })} -{' '}
-                        {vaccine.vaccine}
-                      </span>
+                {contacts.length > 0 &&
+                  contacts.map((contact, index) => (
+                    <div key={`${contact.value}-${index}`} className="flex gap-2 flex-wrap">
+                      <span className="font-bold">{contact.type}:</span>
+                      <span>{contact.value}</span>
                       <button
                         className="bg-red-500 text-white px-2 rounded"
                         onClick={(e) => {
                           e.preventDefault();
-                          const updatedVaccinations =
-                            privateInfo.vaccinations?.filter((_, i) => i !== index) || [];
-                          setPrivateInfo((prev) => ({
-                            ...prev,
-                            vaccinations: updatedVaccinations,
-                          }));
+                          setContacts((prev) => prev.filter((_, i) => i !== index));
                         }}
                       >
                         Eliminar
                       </button>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No se han registrado vacunas.</p>
-              )}
-            </label>
-            <label>
-              <span className="font-bold">Agregar Vacuna:</span>
-              <div className="flex flex-col gap-2">
-                <input
-                  className="outline-2  bg-white outline-gray-200 rounded p-2 w-full"
-                  type="text"
-                  name="vaccineName"
-                  placeholder="Ej: Antirrabica"
-                  id="vaccineName"
-                />
-                <div className="flex gap-2 sm:flex-row flex-col">
-                  <input
-                    className="outline-2  bg-white outline-gray-200 rounded p-2"
-                    type="date"
-                    name="vaccineDate"
-                    id="vaccineDate"
-                    defaultValue={formatMillisForInputDate(Date.now())}
-                  />
-                  <button
-                    className="bg-green-500 w-full text-white px-4 py-2 rounded"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const vaccineInput = document.getElementById(
-                        'vaccineName'
-                      ) as HTMLInputElement;
-                      const dateInput = document.getElementById('vaccineDate') as HTMLInputElement;
-                      if (vaccineInput?.value && dateInput?.value) {
-                        const newVaccine = {
-                          vaccine: vaccineInput.value,
-                          date: new Date(dateInput.value).getTime(),
-                        };
-                        setPrivateInfo((prev) => ({
-                          ...prev,
-                          vaccinations: prev.vaccinations
-                            ? [...prev.vaccinations, newVaccine]
-                            : [newVaccine],
-                        }));
-                        vaccineInput.value = '';
-                        dateInput.value = '';
-                      }
-                    }}
-                  >
-                    Agregar registro
-                  </button>
-                </div>
-              </div>
-            </label>
-            <label className="flex flex-col font-bold">
-              <span className="font-bold">Patologias del animal:</span>
 
-              <textarea
-                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-                name="medicalConditions"
-                onChange={handlePrivateInfoChange}
-                placeholder='Ejemplo: "Diabetes, Epilepsia, si toma medicacion etc"'
-                value={privateInfo.medicalConditions || ''}
-              />
-            </label>
-
-            <label className="flex flex-col font-bold">
-              <span>Información adicional:</span>
-              <textarea
-                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-                name="notes"
-                onChange={handlePrivateInfoChange}
-                placeholder='Ejemplo: "tiene coordinada una visita al veterinario el 15/08"'
-                value={privateInfo.notes || ''}
-              />
-            </label>
-          </section>
-        )}
-
-        <section className="flex flex-wrap gap-4 items-center justify-center">
-          {images.length > 0 &&
-            images.map((img) => (
-              <div key={img.imgId} className="relative flex flex-col items-center">
                 <button
+                  className={`${!showContactForm ? 'bg-green-400' : 'bg-red-400'} text-white px-4 py-2 rounded`}
                   onClick={(e) => {
                     e.preventDefault();
-                    handleImageDelete(img.imgId);
+                    setShowContactForm((prev) => !prev);
                   }}
-                  className="bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow"
                 >
-                  X
+                  {`${!showContactForm ? 'Agregar contacto' : 'Cerrar'} `}
                 </button>
-                <img
-                  src={img.imgUrl}
-                  alt={img.imgAlt}
-                  className="w-40 h-40 object-cover rounded mb-2"
-                />
-                <span className="text-sm text-gray-500">{img.imgId}</span>
-              </div>
-            ))}
-        </section>
-        {formErrors.images && (
-          <div className="bg-red-500 text-white text-sm rounded px-2">
-            {fieldErrorMessagesRecord.images}
-          </div>
-        )}
-        {images.length < 5 && (
-          <UploadImages
-            onImagesAdd={(newImages) => {
-              setImages((prev) => [...prev, ...newImages]);
-            }}
-          />
-        )}
+                {showContactForm && (
+                  <section className="flex flex-col gap-1 bg-cream-light w-full h-full px-2">
+                    <h3 className="text-lg font-semibold">Agregar Contacto</h3>
+                    <label className="flex flex-col font-bold">
+                      Tipo de contacto:
+                      <select
+                        className="outline-2  bg-white outline-gray-200 rounded p-2"
+                        name="contactType"
+                        onChange={(e) =>
+                          setNewContact((prev) => ({
+                            ...prev,
+                            type: e.target.value as 'celular' | 'email' | 'other',
+                          }))
+                        }
+                      >
+                        <option value="celular">Celular</option>
+                        <option value="email">Email</option>
+                        <option value="other">Otro</option>
+                      </select>
+                    </label>
+                    <label className="flex flex-col font-bold">
+                      Valor del contacto:
+                      <input
+                        className="outline-2  bg-white outline-gray-200 rounded p-2"
+                        type="text"
+                        name="contactValue"
+                        onChange={(e) =>
+                          setNewContact((prev) => ({
+                            ...prev,
+                            value: e.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <button
+                      className="bg-green-500 text-white px-4 py-2 rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (newContact.value) {
+                          setContacts((prev) => [...prev, newContact]);
+                          setNewContact({ type: 'email', value: '' });
+                          setShowContactForm((prev) => !prev);
+                        }
+                      }}
+                    >
+                      Agregar contacto
+                    </button>
+                  </section>
+                )}
+              </section>
 
-        {Object.values(formErrors).some(Boolean) && (
-          <div className="bg-red-500 text-white p-3 rounded">
-            <p>Faltan Datos:</p>
-            <ul className="list-disc ml-5">
-              {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
-              {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
-              {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
-              {/* {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>} */}
-              {/* {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>} */}
-            </ul>
-          </div>
-        )}
-        <button
-          onClick={handleSubmit}
-          className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-        >
-          <PlusIcon size={20} title="Crear animal" color="white" />
-          Guardar animal
-        </button>
-      </form>
-      {loading && <Loader />}
-    </section>
+              <label className="flex flex-col font-bold">
+                <span>Fecha de inicio:</span>
+                <p className="font-normal text-xs text-balance">
+                  (Esta es la fecha en la que se tomo el caso){' '}
+                </p>
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2"
+                  type="date"
+                  name="since"
+                  defaultValue={formatMillisForInputDate(Date.now())}
+                  onChange={(e) =>
+                    setTransaction((prev) => ({
+                      ...prev,
+                      since: e.target.value ? new Date(e.target.value).getTime() : 0,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span className="font-bold">Vacunas del animal:</span>
+                {privateInfo.vaccinations && privateInfo.vaccinations.length > 0 ? (
+                  <ul className="list-disc list-inside">
+                    {privateInfo.vaccinations.map((vaccine, index) => (
+                      <li
+                        key={index}
+                        className="flex gap-1 p-1 rounded justify-between items-center bg-amber-50"
+                      >
+                        <span>
+                          {new Date(vaccine.date).toLocaleDateString('es-UY', { timeZone: 'UTC' })}{' '}
+                          - {vaccine.vaccine}
+                        </span>
+                        <button
+                          className="bg-red-500 text-white px-2 rounded"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const updatedVaccinations =
+                              privateInfo.vaccinations?.filter((_, i) => i !== index) || [];
+                            setPrivateInfo((prev) => ({
+                              ...prev,
+                              vaccinations: updatedVaccinations,
+                            }));
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500">No se han registrado vacunas.</p>
+                )}
+              </label>
+              <label>
+                <span className="font-bold">Agregar Vacuna:</span>
+                <div className="flex flex-col gap-2">
+                  <input
+                    className="outline-2  bg-white outline-gray-200 rounded p-2 w-full"
+                    type="text"
+                    name="vaccineName"
+                    placeholder="Ej: Antirrabica"
+                    id="vaccineName"
+                  />
+                  <div className="flex gap-2 sm:flex-row flex-col">
+                    <input
+                      className="outline-2  bg-white outline-gray-200 rounded p-2"
+                      type="date"
+                      name="vaccineDate"
+                      id="vaccineDate"
+                      defaultValue={formatMillisForInputDate(Date.now())}
+                    />
+                    <button
+                      className="bg-green-500 w-full text-white px-4 py-2 rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const vaccineInput = document.getElementById(
+                          'vaccineName'
+                        ) as HTMLInputElement;
+                        const dateInput = document.getElementById(
+                          'vaccineDate'
+                        ) as HTMLInputElement;
+                        if (vaccineInput?.value && dateInput?.value) {
+                          const newVaccine = {
+                            vaccine: vaccineInput.value,
+                            date: new Date(dateInput.value).getTime(),
+                          };
+                          setPrivateInfo((prev) => ({
+                            ...prev,
+                            vaccinations: prev.vaccinations
+                              ? [...prev.vaccinations, newVaccine]
+                              : [newVaccine],
+                          }));
+                          vaccineInput.value = '';
+                          dateInput.value = '';
+                        }
+                      }}
+                    >
+                      Agregar registro
+                    </button>
+                  </div>
+                </div>
+              </label>
+              <label className="flex flex-col font-bold">
+                <span className="font-bold">Patologias del animal:</span>
+
+                <textarea
+                  className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                  name="medicalConditions"
+                  onChange={handlePrivateInfoChange}
+                  placeholder='Ejemplo: "Diabetes, Epilepsia, si toma medicacion etc"'
+                  value={privateInfo.medicalConditions || ''}
+                />
+              </label>
+
+              <label className="flex flex-col font-bold">
+                <span>Información adicional:</span>
+                <textarea
+                  className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                  name="notes"
+                  onChange={handlePrivateInfoChange}
+                  placeholder='Ejemplo: "tiene coordinada una visita al veterinario el 15/08"'
+                  value={privateInfo.notes || ''}
+                />
+              </label>
+            </section>
+          )}
+
+          <section className="flex flex-wrap gap-4 items-center justify-center">
+            {images.length > 0 &&
+              images.map((img) => (
+                <div key={img.imgId} className="relative flex flex-col items-center">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleImageDelete(img.imgId);
+                    }}
+                    className="bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow"
+                  >
+                    X
+                  </button>
+                  <img
+                    src={img.imgUrl}
+                    alt={img.imgAlt}
+                    className="w-40 h-40 object-cover rounded mb-2"
+                  />
+                  <span className="text-sm text-gray-500">{img.imgId}</span>
+                </div>
+              ))}
+          </section>
+          {formErrors.images && (
+            <div className="bg-red-500 text-white text-sm rounded px-2">
+              {fieldErrorMessagesRecord.images}
+            </div>
+          )}
+          {images.length < 5 && (
+            <UploadImages
+              onImagesAdd={(newImages) => {
+                setImages((prev) => [...prev, ...newImages]);
+              }}
+            />
+          )}
+
+          {Object.values(formErrors).some(Boolean) && (
+            <div className="bg-red-500 text-white p-3 rounded">
+              <p>Faltan Datos:</p>
+              <ul className="list-disc ml-5">
+                {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
+                {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
+                {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
+                {/* {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>} */}
+                {/* {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>} */}
+              </ul>
+            </div>
+          )}
+          <button
+            onClick={handleSubmit}
+            className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+          >
+            <PlusIcon size={20} title="Crear animal" color="white" />
+            Guardar animal
+          </button>
+        </form>
+        {loading && <Loader />}
+      </section>
+    </ProtectedRoute>
   );
 }

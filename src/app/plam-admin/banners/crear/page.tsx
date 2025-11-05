@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { PlusIcon } from '@/components/Icons';
 import Image from 'next/image';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const initialBanner: BannerType = {
   id: '',
@@ -116,151 +117,153 @@ export default function CreateAnimalForm() {
   };
 
   return (
-    <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
-      <h1 className="text-4xl font-bold">Nuevo Banner</h1>
-      <p>sube un nuevo banner.</p>
-      <section className="w-full  "></section>
-      <form
-        action="#"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-        autoComplete="off"
-        className="flex flex-col gap-4 max-w-xl w-full"
-      >
-        <section className="w-full flex flex-wrap gap-4 items-center justify-center">
-          {banner.image.imgUrl && (
-            <div key={banner.image.imgId} className="relative flex flex-col items-center">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleImageDelete(banner.image.imgId);
-                }}
-                className="bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow"
-              >
-                X
-              </button>
-              <Image
-                src={banner.image.imgUrl}
-                alt={banner.image.imgAlt}
-                className="object-cover rounded-lg w-full aspect-[21/9]"
-                width={600}
-                height={257}
-              />
-              <span className="text-sm text-gray-500">{banner.image.imgId}</span>
-            </div>
-          )}
-        </section>
-
-        {!banner.image.imgUrl && (
-          <UploadImages
-            currentFolder="banners"
-            maxFiles={1}
-            onImagesAdd={(imgs) => {
-              if (imgs.length > 0) setBanner({ ...banner, image: imgs[0] });
-            }}
-          />
-        )}
-
-        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Mostar Titulo:</span>
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={banner.showTitle}
-            name="showTitle"
-            onChange={(e) => setBanner({ ...banner, showTitle: e.target.checked })}
-          />
-          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-        </label>
-
-        {banner.showTitle && (
-          <label className="flex flex-col font-bold gap-1">
-            Titulo:
-            <input
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              type="text"
-              name="title"
-              value={banner.title}
-              onChange={handleChange}
-              required
-            />
-          </label>
-        )}
-
-        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Mostar descripcion:</span>
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={banner.showDescription}
-            name="showDescription"
-            onChange={(e) => setBanner({ ...banner, showDescription: e.target.checked })}
-          />
-          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-        </label>
-
-        {banner.showDescription && (
-          <label className="flex flex-col font-bold gap-1">
-            Descripción:
-            <textarea
-              className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-              name="description"
-              value={banner.description}
-              onChange={handleChange}
-            />
-          </label>
-        )}
-
-        <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-          <span>Mostar Boton:</span>
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={banner.showButton}
-            name="showButton"
-            onChange={(e) => setBanner({ ...banner, showButton: e.target.checked })}
-          />
-          <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-        </label>
-        {banner.showButton && (
-          <>
-            <label className="flex flex-col font-bold gap-1">
-              Texto del boton:
-              <input
-                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-                type="text"
-                name="buttonText"
-                value={banner.buttonText}
-                onChange={handleChange}
-              />
-            </label>
-            <label className="flex flex-col font-bold gap-1">
-              URL del boton:
-              <input
-                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
-                type="text"
-                name="buttonUrl"
-                value={banner.buttonUrl}
-                onChange={handleChange}
-              />
-            </label>
-          </>
-        )}
-
-        <small className="text-gray-500">
-          *El banner aparecerá en la página principal en unos 10 minutos.
-        </small>
-
-        <button
-          onClick={handleSubmit}
-          className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+    <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
+      <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <h1 className="text-4xl font-bold">Nuevo Banner</h1>
+        <p>sube un nuevo banner.</p>
+        <section className="w-full  "></section>
+        <form
+          action="#"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+          autoComplete="off"
+          className="flex flex-col gap-4 max-w-xl w-full"
         >
-          <PlusIcon size={20} title="Publicar banner" color="white" />
-          Publicar banner
-        </button>
-      </form>
-      {loading && <Loader />}
-    </section>
+          <section className="w-full flex flex-wrap gap-4 items-center justify-center">
+            {banner.image.imgUrl && (
+              <div key={banner.image.imgId} className="relative flex flex-col items-center">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleImageDelete(banner.image.imgId);
+                  }}
+                  className="bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow"
+                >
+                  X
+                </button>
+                <Image
+                  src={banner.image.imgUrl}
+                  alt={banner.image.imgAlt}
+                  className="object-cover rounded-lg w-full aspect-[21/9]"
+                  width={600}
+                  height={257}
+                />
+                <span className="text-sm text-gray-500">{banner.image.imgId}</span>
+              </div>
+            )}
+          </section>
+
+          {!banner.image.imgUrl && (
+            <UploadImages
+              currentFolder="banners"
+              maxFiles={1}
+              onImagesAdd={(imgs) => {
+                if (imgs.length > 0) setBanner({ ...banner, image: imgs[0] });
+              }}
+            />
+          )}
+
+          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+            <span>Mostar Titulo:</span>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={banner.showTitle}
+              name="showTitle"
+              onChange={(e) => setBanner({ ...banner, showTitle: e.target.checked })}
+            />
+            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+          </label>
+
+          {banner.showTitle && (
+            <label className="flex flex-col font-bold gap-1">
+              Titulo:
+              <input
+                className="outline-2 bg-white outline-gray-200 rounded p-2"
+                type="text"
+                name="title"
+                value={banner.title}
+                onChange={handleChange}
+                required
+              />
+            </label>
+          )}
+
+          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+            <span>Mostar descripcion:</span>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={banner.showDescription}
+              name="showDescription"
+              onChange={(e) => setBanner({ ...banner, showDescription: e.target.checked })}
+            />
+            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+          </label>
+
+          {banner.showDescription && (
+            <label className="flex flex-col font-bold gap-1">
+              Descripción:
+              <textarea
+                className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                name="description"
+                value={banner.description}
+                onChange={handleChange}
+              />
+            </label>
+          )}
+
+          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
+            <span>Mostar Boton:</span>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={banner.showButton}
+              name="showButton"
+              onChange={(e) => setBanner({ ...banner, showButton: e.target.checked })}
+            />
+            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
+          </label>
+          {banner.showButton && (
+            <>
+              <label className="flex flex-col font-bold gap-1">
+                Texto del boton:
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                  type="text"
+                  name="buttonText"
+                  value={banner.buttonText}
+                  onChange={handleChange}
+                />
+              </label>
+              <label className="flex flex-col font-bold gap-1">
+                URL del boton:
+                <input
+                  className="outline-2  bg-white outline-gray-200 rounded p-2 field-sizing-content"
+                  type="text"
+                  name="buttonUrl"
+                  value={banner.buttonUrl}
+                  onChange={handleChange}
+                />
+              </label>
+            </>
+          )}
+
+          <small className="text-gray-500">
+            *El banner aparecerá en la página principal en unos 10 minutos.
+          </small>
+
+          <button
+            onClick={handleSubmit}
+            className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+          >
+            <PlusIcon size={20} title="Publicar banner" color="white" />
+            Publicar banner
+          </button>
+        </form>
+        {loading && <Loader />}
+      </section>
+    </ProtectedRoute>
   );
 }
