@@ -7,8 +7,8 @@ This documentation describes the role-based access control system implemented in
 The system provides four hierarchical roles with increasing levels of permissions:
 
 1. **user** - Basic read-only access
-2. **rescuer** - Can manage animals and adoptions
-3. **admin** - Can manage rescuers and all content
+2. **rescatista** - Can manage animals and adoptions
+3. **admin** - Can manage rescatistas and all content
 4. **superadmin** - Full system access, can manage all admins and users
 
 ## Core Files
@@ -59,7 +59,7 @@ With custom loading and redirect:
 
 ```tsx
 <ProtectedRoute
-  requiredRole="rescuer"
+  requiredRole="rescatista"
   redirectPath="/login"
   loadingComponent={<Spinner />}
   unauthorizedComponent={<AccessDenied />}
@@ -86,7 +86,7 @@ function Dashboard() {
       </RoleGuard>
 
       {/* Show with fallback message */}
-      <RoleGuard requiredRole="rescuer" fallback={<p>Rescuer access required</p>}>
+      <RoleGuard requiredRole="rescatista" fallback={<p>rescatista access required</p>}>
         <AnimalEditor />
       </RoleGuard>
     </div>
@@ -146,7 +146,7 @@ function UserManagement({ userRole }: { userRole: UserRole }) {
   const canEdit = hasPermission(userRole, 'admin');
 
   // Check if user can manage another user
-  const canManageRescuer = canManageUser(userRole, 'rescuer');
+  const canManagerescatista = canManageUser(userRole, 'rescatista');
 
   // Get roles this user can assign
   const assignableRoles = getAssignableRoles(userRole);
@@ -171,8 +171,8 @@ function UserManagement({ userRole }: { userRole: UserRole }) {
 Checks if user has at least the required permission level.
 
 ```tsx
-hasPermission('admin', 'rescuer'); // true
-hasPermission('rescuer', 'admin'); // false
+hasPermission('admin', 'rescatista'); // true
+hasPermission('rescatista', 'admin'); // false
 ```
 
 ### `isAdmin(userRole)`
@@ -182,7 +182,7 @@ Checks if user is admin or superadmin.
 ```tsx
 isAdmin('admin'); // true
 isAdmin('superadmin'); // true
-isAdmin('rescuer'); // false
+isAdmin('rescatista'); // false
 ```
 
 ### `isSuperAdmin(userRole)`
@@ -196,10 +196,10 @@ isSuperAdmin('admin'); // false
 
 ### `canManageAnimals(userRole)`
 
-Checks if user can manage animals (rescuer or higher).
+Checks if user can manage animals (rescatista or higher).
 
 ```tsx
-canManageAnimals('rescuer'); // true
+canManageAnimals('rescatista'); // true
 canManageAnimals('user'); // false
 ```
 
@@ -208,7 +208,7 @@ canManageAnimals('user'); // false
 Checks if user can manage another user based on their roles.
 
 ```tsx
-canManageUser('admin', 'rescuer'); // true
+canManageUser('admin', 'rescatista'); // true
 canManageUser('admin', 'admin'); // false
 canManageUser('superadmin', 'admin'); // true
 ```
@@ -218,9 +218,9 @@ canManageUser('superadmin', 'admin'); // true
 Gets roles that can be assigned by the user.
 
 ```tsx
-getAssignableRoles('superadmin'); // ['superadmin', 'admin', 'rescuer', 'user']
-getAssignableRoles('admin'); // ['rescuer', 'user']
-getAssignableRoles('rescuer'); // []
+getAssignableRoles('superadmin'); // ['superadmin', 'admin', 'rescatista', 'user']
+getAssignableRoles('admin'); // ['rescatista', 'user']
+getAssignableRoles('rescatista'); // []
 ```
 
 ## Admin Layout Protection
@@ -239,7 +239,7 @@ User roles are stored in the Firestore `authorizedEmails` collection. Each user 
 }
 ```
 
-Valid roles: `"superadmin"`, `"admin"`, `"rescuer"`, `"user"`
+Valid roles: `"superadmin"`, `"admin"`, `"rescatista"`, `"user"`
 
 If no role is specified, the default is `"user"`.
 

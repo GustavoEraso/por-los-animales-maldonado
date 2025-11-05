@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronRightIcon, HomeIcon, ImageIcon, PetsIcon, UserIcon } from '@/components/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
+import RoleGuard from '@/components/RoleGuard';
 
 /**
  * Dashboard layout component with role-based access control.
@@ -63,35 +64,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <HomeIcon size={32} className="w-8 h-8 mb-2" title="Inicio" />
             </Link>
             <ul className="flex flex-col gap-1">
-              <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
-                <Link
-                  className="flex gap-1 items-center justify-between w-full px-2 py-1 "
-                  href={'/plam-admin/animales'}
-                >
-                  <span className="hidden md:block">Animales</span>
-                  <PetsIcon size={32} className="w-8 h-8 mb-2" title="Animales" />
-                </Link>
-              </li>
+              <RoleGuard requiredRole="rescatista">
+                <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                  <Link
+                    className="flex gap-1 items-center justify-between w-full px-2 py-1 "
+                    href={'/plam-admin/animales'}
+                  >
+                    <span className="hidden md:block">Animales</span>
+                    <PetsIcon size={32} className="w-8 h-8 mb-2" title="Animales" />
+                  </Link>
+                </li>
+              </RoleGuard>
 
-              <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
-                <Link
-                  className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
-                  href={'/plam-admin/usuarios'}
-                >
-                  <span className="hidden md:block">Usuarios</span>
-                  <UserIcon size={32} className="w-8 h-8 mb-2" title="Usuarios" />
-                </Link>
-              </li>
+              <RoleGuard requiredRole="admin">
+                <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                  <Link
+                    className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                    href={'/plam-admin/usuarios'}
+                  >
+                    <span className="hidden md:block">Usuarios</span>
+                    <UserIcon size={32} className="w-8 h-8 mb-2" title="Usuarios" />
+                  </Link>
+                </li>
+              </RoleGuard>
 
-              <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
-                <Link
-                  className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
-                  href={'/plam-admin/banners'}
-                >
-                  <span className="hidden md:block">banners</span>
-                  <ImageIcon size={32} className="w-8 h-8 mb-2" title="banners" />
-                </Link>
-              </li>
+              <RoleGuard requiredRole="admin">
+                <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                  <Link
+                    className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                    href={'/plam-admin/banners'}
+                  >
+                    <span className="hidden md:block">banners</span>
+                    <ImageIcon size={32} className="w-8 h-8 mb-2" title="banners" />
+                  </Link>
+                </li>
+              </RoleGuard>
             </ul>
           </div>
           <button
