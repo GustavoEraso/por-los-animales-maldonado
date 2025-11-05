@@ -1,9 +1,10 @@
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 import { unstable_ViewTransition as ViewTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Animal, PrivateInfoType } from '@/types';
-import { Modal } from '@/components/Modal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { EyeIcon, EditIcon, TrashIcon } from '@/components/Icons';
 
 interface AdminAnimalCardProps {
@@ -49,6 +50,23 @@ export default function AdminAnimalCard({
   const img = images[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
+  };
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setIsDeleteDialogOpen(false);
+    if (onDelete) {
+      onDelete(id);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
   };
 
   return (
@@ -118,42 +136,28 @@ export default function AdminAnimalCard({
             <EditIcon size={20} />
           </Link>
 
-          {/* Delete with Modal */}
+          {/* Delete with ConfirmDialog */}
           {onDelete && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <Modal
-                buttonStyles="p-1 text-red-600 hover:bg-red-100 rounded transition"
-                buttonText={<TrashIcon size={20} title="Eliminar" />}
+            <>
+              <button
+                onClick={handleDeleteClick}
+                className="p-1 text-red-600 hover:bg-red-100 rounded transition"
+                title="Eliminar"
               >
-                <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-4 text-center text-black">
-                  <h2 className="text-2xl font-bold">
-                    ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
-                  </h2>
-                  <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 max-w-md">
-                    <div className="aspect-square">
-                      <Image
-                        className="w-full h-full object-cover bg-white"
-                        src={img.imgUrl}
-                        alt={img.imgAlt}
-                        width={300}
-                        height={300}
-                      />
-                    </div>
-                    <div className="flex flex-col items-center gap-2 p-4">
-                      <span className="uppercase text-2xl text-center font-extrabold">{name}</span>
-                      <span className="text-lg text-center">ID: {id}</span>
-                      <button
-                        onClick={() => onDelete(id)}
-                        className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
-                      >
-                        <TrashIcon size={20} color="white" />
-                        Eliminar
-                      </button>
-                    </div>
-                  </article>
-                </section>
-              </Modal>
-            </div>
+                <TrashIcon size={20} />
+              </button>
+
+              <ConfirmDialog
+                isOpen={isDeleteDialogOpen}
+                title="Eliminar Animal"
+                message={`¿Estás seguro de que quieres eliminar a ${name}?\n\nID: ${id}\n\nEsta acción no se puede deshacer.`}
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+              />
+            </>
           )}
         </div>
       </div>
