@@ -35,6 +35,16 @@ You can edit the main page in `src/app/page.tsx`.
 - [Tailwind CSS](https://tailwindcss.com/) — Utility-first CSS
 - [pnpm](https://pnpm.io/) — Package manager
 
+## Project Documentation
+
+The `/docs` folder contains important documentation about the system:
+
+- **[ROLES_AND_PERMISSIONS.md](/docs/ROLES_AND_PERMISSIONS.md)** — Role-based access control (RBAC) system documentation
+- **[AUDIT_LOG_SYSTEM.md](/docs/AUDIT_LOG_SYSTEM.md)** — Audit log system for tracking all changes in the application
+- **[FIRESTORE_AUDIT_LOG_RULES.md](/docs/FIRESTORE_AUDIT_LOG_RULES.md)** — Firestore security rules for the audit log system
+
+Additional auto-generated API documentation is available in the `/docs` folder using TypeDoc.
+
 ## Documentation & Deployment
 
 Documentation is generated in the `/docs` folder using TypeDoc.
