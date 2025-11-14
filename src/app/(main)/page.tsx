@@ -23,6 +23,16 @@ export default function Home() {
       alt: 'arenadora maldonado logo',
       href: 'https://www.instagram.com/arenadora_maldonado/?hl=es',
     },
+    {
+      src: '/consentidos_logo.webp',
+      alt: 'consentidos logo',
+      href: 'https://www.instagram.com/consentidos_tiendademascotas/?hl=es',
+    },
+    {
+      src: '/logo_costa_mascotas.webp',
+      alt: 'costa mascotas logo',
+      href: 'https://www.costamascotas.uy/',
+    },
   ];
 
   return (

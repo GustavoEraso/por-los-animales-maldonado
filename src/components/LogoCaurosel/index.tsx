@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useLayoutEffect, useRef, useState, useCallback } from 'react';
-import { gsap } from 'gsap/dist/gsap';
+import { useLayoutEffect, useRef, useCallback } from 'react';
+import gsap from 'gsap';
 import SmartLink from '@/lib/SmartLink';
 
 /**
@@ -36,17 +36,101 @@ interface LogoCarouselProps {
 }
 
 /**
+ * Creates a seamless horizontal loop animation for logo items.
+ * Based on GSAP's horizontalLoop helper function.
+ *
+ * @param {HTMLElement[]} items - Array of HTML elements to animate
+ * @param {Object} config - Configuration options
+ * @param {number} [config.speed=1] - Speed multiplier for animation (pixels per second / 100)
+ * @param {number} [config.paddingRight=0] - Padding between items in pixels
+ * @returns {gsap.core.Timeline} GSAP timeline with infinite loop animation
+ */
+function horizontalLoop(
+  items: HTMLElement[],
+  config: { speed?: number; paddingRight?: number }
+): gsap.core.Timeline {
+  config = config || {};
+  const tl = gsap.timeline({
+    repeat: -1,
+    defaults: { ease: 'none' },
+    onReverseComplete: () => {
+      tl.totalTime(tl.rawTime() + tl.duration() * 100);
+    },
+  });
+
+  const length = items.length;
+  const startX = items[0].offsetLeft;
+  const times: number[] = [];
+  const widths: number[] = [];
+  const xPercents: number[] = [];
+  const pixelsPerSecond = (config.speed || 1) * 100;
+  const snap = gsap.utils.snap(1);
+
+  // Convert "x" to "xPercent" to make things responsive
+  gsap.set(items, {
+    xPercent: (i, el) => {
+      const w = (widths[i] = parseFloat(gsap.getProperty(el, 'width', 'px') as string));
+      xPercents[i] = snap(
+        (parseFloat(gsap.getProperty(el, 'x', 'px') as string) / w) * 100 +
+          (gsap.getProperty(el, 'xPercent') as number)
+      );
+      return xPercents[i];
+    },
+  });
+
+  gsap.set(items, { x: 0 });
+
+  const totalWidth =
+    items[length - 1].offsetLeft +
+    (xPercents[length - 1] / 100) * widths[length - 1] -
+    startX +
+    items[length - 1].offsetWidth * (gsap.getProperty(items[length - 1], 'scaleX') as number) +
+    (parseFloat(String(config.paddingRight)) || 0);
+
+  for (let i = 0; i < length; i++) {
+    const item = items[i];
+    const curX = (xPercents[i] / 100) * widths[i];
+    const distanceToStart = item.offsetLeft + curX - startX;
+    const distanceToLoop =
+      distanceToStart + widths[i] * (gsap.getProperty(item, 'scaleX') as number);
+
+    tl.to(
+      item,
+      {
+        xPercent: snap(((curX - distanceToLoop) / widths[i]) * 100),
+        duration: distanceToLoop / pixelsPerSecond,
+      },
+      0
+    )
+      .fromTo(
+        item,
+        { xPercent: snap(((curX - distanceToLoop + totalWidth) / widths[i]) * 100) },
+        {
+          xPercent: xPercents[i],
+          duration: (curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
+          immediateRender: false,
+        },
+        distanceToLoop / pixelsPerSecond
+      )
+      .add('label' + i, distanceToStart / pixelsPerSecond);
+    times[i] = distanceToStart / pixelsPerSecond;
+  }
+
+  tl.progress(1, true).progress(0, true); // pre-render for performance
+  return tl;
+}
+
+/**
  * Animated logo carousel component with seamless infinite horizontal scrolling.
  *
  * Displays an array of logos in a continuously scrolling carousel with smooth
- * GSAP animations. Features include hover pause/resume functionality, optional
- * grayscale effects for visual consistency, and automatic content duplication
- * to ensure a seamless infinite loop without visual jumps. Uses optimized GSAP
- * animations and mathematical modifiers for performance.
+ * GSAP animations using the horizontalLoop helper. Features include hover pause/resume
+ * functionality, optional grayscale effects for visual consistency, and automatic
+ * content duplication to ensure a seamless infinite loop without visual jumps.
  *
- * The component automatically calculates the required number of logo copies
- * based on viewport width to ensure smooth infinite scrolling. Logos can be
- * clickable links or static images, and support lazy loading for performance.
+ * Uses xPercent-based positioning for responsive animations that adapt to window
+ * resizing. Logos can be clickable links or static images, and support lazy loading
+ * for performance.
  *
  * @param {LogoCarouselProps} props - Component configuration props
  * @param {LogoItem[]} props.logos - Array of logo items to display in the carousel
@@ -77,70 +161,32 @@ export default function LogoCarousel({
   grayscale = true,
 }: LogoCarouselProps): React.ReactElement {
   const root = useRef<HTMLDivElement | null>(null);
-  const track = useRef<HTMLUListElement | null>(null);
-  const tween = useRef<gsap.core.Tween | null>(null);
-  const [copies, setCopies] = useState(3); // Start with 3 copies for better overlap
-  const [isInitialized, setIsInitialized] = useState(false);
+  const tween = useRef<gsap.core.Timeline | null>(null);
 
-  // A. Calculate required copies (run once after mount)
+  // Initialize animation with horizontalLoop
   useLayoutEffect(() => {
-    const parent = root.current;
-    const t = track.current;
-    if (!parent || !t || isInitialized) return;
+    const container = root.current;
+    if (!container) return;
 
-    // Wait for next frame to ensure elements are properly sized
-    const timer = setTimeout(() => {
-      const originalWidth = t.scrollWidth / copies; // Width of one set of logos
-      if (originalWidth > 0) {
-        // Calculate optimal copies: viewport width + 2 extra sets for buffer
-        const viewportMultiplier = Math.ceil(parent.offsetWidth / originalWidth);
-        const needed = Math.max(3, viewportMultiplier + 2); // Minimum 3, max reasonable number
-
-        if (needed !== copies && needed <= 10) {
-          // Cap at 10 copies max
-          setCopies(needed);
-        }
-        setIsInitialized(true);
-      }
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [logos, copies, isInitialized]);
-
-  // B. Create/update animation (only when initialized) - Seamless infinite loop
-  useLayoutEffect(() => {
-    const t = track.current;
-    if (!t || !isInitialized) return;
+    // Get all logo items
+    const items = gsap.utils.toArray<HTMLElement>('.logo-item');
+    if (items.length === 0) return;
 
     // Kill existing animation
     tween.current?.kill();
 
-    const singleSetWidth = t.scrollWidth / copies;
-    if (singleSetWidth <= 0) return; // Prevent invalid animation
-
-    const dur = singleSetWidth / speed;
-
-    // Set starting position
-    gsap.set(t, { x: 0 });
-
-    // Create seamless infinite animation
-    tween.current = gsap.to(t, {
-      x: -singleSetWidth,
-      ease: 'none',
-      duration: dur,
-      repeat: -1,
-      onRepeat: () => {
-        // Reset to starting position without visual jump
-        gsap.set(t, { x: 0 });
-      },
+    // Create new horizontal loop animation
+    tween.current = horizontalLoop(items, {
+      speed: speed / 100, // Convert to pixels per second factor
+      paddingRight: 48, // Gap between items (12 * 4 = 48px for gap-12)
     });
 
     return () => {
       tween.current?.kill();
     };
-  }, [copies, speed, isInitialized]);
+  }, [logos, speed]);
 
-  // C. Hover controls with safety checks
+  // Hover controls
   const pause = useCallback(() => {
     if (tween.current && !tween.current.paused()) {
       tween.current.pause();
@@ -153,7 +199,8 @@ export default function LogoCarousel({
     }
   }, []);
 
-  // D. Generate duplicated list
+  // Duplicate logos for seamless loop (3 copies minimum)
+  const copies = 3;
   const full = Array.from({ length: copies }, () => logos).flat();
 
   const imgClass = grayscale
@@ -167,9 +214,9 @@ export default function LogoCarousel({
       onMouseLeave={resume}
       className="relative w-full overflow-hidden py-6 bg-white/5 backdrop-blur-sm"
     >
-      <ul ref={track} className="flex gap-12 whitespace-nowrap" style={{ willChange: 'transform' }}>
+      <ul className="flex gap-12 whitespace-nowrap" style={{ willChange: 'transform' }}>
         {full.map((logo, idx) => (
-          <li key={`${logo.src}-${idx}`} className="shrink-0">
+          <li key={`${logo.src}-${idx}`} className="logo-item shrink-0">
             {logo.href ? (
               <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${idx}`}>
                 <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
