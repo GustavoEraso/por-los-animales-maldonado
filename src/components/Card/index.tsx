@@ -24,7 +24,7 @@ import { Animal } from '@/types';
  * <Card props={animal} />
  */
 export default function Card({ props }: { props: Animal }): React.ReactElement {
-  const { id, name, gender, lifeStage, status, images } = props;
+  const { id, name, gender, lifeStage, images } = props;
   const img = images[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
