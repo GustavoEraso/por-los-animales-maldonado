@@ -32,7 +32,7 @@ const initialAnimal: Animal = {
   isAvalible: false,
   isVisible: false,
   isDeleted: false,
-  status: 'calle',
+  status: 'transitorio',
   waitingSince: Date.now(),
 };
 
@@ -62,7 +62,14 @@ const dateOptions = [
   { label: '1 mes y medio', value: 1.5 },
   { label: '2 meses', value: 2 },
   { label: '3 meses', value: 3 },
+  { label: '4 meses', value: 4 },
+  { label: '5 meses', value: 5 },
   { label: '6 meses', value: 6 },
+  { label: '7 meses', value: 7 },
+  { label: '8 meses', value: 8 },
+  { label: '9 meses', value: 9 },
+  { label: '10 meses', value: 10 },
+  { label: '11 meses', value: 11 },
   { label: '1 año', value: 12 },
   { label: '1 año y medio', value: 18 },
   { label: '2 años', value: 24 },
@@ -161,6 +168,22 @@ export default function CreateAnimalForm() {
     setCompatibility((prev) => ({
       ...prev,
       [name]: value as 'si' | 'no' | 'no_se',
+    }));
+  };
+
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const monthsToSubtract = Math.floor(Number(e.target.value));
+    const fractionalPart = Number(e.target.value) % 1;
+    const currentDate = new Date();
+
+    currentDate.setMonth(currentDate.getMonth() - monthsToSubtract);
+
+    const daysToSubtract = Math.round(fractionalPart * 30.44);
+    currentDate.setDate(currentDate.getDate() - daysToSubtract);
+
+    setAnimal((prev) => ({
+      ...prev,
+      aproxBirthDate: currentDate.getTime(),
     }));
   };
 
@@ -488,22 +511,7 @@ export default function CreateAnimalForm() {
               name="aproxBirthDate"
               defaultValue={dateOptions[0].value}
               size={1}
-              onChange={(e) => {
-                const monthsToSubtract = Math.floor(Number(e.target.value));
-                const fractionalPart = Number(e.target.value) % 1;
-                const currentDate = new Date();
-
-                currentDate.setMonth(currentDate.getMonth() - monthsToSubtract);
-
-                const daysToSubtract = Math.round(fractionalPart * 30.44);
-                currentDate.setDate(currentDate.getDate() - daysToSubtract);
-                console.log(currentDate.getTime());
-
-                setAnimal((prev) => ({
-                  ...prev,
-                  aproxBirthDate: currentDate.getTime(),
-                }));
-              }}
+              onChange={(e) => handleBirthDateChange(e)}
             >
               {dateOptions.map((option) => (
                 <option key={option.label} value={option.value}>
