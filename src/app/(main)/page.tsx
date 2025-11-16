@@ -2,7 +2,7 @@ import Link from 'next/link';
 import HeroCarrousel from '@/components/HeroCarrousel';
 import CircleCard from '@/components/CircleCard';
 import RevealSection from '@/components/RevealSection';
-import LogoCarousel from '@/components/LogoCaurosel';
+import LogoCarousel from '@/components/LogoCarousel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 
@@ -132,7 +132,7 @@ export default function Home() {
             Infintas gracias a ellos:
           </h3>
 
-          <LogoCarousel speed={50} logos={logos} />
+          <LogoCarousel speed={15} logos={logos} />
         </section>
 
         <section className="flex flex-col items-center justify-center w-full bg-white px-6 py-12">
