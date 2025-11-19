@@ -11,6 +11,7 @@
     "docs": "typedoc src/lib src/components --entryPointStrategy expand"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@next/third-parties": "^15.4.1",
     "@paypal/react-paypal-js": "^8.8.3",
     "@types/d3": "^7.4.3",

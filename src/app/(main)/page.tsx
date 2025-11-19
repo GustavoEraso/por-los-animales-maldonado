@@ -5,6 +5,7 @@ import RevealSection from '@/components/RevealSection';
 import LogoCarousel from '@/components/LogoCarousel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
+import ImpactoBanner from '@/components/ImpactoBanner';
 
 export default function Home() {
   const logos = [
@@ -171,6 +172,7 @@ export default function Home() {
             </SmartLink>
           </div>
         </section>
+        <ImpactoBanner />
       </main>
     </div>
   );

@@ -8,7 +8,8 @@ import ShareButton from '@/elements/ShareButton';
 import PayPalDonationButton from '@/elements/PayPalDonationButton';
 
 import PayPalProvider from '@/components/PaypalProvider';
-import { ArrowUpRightIcon, LanguageIcon, WhatsAppIcon } from '@/components/Icons';
+import { ArrowUpRightIcon, LanguageIcon, ShieldIcon, WhatsAppIcon } from '@/components/Icons';
+import ImpactoBanner from '@/components/ImpactoBanner';
 
 export const generateMetadata = (): Metadata => {
   return {
@@ -42,8 +43,9 @@ export default function Donaciones() {
         </p>
       </section>
       <section className=" w-full flex flex-col items-center justify-center  bg-cream-light py-6">
+        <ImpactoBanner />
         {/* MENSIONES */}
-        <h3 id="mensiones" className="text-2xl font-bold text-green-dark text-center">
+        <h3 id="mensiones" className="mt-4 text-2xl font-bold text-green-dark text-center">
           MENCIONANOS Y AYUDANOS!!!
         </h3>
         <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4 text-green-dark">
@@ -411,6 +413,57 @@ export default function Donaciones() {
                   porlosanimalesmaldo@gmail.com
                 </a>
               </p>
+            </footer>
+          </article>
+
+          {/* 3IMPACTO */}
+          <article className="sm:col-span-2 flex flex-col items-center bg-white rounded-lg shadow-lg w-full py-8 px-4 gap-6">
+            {/* Header */}
+            <header className="flex flex-col items-center gap-4 w-full">
+              <h3 className="font-bold text-green-dark text-2xl text-center text-balance">
+                Comunidad
+              </h3>
+              <Image
+                className="rounded-xl"
+                src="/LogoImpactoBig.svg"
+                alt="logo Comunidad 3IMPACTO"
+                width={300}
+                height={80}
+              />
+            </header>
+
+            {/* Main  */}
+            <main className="w-full max-w-md sm:max-w-full flex flex-col gap-4 ">
+              <section className="bg-cream-light p-4 rounded-lg text-center">
+                <h4 className="font-bold text-green-dark text-lg mb-3">Ubicación</h4>
+                <p className="text-base mb-1">
+                  3Impacto es una plataforma que impulsa proyectos con impacto social y ambiental. A
+                  través de su sistema de “escudos”, permite que personas y empresas apoyen causas
+                  reales y transparentes.
+                </p>
+                <p className="text-base mb-1">
+                  Gracias a esta alianza, PLAM suma una herramienta que facilita recibir apoyo,
+                  financiar rescates y seguir mejorando la atención, rehabilitación y adopción de
+                  nuestros peludos.
+                </p>
+              </section>
+            </main>
+
+            {/* Footer */}
+            <footer className="bg-green-forest/10 p-6 rounded-lg text-center w-full">
+              <h4 className="font-bold text-green-dark text-lg mb-3">Quiero unirme!</h4>
+              <div className="flex flex-col justify-center items-center gap-2">
+                <p className="text-base mb-1">
+                  Cada escudo adquirido en 3Impacto ayuda directamente a que podamos continuar
+                  nuestro trabajo con los peludos.{' '}
+                </p>
+                <SmartLink
+                  href="https://3impacto.eco/marketplace/proyecto-plam"
+                  className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition"
+                >
+                  Adquirir escudo <ShieldIcon size={30} color="white" />
+                </SmartLink>
+              </div>
             </footer>
           </article>
         </section>

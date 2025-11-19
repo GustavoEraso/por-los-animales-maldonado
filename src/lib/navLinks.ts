@@ -67,6 +67,11 @@ export const navLinks: Links[] = [
     url: '/donaciones',
     childs: [
       {
+        id: 'LINKSDONACIONES3IMPACTO',
+        name: 'COMUNIDAD 3IMPACTO',
+        url: 'https://3impacto.eco/marketplace/proyecto-plam',
+      },
+      {
         id: 'LINKSDONACIONESAPORTESECONOMICOS',
         name: 'APORTES ECONÓMICOS',
         url: '/donaciones#aportes-economicos',
