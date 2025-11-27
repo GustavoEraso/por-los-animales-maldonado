@@ -59,3 +59,22 @@ export function yearsOrMonthsElapsed(millis: number): string {
   // If less than a month, return this message
   return 'menos de un mes';
 }
+
+/**
+ * Formats a timestamp as dd/mm/yy (date only, no time).
+ *
+ * @param {number} date - The timestamp in milliseconds.
+ * @returns {string} The formatted date as dd/mm/yy.
+ *
+ * @example
+ * // Format a timestamp for March 15, 2024
+ * const dateStr = formatedDateOnly(1710460800000); // "15/03/24"
+ */
+export function formatedDateOnly(date: number): string {
+  return new Date(date).toLocaleDateString('es-UY', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    timeZone: 'UTC',
+  });
+}
