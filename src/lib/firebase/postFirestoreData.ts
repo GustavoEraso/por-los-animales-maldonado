@@ -1,5 +1,5 @@
 import { CollectionsType } from '@/types';
-import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 interface Props<T> {
@@ -40,15 +40,38 @@ export async function postFirestoreData<T extends object>({
   currentCollection,
   id,
 }: Props<T>): Promise<void> {
+  // Remove undefined values recursively (objects & arrays)
+  function removeUndefinedDeep<V>(value: V): V {
+    if (value === null || value === undefined) return value;
+
+    if (Array.isArray(value)) {
+      const items = value.map((v: unknown) => removeUndefinedDeep<unknown>(v));
+      return items.filter((v): v is Exclude<unknown, undefined> => v !== undefined) as unknown as V;
+    }
+
+    if (typeof value === 'object') {
+      const obj: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        const cleaned = removeUndefinedDeep(v as unknown);
+        if (cleaned !== undefined) obj[k] = cleaned;
+      }
+      return obj as V;
+    }
+
+    return value;
+  }
+
   try {
+    const sanitized = removeUndefinedDeep(data) as unknown as Record<string, unknown>;
+
     if (!id) {
-      await addDoc(collection(db, currentCollection), data);
+      await addDoc(collection(db, currentCollection), sanitized as DocumentData);
     } else {
       const docRef = doc(db, currentCollection, id);
-      await setDoc(docRef, data, { merge: true });
+      await setDoc(docRef, sanitized as DocumentData, { merge: true });
     }
   } catch (error) {
-    console.error('Error creating document:', error);
+    console.error('Error creating/updating document:', error);
     throw error;
   }
 }
