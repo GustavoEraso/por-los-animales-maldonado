@@ -32,7 +32,7 @@ const FORM_BASE =
  */
 
 export function buildFormUrl({ dogName, dogId }: FormUrlParams): string {
-  const dogUrl = `https://porlosanimalesmaldonado.com/adopta/${dogId}`;
+  const dogUrl = `https://porlosanimalesmaldonado.org/adopta/${dogId}`;
   const combined = `${dogName.trim()} - ${dogUrl}`;
 
   const params = new URLSearchParams({

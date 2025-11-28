@@ -17,7 +17,7 @@ export async function generateMetadata(
         type: 'article',
         title: 'Animal no encontrado',
         description: 'No se pudo encontrar el animal solicitado.',
-        url: `https://porlosanimalesmaldonado.com/adopta/${id}`,
+        url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
       },
     };
   }
@@ -31,7 +31,7 @@ export async function generateMetadata(
       type: 'article',
       title: name,
       description,
-      url: `https://porlosanimalesmaldonado.com/adopta/${id}`,
+      url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
       images: cover
         ? [{ url: cover, alt: `Foto de ${name}` }] // Solo la imagen del animal
         : undefined, // Deja que Next.js use las del layout padre

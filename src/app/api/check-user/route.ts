@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.com';
+      : 'https://www.porlosanimalesmaldonado.org';
 
   const { email } = await request.json();
 

@@ -6,7 +6,7 @@ export const generateMetadata = (): Metadata => {
     openGraph: {
       title: 'Bingo Solidario 🐾',
       description: 'Vení a nuestro Bingo Solidario y ayudanos a seguir cuidando a los animales.',
-      url: 'https://www.porlosanimalesmaldonado.com/bingo',
+      url: 'https://www.porlosanimalesmaldonado.org/bingo',
       images: [
         {
           url: 'https://res.cloudinary.com/dytabfg7v/image/upload/v1760111922/flyer_njhq2f_51f254.jpg',

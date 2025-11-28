@@ -687,13 +687,13 @@ export default function Compartir() {
                     </div>
                   )}
                   <QRCode
-                    value={`www.porlosanimalesmaldonado.com/adopta/${animal.id}`}
+                    value={`www.porlosanimalesmaldonado.org/adopta/${animal.id}`}
                     size={60}
                     level="H"
                   />
                 </div>
                 <p className="text-xs text-cream-light text-center">
-                  {`porlosanimalesmaldonado.com/adopta/${animal.id}`}
+                  {`porlosanimalesmaldonado.org/adopta/${animal.id}`}
                 </p>
               </footer>
             </div>

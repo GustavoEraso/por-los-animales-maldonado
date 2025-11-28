@@ -350,6 +350,14 @@ function ShieldIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
   );
 }
 
+function SwapIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z" />
+    </SvgBase>
+  );
+}
+
 function SvgBase({ title, size, color, viewBox, children, ...props }: IconProps) {
   const iconSize = typeof size === 'string' ? sizeMap[size] || DEFAULT_SIZE : size || DEFAULT_SIZE;
 
@@ -412,4 +420,5 @@ export {
   TableViewIcon,
   ImageIcon,
   ShieldIcon,
+  SwapIcon,
 };

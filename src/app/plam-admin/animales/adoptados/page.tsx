@@ -11,7 +11,7 @@ import { auth } from '@/firebase';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminAnimalCard from '@/components/AdminAnimalCard';
+import Card from '@/components/Card';
 import { EditIcon, EyeIcon, GridViewIcon, TableViewIcon, TrashIcon } from '@/components/Icons';
 
 export default function AnimalsPage() {
@@ -244,7 +244,7 @@ export default function AnimalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
             {sortedAnimals.length > 0 ? (
               sortedAnimals.map((animal) => (
-                <AdminAnimalCard key={animal.id} animal={animal} onDelete={handleDelete} />
+                <Card key={animal.id} animal={animal} href={`/plam-admin/animales/${animal.id}`} />
               ))
             ) : (
               <p className="col-span-full text-center">No hay animales que mostrar</p>

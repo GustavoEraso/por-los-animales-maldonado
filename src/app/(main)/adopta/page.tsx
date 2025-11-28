@@ -13,10 +13,10 @@ export const generateMetadata = (): Metadata => {
       title: 'Adopta una mascota 🐾',
       description:
         'Conoce a nuestros animales en adopción. Perros, gatos y otros animales esperan encontrar un hogar lleno de amor.',
-      url: 'https://www.porlosanimalesmaldonado.com/adopta',
+      url: 'https://www.porlosanimalesmaldonado.org/adopta',
       images: [
         {
-          url: 'https://www.porlosanimalesmaldonado.com/og/cachorritos.jpg',
+          url: 'https://www.porlosanimalesmaldonado.org/og/cachorritos.jpg',
           width: 1200,
           height: 630,
           alt: 'Animales en adopción',

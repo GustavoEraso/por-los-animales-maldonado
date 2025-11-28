@@ -82,7 +82,7 @@ export default function Bingo() {
             <ShareButton
               shareTitle="Bingo Solidario"
               shareText="¡Participa y gana increíbles premios!"
-              urlToShare="https://www.porlosanimalesmaldonado.com/bingo"
+              urlToShare="https://www.porlosanimalesmaldonado.org/bingo"
               className="text-2xl bg-amber-sunset hover:bg-amber-600 active:scale-95 text-white font-bold py-2 px-4 rounded-full flex items-center justify-center w-fit mx-auto"
             >
               {' '}

@@ -12,6 +12,7 @@ import { Animal } from '@/types';
  *
  * @param {Object} props - Component props
  * @param {Animal} props.props - Animal data object containing all animal information
+ * @param {string} [props.href] - Optional custom href for the link. Defaults to `/adopta/${id}`
  * @returns {React.ReactElement} The rendered animal card component
  *
  * @example
@@ -19,12 +20,22 @@ import { Animal } from '@/types';
  * <Card props={animalData} />
  *
  * @example
+ * // With custom href
+ * <Card props={animalData} href={`/custom-path/${animalData.id}`} />
+ *
+ * @example
  * // With animal object
  * const animal = { id: '123', name: 'Max', gender: 'Macho', lifeStage: 'Adulto', status: 'Disponible', images: [...] };
  * <Card props={animal} />
  */
-export default function Card({ props }: { props: Animal }): React.ReactElement {
-  const { id, name, gender, lifeStage, images } = props;
+export default function Card({
+  animal,
+  href,
+}: {
+  animal: Animal;
+  href?: string;
+}): React.ReactElement {
+  const { id, name, gender, lifeStage, images } = animal;
   const img = images[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
@@ -32,7 +43,7 @@ export default function Card({ props }: { props: Animal }): React.ReactElement {
 
   return (
     <article className="grid grid-rows-[1.8fr_auto] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
-      <Link href={`/adopta/${id}`} className="block w-full h-full">
+      <Link href={href || `/adopta/${id}`} className="block w-full h-full">
         <div className="aspect-square">
           <ViewTransition name={`animal-${id}`}>
             <Image

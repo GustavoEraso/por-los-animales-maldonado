@@ -25,7 +25,7 @@ export interface Animal {
   isSterilized: YesNoUnknown;
   isAvalible: boolean;
   isVisible: boolean;
-  status: 'calle' | 'protectora' | 'transitorio' | 'adoptado';
+  status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' | 'hogar';
   waitingSince: number;
   isDeleted?: boolean;
   hardDeleted?: boolean;
@@ -44,20 +44,54 @@ export interface PrivateInfoType {
   id: string;
   name: string;
   caseManager?: string;
+  rescueReason?:
+    | 'abandonment'
+    | 'lost'
+    | 'sterilization'
+    | 'illness'
+    | 'abuse'
+    | 'other'
+    | 'hit_by_vehicle';
   vaccinations?: Vaccination[];
   medicalConditions?: string;
-  notes?: string;
+  notes?: string[];
   contactName?: string;
+  address?: string;
   contacts?: ContactType[];
+  totalCost?: number;
 }
 
+export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
+
 export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType {
+  transactionId?: string;
+  transactionType?:
+    | 'create'
+    | 'update'
+    | 'delete'
+    | 'transit_change'
+    | 'adoption'
+    | 'return'
+    | 'medical'
+    | 'vaccination'
+    | 'sterilization'
+    | 'emergency'
+    | 'supply'
+    | 'followup'
+    | 'note'
+    | 'other';
   id: string;
   name: string;
-  notes?: string;
+  transactionNote?: string;
   date: number;
   modifiedBy: string;
   since: number;
+  cost?: number;
+  img?: Img;
+  changes?: {
+    before?: beforeAfterType;
+    after?: beforeAfterType;
+  };
 }
 
 /**

@@ -9,9 +9,10 @@ import { auth } from '@/firebase';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import Loader from '@/components/Loader';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
-import { getChangedFields } from '@/lib/getChangedFields';
+import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import generateId from '@/lib/generateId';
 
 const initialAnimal: Animal = {
   id: '',
@@ -43,7 +44,7 @@ const initialPrivateInfo: PrivateInfoType = {
   contacts: [],
   vaccinations: [],
   medicalConditions: '',
-  notes: '',
+  notes: [''],
 };
 
 const initialTransactionInfo: AnimalTransactionType = {
@@ -74,20 +75,6 @@ export default function EditAnimalForm() {
   const [transactionInfo, setTransactionInfo] =
     useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
-
-  const [contacts, setContacts] = useState<
-    { type: 'celular' | 'email' | 'other'; value: string | number }[]
-  >([]);
-  const [newContact, setNewContact] = useState<{
-    type: 'celular' | 'email' | 'other';
-    value: string | number;
-  }>({ type: 'celular', value: '' });
-  const [showContactForm, setShowContactForm] = useState(false);
-
-  const [vaccinations, setVaccinations] = useState<{ date: number; vaccine: string }[]>([]);
-
-  const [isAvalible, setIsAvalible] = useState(true);
-  const [isVisible, setIsVisible] = useState(true);
 
   const [compatibility, setCompatibility] = useState<CompatibilityType>(
     initialAnimal.compatibility || {
@@ -150,8 +137,6 @@ export default function EditAnimalForm() {
         setTransactionInfo(currentTransactionInfo);
 
         setImages(fetchedAnimal.images || []);
-        setContacts(currentTransactionInfo.contacts || []);
-        setVaccinations(fetchedPrivateInfo.vaccinations || []);
       } catch (error) {
         console.error('Error fetching animal data:', error);
         handleToast({
@@ -173,42 +158,6 @@ export default function EditAnimalForm() {
     };
     fetchAnimalData();
   }, [currentId]);
-
-  useEffect(() => {
-    setPrivateInfo((prev) => ({
-      ...prev,
-      contacts,
-    }));
-  }, [contacts]);
-
-  useEffect(() => {
-    setPrivateInfo((prev) => ({
-      ...prev,
-      vaccinations,
-    }));
-  }, [vaccinations]);
-
-  useEffect(() => {
-    setAnimal((prev) => ({
-      ...prev,
-      isAvalible: isAvalible,
-    }));
-    setTransactionInfo((prev) => ({
-      ...prev,
-      isAvalible: isAvalible,
-    }));
-  }, [isAvalible]);
-
-  useEffect(() => {
-    setAnimal((prev) => ({
-      ...prev,
-      isVisible: isVisible,
-    }));
-    setTransactionInfo((prev) => ({
-      ...prev,
-      isVisible: isVisible,
-    }));
-  }, [isVisible]);
 
   useEffect(() => {
     setAnimal((prev) => ({
@@ -249,8 +198,6 @@ export default function EditAnimalForm() {
     name: false,
     images: false,
     description: false,
-    // contactName: false,
-    // contacts: false,
   });
 
   const fieldErrorMessagesRecord = {
@@ -268,27 +215,37 @@ export default function EditAnimalForm() {
       const newAnimal: Animal = {
         ...animal,
         images: images,
-        isAvalible: isAvalible,
-        isVisible: isVisible,
       };
 
-      const animalChanges = getChangedFields({ oldObj: oldAnimal, newObj: newAnimal });
-      const privateInfoChanges = getChangedFields({ oldObj: oldPrivateInfo, newObj: privateInfo });
+      const animalChanges = getChangedFieldsWithValues({ oldObj: oldAnimal, newObj: newAnimal });
+      const privateInfoChanges = getChangedFieldsWithValues({
+        oldObj: oldPrivateInfo,
+        newObj: privateInfo,
+      });
+
+      const { before: aBefore, after: aAfter } = animalChanges || {};
+      const { before: pBefore, after: pAfter } = privateInfoChanges || {};
+
+      // Merge before/after from both sources (sanitization handled centrally in `postFirestoreData`)
+      const mergedChanges = {
+        before: { ...(aBefore || {}), ...(pBefore || {}) },
+        after: { ...(aAfter || {}), ...(pAfter || {}) },
+      };
       const newTransactionInfo: AnimalTransactionType = {
-        ...animalChanges,
-        ...privateInfoChanges,
+        transactionType: 'update',
+        transactionId: generateId(),
         id: animal.id,
         name: animal.name,
         since: transactionInfo.since,
+        img: images[0] || undefined,
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
+        changes: mergedChanges,
       };
       const errors = {
         name: newAnimal.name === '',
         images: !images.length,
         description: newAnimal.description === '',
-        // contactName: newPrivateInfo.contactName === '',
-        // contacts: !privateInfo?.contacts?.length,
       };
 
       setFormErrors(errors);
@@ -335,6 +292,7 @@ export default function EditAnimalForm() {
           postFirestoreData<AnimalTransactionType>({
             data: newTransactionInfo,
             currentCollection: 'animalTransactions',
+            id: newTransactionInfo.transactionId!,
           })
         );
       }
@@ -597,44 +555,6 @@ export default function EditAnimalForm() {
             />
           </label>
 
-          <label className="flex flex-col font-bold">
-            Situación actual:
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="status"
-              value={animal.status}
-              onChange={handleChange}
-            >
-              <option value="adoptado">Adoptado</option>
-              <option value="calle">Calle</option>
-              <option value="protectora">Protectora</option>
-              <option value="transitorio">Transitorio</option>
-            </select>
-          </label>
-
-          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-            <span>Disponible para adoptar:</span>
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              defaultChecked={animal.isAvalible}
-              name="isAvalible"
-              onChange={(e) => setIsAvalible(e.target.checked)}
-            />
-            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-          </label>
-          <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-            <span>Mostrar:</span>
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              defaultChecked={animal.isVisible}
-              name="isVisible"
-              onChange={(e) => setIsVisible(e.target.checked)}
-            />
-            <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-          </label>
-
           {animal.status && (
             <section className="bg-gray-100 p-2 rounded-lg">
               <h3 className="font-semibold text-center">Datos privados del Animal</h3>
@@ -648,173 +568,6 @@ export default function EditAnimalForm() {
                   onChange={handlePrivateInfoChange}
                 />
               </label>
-              <label className="flex flex-col font-bold gap-1">
-                Nombre del contacto:
-                {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
-                <input
-                  className="outline-2 bg-white outline-gray-200 rounded p-2"
-                  type="text"
-                  name="contactName"
-                  value={privateInfo.contactName}
-                  onChange={handlePrivateInfoChange}
-                />
-              </label>
-              <section className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">Contactos:</h2>
-                {/* {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>} */}
-
-                {contacts.length > 0 &&
-                  contacts.map((contact, index) => (
-                    <div key={`${contact.value}-${index}`} className="flex gap-2 flex-wrap">
-                      <span className="font-bold">{contact.type}:</span>
-                      <span>{contact.value}</span>
-                      <button
-                        className="bg-red-500 text-white px-2 rounded"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setContacts((prev) => prev.filter((_, i) => i !== index));
-                        }}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  ))}
-
-                <button
-                  className={`${!showContactForm ? 'bg-green-400' : 'bg-red-400'} text-white px-4 py-2 rounded`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowContactForm((prev) => !prev);
-                  }}
-                >
-                  {`${!showContactForm ? 'Agregar contacto' : 'Cerrar'} `}
-                </button>
-                {showContactForm && (
-                  <section className="flex flex-col gap-1 bg-cream-light w-full h-full px-2">
-                    <h3 className="text-lg font-semibold">Agregar Contacto</h3>
-                    <label className="flex flex-col font-bold">
-                      Tipo de contacto:
-                      <select
-                        className="outline-2 bg-white outline-gray-200 rounded p-2"
-                        name="contactType"
-                        onChange={(e) =>
-                          setNewContact((prev) => ({
-                            ...prev,
-                            type: e.target.value as 'celular' | 'email' | 'other',
-                          }))
-                        }
-                      >
-                        <option value="celular">Celular</option>
-                        <option value="email">Email</option>
-                        <option value="other">Otro</option>
-                      </select>
-                    </label>
-                    <label className="flex flex-col font-bold">
-                      Valor del contacto:
-                      <input
-                        className="outline-2 bg-white outline-gray-200 rounded p-2"
-                        type="text"
-                        name="contactValue"
-                        onChange={(e) =>
-                          setNewContact((prev) => ({
-                            ...prev,
-                            value: e.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                    <button
-                      className="bg-green-500 text-white px-4 py-2 rounded"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (newContact.value) {
-                          setContacts((prev) => [...prev, newContact]);
-                          setNewContact({ type: 'email', value: '' });
-                          setShowContactForm((prev) => !prev);
-                        }
-                      }}
-                    >
-                      Agregar contacto
-                    </button>
-                  </section>
-                )}
-              </section>
-
-              <section className="flex flex-col gap-4">
-                <h3 className="text-lg font-bold">Vacunas:</h3>
-
-                {vaccinations.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {vaccinations.map((vaccination, index) => (
-                      <div
-                        key={`${vaccination.vaccine}-${index}`}
-                        className="flex gap-2 items-center bg-white p-2 rounded"
-                      >
-                        <span>
-                          {new Date(vaccination.date).toLocaleDateString('es-UY', {
-                            timeZone: 'UTC',
-                          })}{' '}
-                          - {vaccination.vaccine}
-                        </span>
-                        <button
-                          className="bg-red-500 text-white px-2 py-1 rounded text-sm ml-auto"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setVaccinations((prev) => prev.filter((_, i) => i !== index));
-                          }}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <label>
-                  <span className="font-bold">Agregar Vacuna:</span>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      className="outline-2  bg-white outline-gray-200 rounded p-2 w-full"
-                      type="text"
-                      name="vaccineName"
-                      placeholder="Ej: Antirrabica"
-                      id="vaccineName"
-                    />
-                    <div className="flex gap-2 sm:flex-row flex-col">
-                      <input
-                        className="outline-2  bg-white outline-gray-200 rounded p-2"
-                        type="date"
-                        name="vaccineDate"
-                        id="vaccineDate"
-                        defaultValue={new Date().toLocaleDateString('en-CA')}
-                      />
-                      <button
-                        className="bg-green-500 w-full text-white px-4 py-2 rounded"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const vaccineInput = document.getElementById(
-                            'vaccineName'
-                          ) as HTMLInputElement;
-                          const dateInput = document.getElementById(
-                            'vaccineDate'
-                          ) as HTMLInputElement;
-                          if (vaccineInput?.value && dateInput?.value) {
-                            const newVaccine = {
-                              vaccine: vaccineInput.value,
-                              date: new Date(dateInput.value).getTime(),
-                            };
-                            setVaccinations((prev) => [...prev, newVaccine]);
-                            vaccineInput.value = '';
-                            dateInput.value = new Date().toLocaleDateString('en-CA');
-                          }
-                        }}
-                      >
-                        Agregar registro
-                      </button>
-                    </div>
-                  </div>
-                </label>
-              </section>
 
               <label className="flex flex-col font-bold">
                 Patologías:
@@ -822,35 +575,6 @@ export default function EditAnimalForm() {
                   className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
                   name="medicalConditions"
                   value={privateInfo.medicalConditions}
-                  onChange={handlePrivateInfoChange}
-                />
-              </label>
-
-              <label className="flex flex-col font-bold">
-                <span>Fecha de inicio:</span>
-                <p className="font-normal text-xs text-balance">
-                  (Esta es la fecha en la que cambio el estado. Por ejemplo si estaba en transitorio
-                  y es adoptado, aca va la fecha de adopción){' '}
-                </p>
-                <input
-                  className="outline-2 bg-white outline-gray-200 rounded p-2"
-                  type="date"
-                  name="since"
-                  defaultValue={formatMillisForInputDate(transactionInfo.since)}
-                  onChange={(e) =>
-                    setTransactionInfo((prev) => ({
-                      ...prev,
-                      since: e.target.value ? new Date(e.target.value).getTime() : 0,
-                    }))
-                  }
-                />
-              </label>
-              <label className="flex flex-col font-bold">
-                Notas adicionales:
-                <textarea
-                  className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
-                  name="notes"
-                  value={privateInfo.notes}
                   onChange={handlePrivateInfoChange}
                 />
               </label>
@@ -899,8 +623,6 @@ export default function EditAnimalForm() {
                 {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
                 {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
                 {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
-                {/* {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>} */}
-                {/* {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>} */}
               </ul>
             </div>
           )}
