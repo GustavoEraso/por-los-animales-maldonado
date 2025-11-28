@@ -302,18 +302,18 @@ function AnimalsPageContent() {
       <section className=" bg-gradient-to-tr from-cream-light to-amber-sunset w-full p-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
         {loading && <Loader />}
 
-        <div className="flex items-center justify-between w-full ">
+        <div className="flex flex-col sm:flex-row gap-2 items-center justify-between w-full ">
           <div className="flex  bg-cream-light p-3 rounded  justify-center-safe">
             <div className="flex items-center gap-2 rounded p-2 bg-amber-sunset">
               <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
-              <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+              <h3 className=" text-2xl font-bold underline">Casos</h3>
             </div>
             <Link
               href={'/plam-admin/animales/linea-tiempo'}
               className="flex items-center gap-2 px-2 text-gray-400"
             >
               <CalendarIcon size="md" title="Calendario de adopciones" />
-              <h4 className="text-2xl font-bold underline">ver eventos por fecha</h4>
+              <h4 className="text-2xl font-bold underline">Eventos</h4>
             </Link>
           </div>
 
@@ -350,7 +350,12 @@ function AnimalsPageContent() {
             className="w-full grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4"
           >
             {sortedAnimals.map((animal) => (
-              <Card key={animal.id} animal={animal} href={`/plam-admin/animales/${animal.id}`} />
+              <Card
+                key={animal.id}
+                adminView
+                animal={animal}
+                href={`/plam-admin/animales/${animal.id}`}
+              />
             ))}
           </div>
         )}
