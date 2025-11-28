@@ -4,13 +4,10 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
-import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { Animal } from '@/types';
 import FloatButton from '@/elements/FloatButton';
-import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
-import { auth } from '@/firebase';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { handlePromiseToast } from '@/lib/handleToast';
+
 import {
   EyeIcon,
   EditIcon,
@@ -19,9 +16,10 @@ import {
   FilterIcon,
   GridViewIcon,
   TableViewIcon,
+  CalendarIcon,
 } from '@/components/Icons';
 import SearchBox from '@/components/SearchBox';
-import AdminAnimalCard from '@/components/AdminAnimalCard';
+import Card from '@/components/Card';
 import { gsap } from 'gsap';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -54,25 +52,14 @@ function AnimalsPageContent() {
   }, [infoModeRender]);
 
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([]);
-  const [privateInfoMap, setPrivateInfoMap] = useState<Map<string, PrivateInfoType>>(new Map());
   const [sortReference, setSortReference] = useState<string | boolean>('name');
   const [sortOrder, setSortOrder] = useState('>');
   const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([]);
-  const [refresh, setRefresh] = useState<boolean>(false);
-  const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null);
 
   useEffect(() => {
     const start = Date.now();
 
     const fetchData = async () => {
-      // Fetch private info and create Map for O(1) lookup
-      await getFirestoreData({ currentCollection: 'animalPrivateInfo' }).then((data) => {
-        const infoMap = new Map<string, PrivateInfoType>();
-        (data as PrivateInfoType[]).forEach((info) => {
-          infoMap.set(info.id, info);
-        });
-        setPrivateInfoMap(infoMap);
-      });
       // Fetch ALL animals (excluding deleted by default)
       // Apply all filters client-side to avoid Firestore index issues
       await getFirestoreData({
@@ -200,7 +187,7 @@ function AnimalsPageContent() {
         setLoading(false);
       }
     });
-  }, [refresh, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!animalsToShow) {
@@ -310,135 +297,24 @@ function AnimalsPageContent() {
   const renderDirection = (ref: string) =>
     sortReference === ref ? (sortOrder === '>' ? '▼' : '▲') : '';
 
-  const handleVisible = async ({ currentId, active }: { currentId: string; active: boolean }) => {
-    try {
-      const animal = sortedAnimals.find((animal) => animal.id === currentId);
-      if (!animal) throw new Error(`Animal with id ${currentId} not found`);
-
-      const updatedAnimal = { ...animal, isVisible: active };
-
-      const newTransaction: AnimalTransactionType = {
-        id: currentId,
-        name: animal.name,
-        since: Date.now(),
-        date: Date.now(),
-        modifiedBy: auth.currentUser?.email || '',
-        isVisible: active,
-      };
-
-      const promises = Promise.all([
-        postFirestoreData<Animal>({
-          currentCollection: 'animals',
-          data: updatedAnimal,
-          id: currentId,
-        }),
-        postFirestoreData<AnimalTransactionType>({
-          currentCollection: 'animalTransactions',
-          data: newTransaction,
-        }),
-      ]);
-      await handlePromiseToast(promises, {
-        messages: {
-          pending: {
-            title: 'Cambiando estado...',
-            text: `Por favor espera mientras actualizamos el estado de ${animal.name}`,
-          },
-          success: {
-            title: 'Estado cambiado',
-            text: `El estado de ${animal.name} fue cambiado exitosamente`,
-          },
-          error: { title: 'Error', text: `Hubo un error al cambiar el estado de ${animal.name}` },
-        },
-      });
-      setRefresh(!refresh);
-    } catch (error) {
-      console.error('Error al cambiar el estado del animal:', error);
-    }
-  };
-
-  const handleDelete = async (currentId: string) => {
-    const animal = sortedAnimals.find((animal) => animal.id === currentId);
-    if (!animal) return;
-
-    setAnimalToDelete(animal);
-  };
-
-  const confirmDelete = async () => {
-    if (!animalToDelete) return;
-
-    const start = Date.now();
-    setLoading(true);
-    setAnimalToDelete(null);
-
-    try {
-      const updatedAnimal = {
-        ...animalToDelete,
-        isDeleted: true,
-        isVisible: false,
-        isAvalible: false,
-      };
-
-      const newTransaction: AnimalTransactionType = {
-        date: Date.now(),
-        since: Date.now(),
-        modifiedBy: auth.currentUser?.email || '',
-        isDeleted: true,
-        isVisible: false,
-        isAvalible: false,
-        id: animalToDelete.id,
-        name: animalToDelete.name,
-      };
-
-      const promises = Promise.all([
-        postFirestoreData<Animal>({
-          data: updatedAnimal,
-          currentCollection: 'animals',
-          id: animalToDelete.id,
-        }),
-        postFirestoreData<AnimalTransactionType>({
-          data: newTransaction,
-          currentCollection: 'animalTransactions',
-        }),
-      ]);
-
-      await handlePromiseToast(promises, {
-        messages: {
-          pending: {
-            title: 'Enviando a la papelera...',
-            text: `Por favor espera mientras enviamos a la papelera a ${animalToDelete.name}`,
-          },
-          success: {
-            title: 'Enviado a la papelera',
-            text: `${animalToDelete.name} fue enviado a la papelera exitosamente`,
-          },
-          error: { title: 'Error', text: `Hubo un error al eliminar a ${animalToDelete.name}` },
-        },
-      });
-
-      setRefresh(!refresh);
-    } catch (error) {
-      console.error('Error al cambiar el estado del animal:', error);
-    } finally {
-      const elapsed = Date.now() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
-          setLoading(false);
-        }, remaining);
-      } else {
-        setLoading(false);
-      }
-    }
-  };
-
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="plam-admin">
       <section className=" bg-gradient-to-tr from-cream-light to-amber-sunset w-full p-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
         {loading && <Loader />}
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
-            <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+
+        <div className="flex items-center justify-between w-full ">
+          <div className="flex  bg-cream-light p-3 rounded  justify-center-safe">
+            <div className="flex items-center gap-2 rounded p-2 bg-amber-sunset">
+              <FilterIcon size="md" className="text-gray-600" title="Filtros activos" />
+              <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+            </div>
+            <Link
+              href={'/plam-admin/animales/linea-tiempo'}
+              className="flex items-center gap-2 px-2 text-gray-400"
+            >
+              <CalendarIcon size="md" title="Calendario de adopciones" />
+              <h4 className="text-2xl font-bold underline">ver eventos por fecha</h4>
+            </Link>
           </div>
 
           {/* View Toggle Buttons */}
@@ -474,13 +350,7 @@ function AnimalsPageContent() {
             className="w-full grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4"
           >
             {sortedAnimals.map((animal) => (
-              <AdminAnimalCard
-                key={animal.id}
-                animal={animal}
-                privateInfo={privateInfoMap.get(animal.id)}
-                onVisible={(id, active) => handleVisible({ currentId: id, active })}
-                onDelete={(id) => handleDelete(id)}
-              />
+              <Card key={animal.id} animal={animal} href={`/plam-admin/animales/${animal.id}`} />
             ))}
           </div>
         )}
@@ -565,18 +435,8 @@ function AnimalsPageContent() {
                       <td className="px-2 py-4 outline-1 outline-slate-200 text-nowrap">
                         {animal.status}
                       </td>
-                      <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell ">
-                        <label className="flex justify-center items-center cursor-pointer w-full">
-                          <input
-                            type="checkbox"
-                            onChange={() =>
-                              handleVisible({ currentId: animal.id, active: !animal.isVisible })
-                            }
-                            className="sr-only peer"
-                            checked={animal.isVisible}
-                          />
-                          <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-blue-600" />
-                        </label>
+                      <td className="px-2 py-4 outline-1 outline-slate-200 text-nowrap ">
+                        {animal.isVisible ? 'Sí' : 'No'}
                       </td>
                       <td className="px-2 py-4 text-right">
                         <Link
@@ -596,15 +456,6 @@ function AnimalsPageContent() {
                           <span className="hidden lg:inline">Editar</span>
                         </Link>
                       </td>
-                      <td className="px-2 py-4 text-right">
-                        <button
-                          onClick={() => handleDelete(animal.id)}
-                          className="font-medium text-red-600 hover:underline cursor-pointer flex items-center justify-end gap-1"
-                        >
-                          <TrashIcon size={16} title="Eliminar animal" />
-                          <span className="hidden xl:inline">Eliminar</span>
-                        </button>
-                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -612,17 +463,6 @@ function AnimalsPageContent() {
           </div>
         )}
         {animalsToShow.length < 1 && <p className="text-center">No hay animales que mostar</p>}
-
-        <ConfirmDialog
-          isOpen={animalToDelete !== null}
-          title="Eliminar Animal"
-          message={`¿Estás seguro de que quieres eliminar a ${animalToDelete?.name}?\n\nID: ${animalToDelete?.id}\n\nEsta acción no se puede deshacer.`}
-          confirmText="Eliminar"
-          cancelText="Cancelar"
-          variant="danger"
-          onConfirm={confirmDelete}
-          onCancel={() => setAnimalToDelete(null)}
-        />
 
         <Link
           className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
