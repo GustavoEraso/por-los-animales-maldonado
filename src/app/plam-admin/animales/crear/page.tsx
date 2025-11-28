@@ -96,12 +96,7 @@ export default function CreateAnimalForm() {
 
   const [contacts, setContacts] = useState<
     { type: 'celular' | 'email' | 'other'; value: string | number }[]
-  >([]);
-  const [newContact, setNewContact] = useState<{
-    type: 'celular' | 'email' | 'other';
-    value: string | number;
-  }>({ type: 'celular', value: '' });
-  const [showContactForm, setShowContactForm] = useState<boolean>(false);
+  >([{ type: 'celular', value: '' }]);
 
   const [isAvalible, setIsAvalible] = useState<boolean>(true);
   const [isVisible, setIsVisible] = useState<boolean>(true);
@@ -201,14 +196,16 @@ export default function CreateAnimalForm() {
     name: false,
     images: false,
     description: false,
-    // contactName: false,
-    // contacts: false,
+    rescueReason: false,
+    contactName: false,
+    contacts: false,
   });
 
   const fieldErrorMessagesRecord = {
     name: 'Debes ingresar el nombre del animal.',
     images: 'No subiste ninguna imagen.',
     description: 'Falta una descripción.',
+    rescueReason: 'Debes seleccionar un motivo del rescate.',
     contactName: 'Falta el nombre de contacto.',
     contacts: 'Faltan medios de contacto.',
   };
@@ -235,21 +232,49 @@ export default function CreateAnimalForm() {
       };
 
       const newTransaction: AnimalTransactionType = {
-        ...transaction,
         id: id,
         name: animal.name,
-        isAvalible: isAvalible,
-        isVisible: isVisible,
-        status: animal.status,
+        img: images[0],
+        transactionType: 'create',
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
+        since: transaction.since,
+        changes: {
+          after: {
+            name: animal.name,
+            gender: animal.gender,
+            species: animal.species,
+            images: images,
+            description: animal.description,
+            lifeStage: animal.lifeStage,
+            size: animal.size,
+            compatibility: animal.compatibility,
+            isSterilized: animal.isSterilized,
+            aproxBirthDate: animal.aproxBirthDate,
+            waitingSince: animal.waitingSince,
+            status: animal.status,
+            isAvalible: isAvalible,
+            isVisible: isVisible,
+            isDeleted: false,
+            contactName: privateInfo.contactName,
+            contacts: privateInfo.contacts,
+            caseManager: privateInfo.caseManager,
+            rescueReason: newPrivateInfo.rescueReason,
+            vaccinations: privateInfo.vaccinations,
+            medicalConditions: privateInfo.medicalConditions,
+            notes: privateInfo.notes,
+          },
+        },
       };
       const errors = {
         name: newAnimal.name === '',
         images: !images.length,
         description: newAnimal.description === '',
-        // contactName: newPrivateInfo.contactName === '',
-        // contacts: !privateInfo?.contacts?.length,
+        rescueReason:
+          !newPrivateInfo.rescueReason || (newPrivateInfo.rescueReason as string) === '',
+        contactName: newPrivateInfo.contactName === '',
+        contacts:
+          !newPrivateInfo?.contacts?.length || !newPrivateInfo.contacts.some((c) => c.value !== ''),
       };
 
       setFormErrors(errors);
@@ -265,6 +290,27 @@ export default function CreateAnimalForm() {
           type: 'error',
           title: 'Ups!',
           text: fieldErrorMessagesRecord.description,
+        });
+      }
+      if (errors.rescueReason) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.rescueReason,
+        });
+      }
+      if (errors.contactName) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.contactName,
+        });
+      }
+      if (errors.contacts) {
+        handleToast({
+          type: 'error',
+          title: 'Ups!',
+          text: fieldErrorMessagesRecord.contacts,
         });
       }
       if (errors.images) {
@@ -571,6 +617,31 @@ export default function CreateAnimalForm() {
             </select>
           </label>
 
+          <label className="flex flex-col font-bold gap-1">
+            Motivo del rescate:
+            {formErrors.rescueReason && (
+              <div className="bg-red-500 text-white text-sm rounded px-2">
+                {fieldErrorMessagesRecord.rescueReason}
+              </div>
+            )}
+            <select
+              className="outline-2 bg-white outline-gray-200 rounded p-2"
+              name="rescueReason"
+              value={privateInfo.rescueReason || ''}
+              onChange={handlePrivateInfoChange}
+              required
+            >
+              <option value="">Seleccionar motivo</option>
+              <option value="abandonment">Abandono</option>
+              <option value="lost">Perdido</option>
+              <option value="sterilization">Esterilización</option>
+              <option value="illness">Enfermedad</option>
+              <option value="abuse">Maltrato</option>
+              <option value="hit_by_vehicle">Atropellado</option>
+              <option value="other">Otro</option>
+            </select>
+          </label>
+
           <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
             <span>Disponible para adoptar:</span>
             <input
@@ -611,7 +682,11 @@ export default function CreateAnimalForm() {
 
               <label className="flex flex-col font-bold gap-1">
                 Nombre del contacto (transitorio/adoptante):
-                {/* {formErrors.contactName && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contactName}</div>} */}
+                {formErrors.contactName && (
+                  <div className="bg-red-500 text-white text-sm rounded px-2">
+                    {fieldErrorMessagesRecord.contactName}
+                  </div>
+                )}
                 <input
                   className="outline-2  bg-white outline-gray-200 rounded p-2"
                   type="text"
@@ -621,15 +696,41 @@ export default function CreateAnimalForm() {
               </label>
               <section className="flex flex-col gap-4">
                 <h2 className="text-lg font-bold">Contactos:</h2>
-                {/* {formErrors.contacts && <div className='bg-red-500 text-white text-sm rounded px-2'>{fieldErrorMessagesRecord.contacts}</div>} */}
+                {formErrors.contacts && (
+                  <div className="bg-red-500 text-white text-sm rounded px-2">
+                    {fieldErrorMessagesRecord.contacts}
+                  </div>
+                )}
 
-                {contacts.length > 0 &&
-                  contacts.map((contact, index) => (
-                    <div key={`${contact.value}-${index}`} className="flex gap-2 flex-wrap">
-                      <span className="font-bold">{contact.type}:</span>
-                      <span>{contact.value}</span>
+                <div className="flex flex-col gap-3">
+                  {contacts.map((contact, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <select
+                        className="outline-2 bg-white outline-gray-200 rounded p-2"
+                        value={contact.type}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].type = e.target.value as 'celular' | 'email' | 'other';
+                          setContacts(newContacts);
+                        }}
+                      >
+                        <option value="celular">Celular</option>
+                        <option value="email">Email</option>
+                        <option value="other">Otro</option>
+                      </select>
+                      <input
+                        className="outline-2 bg-white outline-gray-200 rounded p-2 flex-1"
+                        type="text"
+                        value={contact.value}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].value = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="Valor del contacto"
+                      />
                       <button
-                        className="bg-red-500 text-white px-2 rounded"
+                        className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
                         onClick={(e) => {
                           e.preventDefault();
                           setContacts((prev) => prev.filter((_, i) => i !== index));
@@ -639,65 +740,17 @@ export default function CreateAnimalForm() {
                       </button>
                     </div>
                   ))}
+                </div>
 
                 <button
-                  className={`${!showContactForm ? 'bg-green-400' : 'bg-red-400'} text-white px-4 py-2 rounded`}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-fit"
                   onClick={(e) => {
                     e.preventDefault();
-                    setShowContactForm((prev) => !prev);
+                    setContacts((prev) => [...prev, { type: 'celular', value: '' }]);
                   }}
                 >
-                  {`${!showContactForm ? 'Agregar contacto' : 'Cerrar'} `}
+                  + Agregar contacto
                 </button>
-                {showContactForm && (
-                  <section className="flex flex-col gap-1 bg-cream-light w-full h-full px-2">
-                    <h3 className="text-lg font-semibold">Agregar Contacto</h3>
-                    <label className="flex flex-col font-bold">
-                      Tipo de contacto:
-                      <select
-                        className="outline-2  bg-white outline-gray-200 rounded p-2"
-                        name="contactType"
-                        onChange={(e) =>
-                          setNewContact((prev) => ({
-                            ...prev,
-                            type: e.target.value as 'celular' | 'email' | 'other',
-                          }))
-                        }
-                      >
-                        <option value="celular">Celular</option>
-                        <option value="email">Email</option>
-                        <option value="other">Otro</option>
-                      </select>
-                    </label>
-                    <label className="flex flex-col font-bold">
-                      Valor del contacto:
-                      <input
-                        className="outline-2  bg-white outline-gray-200 rounded p-2"
-                        type="text"
-                        name="contactValue"
-                        onChange={(e) =>
-                          setNewContact((prev) => ({
-                            ...prev,
-                            value: e.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                    <button
-                      className="bg-green-500 text-white px-4 py-2 rounded"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (newContact.value) {
-                          setContacts((prev) => [...prev, newContact]);
-                          setNewContact({ type: 'email', value: '' });
-                          setShowContactForm((prev) => !prev);
-                        }
-                      }}
-                    >
-                      Agregar contacto
-                    </button>
-                  </section>
-                )}
               </section>
 
               <label className="flex flex-col font-bold">
@@ -868,8 +921,9 @@ export default function CreateAnimalForm() {
                 {formErrors.name && <li>{fieldErrorMessagesRecord.name}</li>}
                 {formErrors.description && <li>{fieldErrorMessagesRecord.description}</li>}
                 {formErrors.images && <li>{fieldErrorMessagesRecord.images}</li>}
-                {/* {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>} */}
-                {/* {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>} */}
+                {formErrors.rescueReason && <li>{fieldErrorMessagesRecord.rescueReason}</li>}
+                {formErrors.contactName && <li>{fieldErrorMessagesRecord.contactName}</li>}
+                {formErrors.contacts && <li>{fieldErrorMessagesRecord.contacts}</li>}
               </ul>
             </div>
           )}
