@@ -118,11 +118,11 @@ export default function LineaTiempoPage() {
               className="flex items-center gap-2 px-2 text-gray-400 "
             >
               <FilterIcon size="md" title="Filtros activos" />
-              <h3 className="text-2xl font-bold underline">Animales Activos</h3>
+              <h3 className="text-2xl font-bold underline">Casos</h3>
             </Link>
             <div className="flex items-center gap-2 rounded p-2 bg-amber-sunset">
               <CalendarIcon size="md" className="text-gray-600" title="Calendario de adopciones" />
-              <h4 className="text-2xl font-bold underline">ver eventos por fecha</h4>
+              <h4 className="text-2xl font-bold underline">Eventos</h4>
             </div>
           </div>
         </div>
