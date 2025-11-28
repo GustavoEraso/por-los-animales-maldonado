@@ -12,7 +12,7 @@ async function getContactsFromCache(): Promise<WpContactType[]> {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.com';
+      : 'https://www.porlosanimalesmaldonado.org';
 
   const res = await fetch(`${baseUrl}/api/contacts-cache`, {
     headers: {

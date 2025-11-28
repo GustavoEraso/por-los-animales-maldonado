@@ -12,7 +12,7 @@ async function getBannersFromCache(): Promise<BannerType[]> {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.com';
+      : 'https://www.porlosanimalesmaldonado.org';
 
   const res = await fetch(`${baseUrl}/api/banners-cache`, {
     headers: {

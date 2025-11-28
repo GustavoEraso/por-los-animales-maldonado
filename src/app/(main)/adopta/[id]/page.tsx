@@ -171,7 +171,7 @@ export default async function AnimalPage({ params }: PageProps) {
             historias:
           </p>
           <a
-            href={`https://porlosanimalesmaldonado.com/adopta/${id}/compartir`}
+            href={`https://porlosanimalesmaldonado.org/adopta/${id}/compartir`}
             className="w-fit text-xl rounded-full px-2 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"

@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Por Los Animales Maldonado',
     description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
-    url: 'https://porlosanimalesmaldonado.com',
+    url: 'https://porlosanimalesmaldonado.org',
     siteName: 'Por Los Animales Maldonado',
     images: [
       {
-        url: 'https://porlosanimalesmaldonado.com/logo300.webp',
+        url: 'https://porlosanimalesmaldonado.org/logo300.webp',
         width: 300,
         height: 300,
         alt: 'Logo de Por Los Animales Maldonado',
