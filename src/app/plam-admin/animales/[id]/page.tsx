@@ -5,7 +5,7 @@ import { Modal } from '@/components/Modal';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { auth } from '@/firebase';
@@ -18,13 +18,25 @@ import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
-
-const contactLabelMap = {
-  adoptado: 'Adoptante',
-  transitorio: 'Transitorio',
-  calle: 'Contacto',
-  protectora: 'Contacto',
-};
+import TransactionCard from '@/components/TransactionCard';
+import { postNewAnimalNote } from '@/lib/firebase/postAnimalNote';
+import {
+  EditIcon,
+  TrashIcon,
+  EyeIcon,
+  CheckIcon,
+  CalendarIcon,
+  HeartIcon,
+  SwapIcon,
+  PlusIcon,
+} from '@/components/Icons';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import {
+  contactLabelMap,
+  YesNoUnknownMap,
+  getRescueReasonLabel,
+  eventLabels,
+} from '@/lib/constants/animalLabels';
 
 export default function AnimalPage() {
   const router = useRouter();
@@ -40,7 +52,712 @@ export default function AnimalPage() {
   const [allAnimalTransactions, setAllAnimalTransactions] = useState<AnimalTransactionType[]>(
     [] as AnimalTransactionType[]
   );
+  const [newNote, setNewNote] = useState<string>('');
+  const [addNoteModalOpen, setAddNoteModalOpen] = useState<boolean>(false);
+  const [adoptionModalOpen, setAdoptionModalOpen] = useState<boolean>(false);
+  const [returnModalOpen, setReturnModalOpen] = useState<boolean>(false);
+  const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
+  const [adoptionData, setAdoptionData] = useState<{
+    contactName: string;
+    contacts: Array<{ type: 'celular' | 'email' | 'other'; value: string }>;
+    note: string;
+    newStatus?: 'transitorio' | 'adoptado';
+  }>({
+    contactName: '',
+    contacts: [{ type: 'celular', value: '' }],
+    note: '',
+    newStatus: 'transitorio',
+  });
+  const [eventData, setEventData] = useState<{
+    eventType:
+      | 'medical'
+      | 'vaccination'
+      | 'sterilization'
+      | 'emergency'
+      | 'supply'
+      | 'followup'
+      | 'other';
+    note: string;
+    cost: string;
+    vaccineName?: string;
+    vaccineDate?: string;
+  }>({
+    eventType: 'medical',
+    note: '',
+    cost: '',
+    vaccineName: '',
+    vaccineDate: new Date().toISOString().split('T')[0],
+  });
+  const [transitChangeModalOpen, setTransitChangeModalOpen] = useState<boolean>(false);
+  const [transitChangeData, setTransitChangeData] = useState<{
+    contactName: string;
+    contacts: Array<{ type: 'celular' | 'email' | 'other'; value: string }>;
+    note: string;
+  }>({
+    contactName: '',
+    contacts: [{ type: 'celular', value: '' }],
+    note: '',
+  });
 
+  // Track which note indexes are currently editable
+  const [editingNotes, setEditingNotes] = useState<Set<number>>(new Set());
+  // Refs to note textareas so we can focus when toggling edit
+  const noteRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  // Store original note values when starting edit (for before/after comparison)
+  const originalNoteValues = useRef<Record<number, string>>({});
+  // Index of note pending deletion via ConfirmDialog (null = none)
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
+
+  // Handle note editing toggle and save
+  const handleNoteEditToggle = async (index: number, isEditing: boolean) => {
+    if (isEditing) {
+      // Saving: we have both original and edited values
+      const originalNote = originalNoteValues.current[index];
+      const editedNote = privateInfo.notes?.[index];
+
+      const newTransactionData: AnimalTransactionType = {
+        id: privateInfo.id,
+        name: privateInfo.name || '',
+        transactionType: 'note',
+        img: animal.images[0],
+        date: Date.now(),
+        modifiedBy: auth.currentUser?.email || 'system',
+        since: Date.now(),
+        changes: {
+          before: { notes: [originalNote || ''] },
+          after: { notes: [editedNote || ''] },
+        },
+      };
+
+      // Optimistic UI: add transaction immediately
+      setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+      try {
+        // Save the changes to Firestore and create transaction
+        await handlePromiseToast(
+          Promise.all([
+            postFirestoreData<PrivateInfoType>({
+              data: privateInfo,
+              currentCollection: 'animalPrivateInfo',
+              id: privateInfo.id,
+            }),
+            postFirestoreData<AnimalTransactionType>({
+              data: newTransactionData,
+              currentCollection: 'animalTransactions',
+            }),
+          ]),
+          {
+            messages: {
+              pending: {
+                title: 'Guardando',
+                text: 'Guardando cambios...',
+              },
+              success: {
+                title: 'Guardado',
+                text: 'Nota actualizada exitosamente',
+              },
+              error: {
+                title: 'Error',
+                text: 'No se pudo actualizar la nota',
+              },
+            },
+          }
+        );
+
+        // Clear the original value after successful save
+        delete originalNoteValues.current[index];
+      } catch (error) {
+        console.error('Error updating note:', error);
+        // Revert optimistic update on error
+        setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+      }
+    }
+
+    setEditingNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        // Starting edit: save original value
+        originalNoteValues.current[index] = privateInfo.notes?.[index] || '';
+        next.add(index);
+        setTimeout(() => noteRefs.current[index]?.focus(), 0);
+      }
+      return next;
+    });
+  };
+
+  // Handle note change
+  const handleNoteChange = (index: number, value: string) => {
+    setPrivateInfo((prev) => {
+      const updatedNotes = [...(prev.notes || [])];
+      updatedNotes[index] = value;
+      return { ...prev, notes: updatedNotes };
+    });
+  };
+
+  // Handle note deletion
+  const handleNoteDelete = async (index: number) => {
+    const deletedNote = privateInfo.notes?.[index];
+    const updatedNotes = privateInfo.notes?.filter((_, i) => i !== index);
+    setPrivateInfo((prev) => ({ ...prev, notes: updatedNotes }));
+
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'note',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      changes: {
+        before: { notes: [deletedNote || ''] },
+      },
+    };
+
+    // Optimistic UI: add transaction immediately
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<PrivateInfoType>({
+            data: { ...privateInfo, notes: updatedNotes },
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransactionData,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Eliminando',
+              text: 'Eliminando nota...',
+            },
+            success: {
+              title: 'Eliminada',
+              text: 'Nota eliminada exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo eliminar la nota',
+            },
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      // Revert optimistic updates on error
+      setPrivateInfo((prev) => ({
+        ...prev,
+        notes: [...(prev.notes || []), deletedNote || ''],
+      }));
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+    }
+
+    setConfirmDeleteIndex(null);
+  };
+
+  // Handle return from adoption
+  const handleReturn = async () => {
+    setReturnModalOpen(false);
+
+    const newStatus = adoptionData.newStatus || 'transitorio';
+    const isGoingToNewAdopter = newStatus === 'adoptado';
+    const notePrefix = isGoingToNewAdopter ? '[Nota de re-adopción] - ' : '[Nota de retorno] - ';
+
+    const updatedPrivateInfo = {
+      ...privateInfo,
+      contactName: adoptionData.contactName,
+      contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      notes: [...(privateInfo.notes || []), notePrefix + adoptionData.note],
+    };
+
+    const updatedAnimal = {
+      ...animal,
+      status: newStatus,
+      isAvalible: !isGoingToNewAdopter,
+      isVisible: !isGoingToNewAdopter,
+    };
+
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: isGoingToNewAdopter ? 'adoption' : 'return',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      status: newStatus,
+      isAvalible: !isGoingToNewAdopter,
+      isVisible: !isGoingToNewAdopter,
+      contactName: adoptionData.contactName,
+      contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      changes: {
+        before: {
+          status: animal.status,
+          isAvalible: animal.isAvalible,
+          isVisible: animal.isVisible,
+          contactName: privateInfo.contactName,
+          contacts: privateInfo.contacts,
+        },
+        after: {
+          status: newStatus,
+          isAvalible: !isGoingToNewAdopter,
+          isVisible: !isGoingToNewAdopter,
+          contactName: adoptionData.contactName,
+          contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+          notes: [notePrefix + adoptionData.note],
+        },
+      },
+    };
+
+    // Optimistic UI
+    setAnimal(updatedAnimal);
+    setPrivateInfo(updatedPrivateInfo);
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<Animal>({
+            data: updatedAnimal,
+            currentCollection: 'animals',
+            id: animal.id,
+          }),
+          postFirestoreData<PrivateInfoType>({
+            data: updatedPrivateInfo,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransactionData,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Registrando retorno',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: isGoingToNewAdopter ? 'Re-adopción registrada' : 'Retorno registrado',
+              text: isGoingToNewAdopter
+                ? 'El animal fue re-adoptado exitosamente'
+                : 'El retorno se registró exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo registrar el retorno',
+            },
+          },
+        }
+      );
+
+      // Reset form
+      setAdoptionData({
+        contactName: '',
+        contacts: [{ type: 'celular', value: '' }],
+        note: '',
+        newStatus: 'transitorio',
+      });
+    } catch (error) {
+      console.error('Error handling return:', error);
+      // Revert optimistic updates
+      setAnimal(animal);
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+    }
+  };
+
+  // Handle transit change
+  const handleTransitChange = async () => {
+    setTransitChangeModalOpen(false);
+
+    const notePrefix = '[Cambio de tránsito] - ';
+
+    const updatedPrivateInfo = {
+      ...privateInfo,
+      contactName: transitChangeData.contactName,
+      contacts: transitChangeData.contacts.filter((c) => c.value.trim() !== ''),
+      notes: [...(privateInfo.notes || []), notePrefix + transitChangeData.note],
+    };
+
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'transit_change',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      contactName: transitChangeData.contactName,
+      contacts: transitChangeData.contacts.filter((c) => c.value.trim() !== ''),
+      changes: {
+        before: {
+          contactName: privateInfo.contactName,
+          contacts: privateInfo.contacts,
+        },
+        after: {
+          contactName: transitChangeData.contactName,
+          contacts: transitChangeData.contacts.filter((c) => c.value.trim() !== ''),
+          notes: [notePrefix + transitChangeData.note],
+        },
+      },
+    };
+
+    // Optimistic UI
+    setPrivateInfo(updatedPrivateInfo);
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<PrivateInfoType>({
+            data: updatedPrivateInfo,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransactionData,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Registrando cambio',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Cambio registrado',
+              text: 'El cambio de tránsito se registró exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo registrar el cambio',
+            },
+          },
+        }
+      );
+
+      // Reset form
+      setTransitChangeData({
+        contactName: '',
+        contacts: [{ type: 'celular', value: '' }],
+        note: '',
+      });
+    } catch (error) {
+      console.error('Error handling transit change:', error);
+      // Revert optimistic updates
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+    }
+  };
+
+  // Handle event registration
+  const handleEvent = async () => {
+    setEventModalOpen(false);
+
+    const notePrefix = `[${eventLabels[eventData.eventType]}] - `;
+    const costValue = eventData.cost.trim() ? parseFloat(eventData.cost) : undefined;
+
+    // If vaccination, add to vaccinations array
+    const isVaccination = eventData.eventType === 'vaccination';
+    const newVaccination =
+      isVaccination && eventData.vaccineName?.trim()
+        ? {
+            vaccine: eventData.vaccineName.trim(),
+            date: eventData.vaccineDate ? new Date(eventData.vaccineDate).getTime() : Date.now(),
+          }
+        : null;
+
+    // Only add note if there's text (vaccination can skip note)
+    const shouldAddNote = eventData.note.trim() !== '';
+
+    // Update totalCost if there's a cost
+    const currentTotalCost = privateInfo.totalCost || 0;
+    const newTotalCost = costValue ? currentTotalCost + costValue : currentTotalCost;
+
+    const updatedPrivateInfo = {
+      ...privateInfo,
+      ...(shouldAddNote && {
+        notes: [...(privateInfo.notes || []), notePrefix + eventData.note],
+      }),
+      ...(newVaccination && {
+        vaccinations: [...(privateInfo.vaccinations || []), newVaccination],
+      }),
+      ...(costValue && {
+        totalCost: newTotalCost,
+      }),
+    };
+
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: eventData.eventType,
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      cost: costValue,
+      ...(newVaccination && { vaccinations: [newVaccination] }),
+      changes: {
+        ...(isVaccination &&
+          newVaccination && {
+            before: {
+              vaccinations: privateInfo.vaccinations || [],
+            },
+          }),
+        ...(costValue && {
+          before: {
+            ...(isVaccination &&
+              newVaccination && { vaccinations: privateInfo.vaccinations || [] }),
+            totalCost: currentTotalCost,
+          },
+        }),
+        after: {
+          ...(shouldAddNote && {
+            notes: [notePrefix + eventData.note],
+          }),
+          ...(newVaccination && {
+            vaccinations: [
+              ...(privateInfo.vaccinations || []),
+              { ...newVaccination, vaccine: '> ' + newVaccination.vaccine },
+            ],
+          }),
+          ...(costValue && {
+            totalCost: newTotalCost,
+          }),
+        },
+      },
+    };
+
+    // Optimistic UI
+    setPrivateInfo(updatedPrivateInfo);
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<PrivateInfoType>({
+            data: updatedPrivateInfo,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransactionData,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Registrando evento',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Evento registrado',
+              text: 'El evento se registró exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo registrar el evento',
+            },
+          },
+        }
+      );
+
+      // Reset form
+      setEventData({
+        eventType: 'medical',
+        note: '',
+        cost: '',
+        vaccineName: '',
+        vaccineDate: new Date().toISOString().split('T')[0],
+      });
+    } catch (error) {
+      console.error('Error handling event registration:', error);
+      // Revert optimistic updates
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+    }
+  };
+
+  // Handle adoption registration
+  const handleAdoption = async () => {
+    setAdoptionModalOpen(false);
+
+    const notePrefix = '[Nota de adopción] - ';
+
+    const updatedPrivateInfo = {
+      ...privateInfo,
+      contactName: adoptionData.contactName,
+      contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      notes: [...(privateInfo.notes || []), notePrefix + adoptionData.note],
+    };
+
+    const updatedAnimal = {
+      ...animal,
+      status: 'adoptado' as const,
+      isAvalible: false,
+      isVisible: false,
+    };
+
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'adoption',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      status: 'adoptado',
+      isAvalible: false,
+      isVisible: false,
+      contactName: adoptionData.contactName,
+      contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      changes: {
+        before: {
+          status: animal.status,
+          isAvalible: animal.isAvalible,
+          isVisible: animal.isVisible,
+          contactName: privateInfo.contactName,
+          contacts: privateInfo.contacts,
+        },
+        after: {
+          status: 'adoptado',
+          isAvalible: false,
+          isVisible: false,
+          contactName: adoptionData.contactName,
+          contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+          notes: [notePrefix + adoptionData.note],
+        },
+      },
+    };
+
+    // Optimistic UI
+    setAnimal(updatedAnimal);
+    setPrivateInfo(updatedPrivateInfo);
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<Animal>({
+            data: updatedAnimal,
+            currentCollection: 'animals',
+            id: animal.id,
+          }),
+          postFirestoreData<PrivateInfoType>({
+            data: updatedPrivateInfo,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransactionData,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Registrando adopción',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Adopción registrada',
+              text: 'La adopción se registró exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo registrar la adopción',
+            },
+          },
+        }
+      );
+
+      // Reset form
+      setAdoptionData({
+        contactName: '',
+        contacts: [{ type: 'celular', value: '' }],
+        note: '',
+      });
+    } catch (error) {
+      console.error('Error handling adoption:', error);
+      // Revert optimistic updates
+      setAnimal(animal);
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+    }
+  };
+
+  // Handle adding a new note
+  const handleAddNote = async () => {
+    const noteToAdd = newNote;
+    // Close modal on success
+    setAddNoteModalOpen(false);
+
+    // Create transaction data for optimistic UI
+    const newTransactionData: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'note',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      changes: {
+        after: { notes: [noteToAdd] },
+      },
+    };
+
+    // Optimistic UI: agregar la nota y la transacción al estado local inmediatamente
+    setPrivateInfo((prev) => ({
+      ...prev,
+      notes: [...(prev.notes || []), noteToAdd],
+    }));
+    setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+    setNewNote('');
+
+    try {
+      await handlePromiseToast(
+        postNewAnimalNote({
+          animalId: animal.id,
+          note: noteToAdd,
+        }),
+        {
+          messages: {
+            pending: {
+              title: 'Agregando nota',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Nota agregada',
+              text: 'La nota se agregó exitosamente',
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo agregar la nota',
+            },
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error adding note:', error);
+      // Si falla, revertir ambos cambios optimistas
+      setPrivateInfo((prev) => ({
+        ...prev,
+        notes: (prev.notes || []).filter((n) => n !== noteToAdd),
+      }));
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+      setNewNote(noteToAdd);
+    }
+  };
   useEffect(() => {
     const fetchAnimalData = async () => {
       try {
@@ -96,6 +813,158 @@ export default function AnimalPage() {
     fetchAnimalData();
   }, [currentId]);
 
+  const handleVisibleToggle = async (newValue: boolean) => {
+    const start = Date.now();
+    setIsLoading(true);
+
+    const updatedAnimal = { ...animal, isVisible: newValue };
+    const newTransaction: AnimalTransactionType = {
+      id: animal.id,
+      name: animal.name,
+      img: animal.images[0],
+      transactionType: 'update',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      isVisible: newValue,
+      changes: {
+        before: {
+          isVisible: animal.isVisible,
+        },
+        after: {
+          isVisible: newValue,
+        },
+      },
+    };
+
+    // Optimistic UI
+    setAnimal(updatedAnimal);
+    setAllAnimalTransactions((prev) => [newTransaction, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<Animal>({
+            data: updatedAnimal,
+            currentCollection: 'animals',
+            id: animal.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransaction,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Actualizando visibilidad',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Visibilidad actualizada',
+              text: `El animal ahora está ${newValue ? 'visible' : 'oculto'}`,
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo actualizar la visibilidad',
+            },
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error updating visibility:', error);
+      // Revert optimistic updates
+      setAnimal(animal);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
+    } finally {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleAvalibleToggle = async (newValue: boolean) => {
+    const start = Date.now();
+    setIsLoading(true);
+
+    const updatedAnimal = { ...animal, isAvalible: newValue };
+    const newTransaction: AnimalTransactionType = {
+      id: animal.id,
+      name: animal.name,
+      img: animal.images[0],
+      transactionType: 'update',
+      date: Date.now(),
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: Date.now(),
+      isAvalible: newValue,
+      changes: {
+        before: {
+          isAvalible: animal.isAvalible,
+        },
+        after: {
+          isAvalible: newValue,
+        },
+      },
+    };
+
+    // Optimistic UI
+    setAnimal(updatedAnimal);
+    setAllAnimalTransactions((prev) => [newTransaction, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<Animal>({
+            data: updatedAnimal,
+            currentCollection: 'animals',
+            id: animal.id,
+          }),
+          postFirestoreData<AnimalTransactionType>({
+            data: newTransaction,
+            currentCollection: 'animalTransactions',
+          }),
+        ]),
+        {
+          messages: {
+            pending: {
+              title: 'Actualizando disponibilidad',
+              text: 'Por favor espera...',
+            },
+            success: {
+              title: 'Disponibilidad actualizada',
+              text: `El animal ahora está ${newValue ? 'disponible' : 'no disponible'}`,
+            },
+            error: {
+              title: 'Error',
+              text: 'No se pudo actualizar la disponibilidad',
+            },
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      // Revert optimistic updates
+      setAnimal(animal);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
+    } finally {
+      const elapsed = Date.now() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, remaining);
+      } else {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const handleDelete = async (currentId: string) => {
     try {
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
@@ -104,12 +973,23 @@ export default function AnimalPage() {
       const newTransaction: AnimalTransactionType = {
         id: currentId,
         name: animal.name,
+        img: animal.images[0],
+        transactionType: 'delete',
         since: Date.now(),
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
-        isDeleted: true,
-        isVisible: false,
-        isAvalible: false,
+        changes: {
+          before: {
+            isDeleted: animal.isDeleted || false,
+            isVisible: animal.isVisible,
+            isAvalible: animal.isAvalible,
+          },
+          after: {
+            isDeleted: true,
+            isVisible: false,
+            isAvalible: false,
+          },
+        },
       };
 
       const promises = Promise.all([
@@ -154,12 +1034,23 @@ export default function AnimalPage() {
       const newTransactionData: AnimalTransactionType = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
-        isDeleted: false,
-        isVisible: false,
-        isAvalible: false,
         id: currentId,
         name: animal.name,
+        img: animal.images[0],
+        transactionType: 'update',
         since: Date.now(),
+        changes: {
+          before: {
+            isDeleted: animal.isDeleted || false,
+            isVisible: animal.isVisible,
+            isAvalible: animal.isAvalible,
+          },
+          after: {
+            isDeleted: false,
+            isVisible: false,
+            isAvalible: false,
+          },
+        },
       };
 
       const promises = Promise.all([
@@ -246,10 +1137,24 @@ export default function AnimalPage() {
       const newTransaction: AnimalTransactionType = {
         id: animal.id,
         name: animal.name,
-        hardDeleted: true,
+        img: animal.images[0],
+        transactionType: 'delete',
         date: Date.now(),
         since: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
+        changes: {
+          before: {
+            name: animal.name,
+            status: animal.status,
+            isDeleted: animal.isDeleted || false,
+            isVisible: animal.isVisible,
+            isAvalible: animal.isAvalible,
+            images: animal.images,
+          },
+          after: {
+            hardDeleted: true,
+          },
+        },
       };
 
       const promises = Promise.all([
@@ -317,26 +1222,28 @@ export default function AnimalPage() {
     compatibility,
     isSterilized,
   } = animal;
-  const { date, modifiedBy, notes } = allAnimalTransactions[0];
-  const { contactName, contacts, caseManager, vaccinations, medicalConditions } = privateInfo;
+  const {
+    contactName,
+    contacts,
+    caseManager,
+    vaccinations,
+    medicalConditions,
+    notes,
+    rescueReason,
+  } = privateInfo;
   const img =
     images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
   if (isLoading) {
     return <Loader />;
   }
 
-  const YesNoUnknownMap = {
-    si: 'Sí',
-    no: 'No',
-    no_se: 'No sabemos',
-  };
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
         <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
-        <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
+        <section className="flex flex-col md:flex-row gap-4 py-4 w-full justify-center items-center">
           <div className="flex flex-col md:flex-row gap-4 px-9 py-4 w-full max-w-7xl">
-            <div className="fflex flex-col gap-4 text-start text-black px-2 md:w-3/5">
+            <div className="flex flex-col gap-4 text-start text-black px-2 md:w-1/2 shrink-0">
               <textarea
                 className="text-green-dark text-lg font-bold field-sizing-content resize-none"
                 value={description}
@@ -391,226 +1298,160 @@ export default function AnimalPage() {
                   </ul>
                 </li>
               </ul>
-              {caseManager && (
-                <div className="bg-amber-sunset p-3 rounded-lg">
-                  <p className="text-xl font-semibold text-green-dark">
-                    Responsable del caso: <span className="font-normal">{caseManager}</span>
-                  </p>
-                </div>
-              )}
-              {(medicalConditions || (vaccinations && vaccinations.length > 0)) && (
-                <div className="bg-cream-light p-3 rounded-lg flex flex-col gap-2">
-                  <h3 className="text-xl font-bold text-green-dark">Información Médica:</h3>
-                  {medicalConditions && (
-                    <p className="text-lg font-semibold text-green-dark">
-                      Patologías: <span className="font-normal">{medicalConditions}</span>
-                    </p>
-                  )}
-                  {vaccinations && vaccinations.length > 0 && (
-                    <div>
-                      <p className="text-lg font-semibold text-green-dark">Vacunas:</p>
-                      <ul className="list-disc pl-6 text-green-dark">
-                        {vaccinations.map((vaccination, index) => (
-                          <li key={`${vaccination.vaccine}-${index}`} className="font-normal">
-                            {vaccination.vaccine} -{' '}
-                            {new Date(vaccination.date).toLocaleDateString('es-UY', {
-                              timeZone: 'UTC',
-                            })}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-              <ul className="list-none p bg-cream-light flex flex-col gap-2 px-2 rounded-lg">
-                <li className="text-xl font-semibold">
-                  <span>{contactLabelMap[status]}</span>:{' '}
-                  <span className="font-normal">{contactName}</span>
-                </li>
-                {contacts &&
-                  contacts.map((contact, index) => (
-                    <li
-                      key={`${index}-${contact.value}`}
-                      className="text-xl font-semibold capitalize"
-                    >
-                      {contact.type}: <span className="font-normal">{contact.value}</span>
-                    </li>
-                  ))}
-                <li className="text-xl font-semibold">
-                  Notas: <span className="font-normal">{notes}</span>
-                </li>
-                <li className="text-xl font-semibold">
-                  Ultima actualización:{' '}
-                  <span className="font-normal">{`${formatDateMMYYYY(date)} (hace ${yearsOrMonthsElapsed(date)})`}</span>
-                </li>
-                <li className="text-xl font-semibold">
-                  Actualizado por: <span className="font-normal">{modifiedBy}</span>
-                </li>
-              </ul>
-              <Modal buttonText="Ver historial de estados">
-                <section className="flex flex-col items-center justify-around bg-amber-sunset w-full min-h-full p-4 gap-1 text-center ">
-                  <h4 className="font-extrabold text-2xl  text-green-dark">Historial de estados</h4>
-                  <p className="text-green-dark text-md font-bold ">
-                    Este animal ha tenido los siguientes estados a lo largo del tiempo:
-                  </p>
-                  <ul className="flex flex-col gap-2 list-disc p-2 text-green-dark">
-                    {allAnimalTransactions.map((info, index) => {
-                      const date = new Date(info.date).toLocaleDateString('uy-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                      });
-
-                      return (
-                        <ul
-                          key={`${index}-${info.date}`}
-                          className="text-xl text-start font-semibold flex flex-col gap- p-2 bg-white rounded"
-                        >
-                          <li className="font-semibold">
-                            {' '}
-                            Fecha: <span className="font-normal">{date} hs</span>
-                          </li>
-                          {info.modifiedBy !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Actualizado por:{' '}
-                              <span className="font-normal">{info.modifiedBy}</span>
-                            </li>
-                          )}
-                          {info.name !== undefined && (
-                            <li className="font-semibold">
-                              Nombre: <span className="font-normal">{info.name}</span>
-                            </li>
-                          )}
-                          {info.description !== undefined && (
-                            <li className="font-semibold">
-                              Descripción: <span className="font-normal">{info.description}</span>
-                            </li>
-                          )}
-                          {info.gender !== undefined && (
-                            <li className="font-semibold">
-                              Género: <span className="font-normal">{info.gender}</span>
-                            </li>
-                          )}
-                          {info.aproxBirthDate !== undefined && (
-                            <li className="font-semibold">
-                              Fecha de nacimiento aproximada:{' '}
-                              <span className="font-normal">{info.aproxBirthDate}</span>
-                            </li>
-                          )}
-                          {info.isSterilized !== undefined && (
-                            <li className="font-semibold">
-                              Esterilizado:{' '}
-                              <span className="font-normal">{`${info.isSterilized ? 'Si' : 'No'}`}</span>
-                            </li>
-                          )}
-                          {info.lifeStage !== undefined && (
-                            <li className="font-semibold">
-                              Etapa de vida: <span className="font-normal">{info.lifeStage}</span>
-                            </li>
-                          )}
-                          {info.isAvalible !== undefined && (
-                            <li className="font-semibold">
-                              Estado:{' '}
-                              <span className="font-normal">{`${info.isAvalible ? 'Disponible' : 'No disponible'}`}</span>
-                            </li>
-                          )}
-                          {info.isVisible !== undefined && (
-                            <li className="font-semibold">
-                              Mostrar:{' '}
-                              <span className="font-normal">{`${info.isVisible ? 'Mostrar' : 'Ocultar'}`}</span>
-                            </li>
-                          )}
-                          {info.isDeleted !== undefined && (
-                            <li className="font-semibold">
-                              Eliminado:{' '}
-                              <span className="font-normal">{`${info.isDeleted ? 'Si' : 'No'}`}</span>
-                            </li>
-                          )}
-                          {info.status !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Situación actual: <span className="font-normal">{info.status}</span>
-                            </li>
-                          )}
-                          {info.size !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Tamaño: <span className="font-normal">{info.size}</span>
-                            </li>
-                          )}
-                          {info.species !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Especie: <span className="font-normal">{info.species}</span>
-                            </li>
-                          )}
-                          {info.contactName !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Contacto: <span className="font-normal">{info.contactName}</span>
-                            </li>
-                          )}
-                          {info.caseManager !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Responsable del caso:{' '}
-                              <span className="font-normal">{info.caseManager}</span>
-                            </li>
-                          )}
-                          {info.medicalConditions !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Patologías:{' '}
-                              <span className="font-normal">{info.medicalConditions}</span>
-                            </li>
-                          )}
-                          {info.vaccinations && info.vaccinations.length > 0 && (
-                            <li className="font-semibold">
-                              {' '}
-                              Vacunas:
-                              <ul className="list-disc pl-4 font-normal">
-                                {info.vaccinations.map((vaccination, vIndex) => (
-                                  <li key={`${vIndex}-${vaccination.vaccine}`}>
-                                    {vaccination.vaccine} -{' '}
-                                    {new Date(vaccination.date).toLocaleDateString('es-UY', {
-                                      timeZone: 'UTC',
-                                    })}
-                                  </li>
-                                ))}
-                              </ul>
-                            </li>
-                          )}
-                          {info.notes !== undefined && (
-                            <li className="font-semibold">
-                              {' '}
-                              Notas: <span className="font-normal">{info.notes}</span>
-                            </li>
-                          )}
-                          {info.contacts &&
-                            info.contacts.map((contact, index) => (
-                              <li
-                                key={`${index}-${contact.value}`}
-                                className="text-xl font-semibold capitalize"
-                              >
-                                {contact.type}: <span className="font-normal">{contact.value}</span>
-                              </li>
-                            ))}
-                        </ul>
-                      );
-                    })}
-                  </ul>
-                </section>
-              </Modal>
             </div>
-            <div className="w-full md:w-2/5 h-auto rounded-lg bg-amber-sunset">
+            <div className="w-full md:w-1/2 h-auto max-h-[650px] rounded-lg bg-amber-sunset shrink-0">
               <PhotoCarrousel images={img} />
             </div>
           </div>
+        </section>
+        <section className="w-full flex flex-col gap-1 max-w-7xl shrink-0 p-4">
+          {caseManager && (
+            <div className="bg-amber-sunset p-3 rounded-lg">
+              <p className="text-xl font-semibold text-green-dark">
+                Responsable del caso: <span className="font-normal">{caseManager}</span>
+              </p>
+            </div>
+          )}
+          {rescueReason && (
+            <div className="bg-cream-light p-3 rounded-lg">
+              <p className="text-xl font-semibold text-green-dark">
+                Motivo del caso:{' '}
+                <span className="font-normal">{getRescueReasonLabel(rescueReason)}</span>
+              </p>
+            </div>
+          )}
+          {privateInfo.totalCost !== undefined && privateInfo.totalCost > 0 && (
+            <p className="text-2xl font-semibold text-green-dark">
+              Costo total acumulado:{' '}
+              <span className="font-semibold text-red-500">${privateInfo.totalCost}</span>
+            </p>
+          )}
+          {(medicalConditions ||
+            (vaccinations && vaccinations.length > 0) ||
+            privateInfo.totalCost) && (
+            <div className="bg-cream-light p-3 rounded-lg flex flex-col gap-2">
+              <h3 className="text-xl font-bold text-green-dark">Información Médica:</h3>
+              {medicalConditions && (
+                <p className="text-lg font-semibold text-green-dark">
+                  Patologías: <span className="font-normal">{medicalConditions}</span>
+                </p>
+              )}
+              {vaccinations && vaccinations.length > 0 && (
+                <div>
+                  <p className="text-lg font-semibold text-green-dark">Vacunas:</p>
+                  <ul className="list-disc pl-6 text-green-dark">
+                    {vaccinations.map((vaccination, index) => (
+                      <li key={`${vaccination.vaccine}-${index}`} className="font-normal">
+                        {vaccination.vaccine} -{' '}
+                        {new Date(vaccination.date).toLocaleDateString('es-UY', {
+                          timeZone: 'UTC',
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+          <ul className="list-none p bg-cream-light flex flex-col gap-2 px-2 rounded-lg">
+            <li className="text-xl font-semibold">
+              <span>{contactLabelMap[status]}</span>:{' '}
+              <span className="font-normal">{contactName}</span>
+            </li>
+            {contacts &&
+              contacts.map((contact, index) => (
+                <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">
+                  {contact.type}: <span className="font-normal">{contact.value}</span>
+                </li>
+              ))}
+            <li className="text-xl font-semibold">
+              {!notes || notes.length === 0 ? (
+                <p className="font-normal">No hay notas disponibles.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <h4>notas:</h4>
+                  {Array.isArray(notes) &&
+                    notes.map((note, index) => {
+                      const isEditing = editingNotes.has(index);
+                      return (
+                        <div className="relative" key={`note-${index}`}>
+                          <textarea
+                            ref={(el) => {
+                              noteRefs.current[index] = el;
+                            }}
+                            className="font-normal field-sizing-content resize-none w-full bg-white p-2 rounded mb-2 pr-20"
+                            value={note}
+                            disabled={!isEditing}
+                            onChange={(e) => handleNoteChange(index, e.target.value)}
+                          />
+                          <div className="absolute top-2 right-2 flex gap-2">
+                            <button
+                              className="bg-green-dark text-white px-2 py-1 rounded text-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleNoteEditToggle(index, isEditing);
+                              }}
+                              aria-pressed={isEditing}
+                              title={isEditing ? 'Guardar nota' : 'Editar nota'}
+                            >
+                              {isEditing ? 'Guardar' : <EditIcon />}
+                            </button>
+                            <button
+                              className="bg-red-500 text-white px-2 py-1 rounded text-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setConfirmDeleteIndex(index);
+                              }}
+                              title="Eliminar nota"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </li>
+            <li className="flex justify-center items-center p-4">
+              <Modal
+                buttonStyles="bg-green-dark text-white text-xl px-4 py-2 rounded hover:bg-green-700 transition duration-300"
+                buttonText={
+                  <div className="flex flex-row gap-2 justify-center items-center">
+                    <PlusIcon size={20} />
+                    <span>agregar nota</span>
+                  </div>
+                }
+                isOpen={addNoteModalOpen}
+                setIsOpen={setAddNoteModalOpen}
+              >
+                <section className="flex flex-col items-center justify-center bg-cream-light w-full h-full p-4 gap-4 text-center ">
+                  <h2 className="font-extrabold text-4xl sm:text-5xl  text-green-dark">
+                    Agregar nota
+                  </h2>
+
+                  <textarea
+                    className="w-4/5 h-40 p-2 border-2 border-green-dark bg-white rounded-lg  field-sizing-content"
+                    placeholder="Escribe la nota aquí..."
+                    value={newNote}
+                    onChange={(e) => {
+                      setNewNote(e.target.value);
+                    }}
+                  />
+                  <button
+                    className="bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!newNote.trim()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleAddNote();
+                    }}
+                  >
+                    Agregar
+                  </button>
+                </section>
+              </Modal>
+            </li>
+          </ul>
         </section>
 
         {animal.isDeleted ? (
@@ -685,51 +1526,678 @@ export default function AnimalPage() {
             </Modal>
           </section>
         ) : (
-          <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
-            <Link
-              href={`/plam-admin/animales/editar/${animal.id}`}
-              className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300"
-            >
-              Editar
-            </Link>
-            <Modal
-              buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300"
-              buttonText="Eliminar"
-            >
-              <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center ">
-                <h2 className="text-2xl font-bold">
-                  ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
-                </h2>
-                <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
-                  <div className="aspect-square">
-                    <Image
-                      className="w-full h-full object-cover bg-white"
-                      src={animal.images[0].imgUrl}
-                      alt={animal.images[0].imgAlt}
-                      width={300}
-                      height={300}
-                    />
-                  </div>
-                  <div className="flex flex-col items-center justify-between gap-1 p-2">
-                    <span className="uppercase text-2xl text-center font-extrabold">
-                      Nombre: {animal.name}
-                    </span>
-                    <span className="uppercase text-2xl text-center font-extrabold">
-                      Id :{animal.id}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(animal.id)}
-                      className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </article>
+          <>
+            <section className="flex flex-col  gap-2 px-9 py-4 w-full max-w-7xl items-center justify-center">
+              <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+                <Modal
+                  buttonStyles="bg-blue-600 text-white text-3xl px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
+                  buttonText={
+                    <div className="flex flex-row gap-2 justify-center items-center">
+                      <CalendarIcon size={24} />
+                      <span>Registrar Evento</span>
+                    </div>
+                  }
+                  isOpen={eventModalOpen}
+                  setIsOpen={setEventModalOpen}
+                >
+                  <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
+                    <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+                      Registrar Evento
+                    </h2>
+
+                    <div className="w-full max-w-2xl space-y-4">
+                      {/* Event Type */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Tipo de Evento *
+                        </label>
+                        <select
+                          className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                          value={eventData.eventType}
+                          onChange={(e) =>
+                            setEventData((prev) => ({
+                              ...prev,
+                              eventType: e.target.value as
+                                | 'medical'
+                                | 'vaccination'
+                                | 'sterilization'
+                                | 'emergency'
+                                | 'supply'
+                                | 'followup'
+                                | 'other',
+                            }))
+                          }
+                        >
+                          <option value="medical">Médico</option>
+                          <option value="vaccination">Vacunación</option>
+                          <option value="sterilization">Esterilización</option>
+                          <option value="emergency">Emergencia</option>
+                          <option value="supply">Suministro alimento insumos etc</option>
+                          <option value="followup">Seguimiento</option>
+                          <option value="other">Otro</option>
+                        </select>
+                      </div>
+
+                      {/* Vaccination specific fields */}
+                      {eventData.eventType === 'vaccination' && (
+                        <>
+                          <div>
+                            <label className="block text-green-dark font-semibold mb-2">
+                              Nombre de la Vacuna *
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                              placeholder="Ej: Rabia, Séxtuple, etc."
+                              value={eventData.vaccineName || ''}
+                              onChange={(e) =>
+                                setEventData((prev) => ({ ...prev, vaccineName: e.target.value }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-green-dark font-semibold mb-2">
+                              Fecha de Vacunación *
+                            </label>
+                            <input
+                              type="date"
+                              className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                              value={eventData.vaccineDate || ''}
+                              onChange={(e) =>
+                                setEventData((prev) => ({ ...prev, vaccineDate: e.target.value }))
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Note */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Descripción del Evento{' '}
+                          {eventData.eventType === 'vaccination' ? '(opcional)' : '*'}
+                        </label>
+                        <textarea
+                          className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                          placeholder="Escribe información sobre el evento..."
+                          value={eventData.note}
+                          onChange={(e) =>
+                            setEventData((prev) => ({ ...prev, note: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      {/* Cost */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Costo (opcional)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-dark text-xl">$</span>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                            placeholder="0"
+                            value={eventData.cost}
+                            onChange={(e) =>
+                              setEventData((prev) => ({ ...prev, cost: e.target.value }))
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={
+                          eventData.eventType === 'vaccination'
+                            ? !eventData.vaccineName?.trim()
+                            : !eventData.note.trim()
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEvent();
+                        }}
+                      >
+                        Registrar Evento
+                      </button>
+                    </div>
+                  </section>
+                </Modal>
+                <Modal
+                  buttonStyles="bg-purple-600 text-white text-3xl px-4 py-2 rounded hover:bg-purple-700 transition duration-300"
+                  buttonText={
+                    <div className="flex flex-row gap-2 justify-center items-center">
+                      <SwapIcon size={24} />
+                      <span>Cambiar Tránsito</span>
+                    </div>
+                  }
+                  isOpen={transitChangeModalOpen}
+                  setIsOpen={setTransitChangeModalOpen}
+                >
+                  <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
+                    <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+                      Cambiar Tránsito
+                    </h2>
+
+                    <div className="w-full max-w-2xl space-y-4">
+                      {/* Contact Name */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Nombre del Nuevo Transitorio *
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                          placeholder="Nombre completo"
+                          value={transitChangeData.contactName}
+                          onChange={(e) =>
+                            setTransitChangeData((prev) => ({
+                              ...prev,
+                              contactName: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      {/* Contacts */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Contactos *
+                        </label>
+                        {transitChangeData.contacts.map((contact, index) => (
+                          <div key={index} className="flex gap-2 mb-2">
+                            <select
+                              className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                              value={contact.type}
+                              onChange={(e) => {
+                                const newContacts = [...transitChangeData.contacts];
+                                newContacts[index].type = e.target.value as
+                                  | 'celular'
+                                  | 'email'
+                                  | 'other';
+                                setTransitChangeData((prev) => ({
+                                  ...prev,
+                                  contacts: newContacts,
+                                }));
+                              }}
+                            >
+                              <option value="celular">Celular</option>
+                              <option value="email">Email</option>
+                              <option value="other">Otro</option>
+                            </select>
+                            <input
+                              type="text"
+                              className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                              placeholder="Valor del contacto"
+                              value={contact.value}
+                              onChange={(e) => {
+                                const newContacts = [...transitChangeData.contacts];
+                                newContacts[index].value = e.target.value;
+                                setTransitChangeData((prev) => ({
+                                  ...prev,
+                                  contacts: newContacts,
+                                }));
+                              }}
+                            />
+                            {transitChangeData.contacts.length > 1 && (
+                              <button
+                                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                                onClick={() => {
+                                  const newContacts = transitChangeData.contacts.filter(
+                                    (_, i) => i !== index
+                                  );
+                                  setTransitChangeData((prev) => ({
+                                    ...prev,
+                                    contacts: newContacts,
+                                  }));
+                                }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                          onClick={() => {
+                            setTransitChangeData((prev) => ({
+                              ...prev,
+                              contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                            }));
+                          }}
+                        >
+                          + Agregar Contacto
+                        </button>
+                      </div>
+
+                      {/* Note */}
+                      <div>
+                        <label className="block text-green-dark font-semibold mb-2">
+                          Nota del Cambio *
+                        </label>
+                        <textarea
+                          className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                          placeholder="Escribe información sobre el cambio de tránsito..."
+                          value={transitChangeData.note}
+                          onChange={(e) =>
+                            setTransitChangeData((prev) => ({ ...prev, note: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      <button
+                        className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={
+                          !transitChangeData.contactName.trim() ||
+                          !transitChangeData.note.trim() ||
+                          transitChangeData.contacts.every((c) => !c.value.trim())
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleTransitChange();
+                        }}
+                      >
+                        Registrar Cambio
+                      </button>
+                    </div>
+                  </section>
+                </Modal>
+                {animal.status === 'adoptado' ? (
+                  <Modal
+                    buttonStyles="bg-amber-600 text-white text-3xl px-4 py-2 rounded hover:bg-amber-700 transition duration-300"
+                    buttonText={
+                      <div className="flex flex-row gap-2 justify-center items-center">
+                        <HeartIcon size={24} />
+                        <span>Registrar Retorno</span>
+                      </div>
+                    }
+                    isOpen={returnModalOpen}
+                    setIsOpen={setReturnModalOpen}
+                  >
+                    <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
+                      <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+                        Registrar Retorno
+                      </h2>
+
+                      <div className="w-full max-w-2xl space-y-4">
+                        {/* New Status */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nueva Situación *
+                          </label>
+                          <select
+                            className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                            value={adoptionData.newStatus}
+                            onChange={(e) =>
+                              setAdoptionData((prev) => ({
+                                ...prev,
+                                newStatus: e.target.value as 'transitorio' | 'adoptado',
+                              }))
+                            }
+                          >
+                            <option value="transitorio">Vuelve a Transitorio</option>
+                            <option value="adoptado">Va con Nuevo Adoptante</option>
+                          </select>
+                        </div>
+
+                        {/* Contact Name */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            {adoptionData.newStatus === 'adoptado'
+                              ? 'Nombre del Nuevo Adoptante *'
+                              : 'Nombre del Transitorio *'}
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                            placeholder="Nombre completo"
+                            value={adoptionData.contactName}
+                            onChange={(e) =>
+                              setAdoptionData((prev) => ({ ...prev, contactName: e.target.value }))
+                            }
+                          />
+                        </div>
+
+                        {/* Contacts */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Contactos *
+                          </label>
+                          {adoptionData.contacts.map((contact, index) => (
+                            <div key={index} className="flex gap-2 mb-2">
+                              <select
+                                className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                                value={contact.type}
+                                onChange={(e) => {
+                                  const newContacts = [...adoptionData.contacts];
+                                  newContacts[index].type = e.target.value as
+                                    | 'celular'
+                                    | 'email'
+                                    | 'other';
+                                  setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                }}
+                              >
+                                <option value="celular">Celular</option>
+                                <option value="email">Email</option>
+                                <option value="other">Otro</option>
+                              </select>
+                              <input
+                                type="text"
+                                className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                                placeholder="Valor del contacto"
+                                value={contact.value}
+                                onChange={(e) => {
+                                  const newContacts = [...adoptionData.contacts];
+                                  newContacts[index].value = e.target.value;
+                                  setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                }}
+                              />
+                              {adoptionData.contacts.length > 1 && (
+                                <button
+                                  className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                                  onClick={() => {
+                                    const newContacts = adoptionData.contacts.filter(
+                                      (_, i) => i !== index
+                                    );
+                                    setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                            onClick={() => {
+                              setAdoptionData((prev) => ({
+                                ...prev,
+                                contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                              }));
+                            }}
+                          >
+                            + Agregar Contacto
+                          </button>
+                        </div>
+
+                        {/* Note */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nota de Retorno *
+                          </label>
+                          <textarea
+                            className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                            placeholder="Escribe información sobre el retorno..."
+                            value={adoptionData.note}
+                            onChange={(e) =>
+                              setAdoptionData((prev) => ({ ...prev, note: e.target.value }))
+                            }
+                          />
+                        </div>
+
+                        <button
+                          className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={
+                            !adoptionData.contactName.trim() ||
+                            !adoptionData.note.trim() ||
+                            adoptionData.contacts.every((c) => !c.value.trim())
+                          }
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleReturn();
+                          }}
+                        >
+                          Registrar Retorno
+                        </button>
+                      </div>
+                    </section>
+                  </Modal>
+                ) : (
+                  <Modal
+                    buttonStyles="bg-green-600 text-white text-3xl px-4 py-2 rounded hover:bg-green-700 transition duration-300"
+                    buttonText={
+                      <div className="flex flex-row gap-2 justify-center items-center">
+                        <HeartIcon size={24} />
+                        <span>Registrar Adopción</span>
+                      </div>
+                    }
+                    isOpen={adoptionModalOpen}
+                    setIsOpen={setAdoptionModalOpen}
+                  >
+                    <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
+                      <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+                        Registrar Adopción
+                      </h2>
+
+                      <div className="w-full max-w-2xl space-y-4">
+                        {/* Contact Name */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nombre del Adoptante *
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                            placeholder="Nombre completo"
+                            value={adoptionData.contactName}
+                            onChange={(e) =>
+                              setAdoptionData((prev) => ({ ...prev, contactName: e.target.value }))
+                            }
+                          />
+                        </div>
+
+                        {/* Contacts */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Contactos *
+                          </label>
+                          {adoptionData.contacts.map((contact, index) => (
+                            <div key={index} className="flex gap-2 mb-2">
+                              <select
+                                className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                                value={contact.type}
+                                onChange={(e) => {
+                                  const newContacts = [...adoptionData.contacts];
+                                  newContacts[index].type = e.target.value as
+                                    | 'celular'
+                                    | 'email'
+                                    | 'other';
+                                  setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                }}
+                              >
+                                <option value="celular">Celular</option>
+                                <option value="email">Email</option>
+                                <option value="other">Otro</option>
+                              </select>
+                              <input
+                                type="text"
+                                className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                                placeholder="Valor del contacto"
+                                value={contact.value}
+                                onChange={(e) => {
+                                  const newContacts = [...adoptionData.contacts];
+                                  newContacts[index].value = e.target.value;
+                                  setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                }}
+                              />
+                              {adoptionData.contacts.length > 1 && (
+                                <button
+                                  className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                                  onClick={() => {
+                                    const newContacts = adoptionData.contacts.filter(
+                                      (_, i) => i !== index
+                                    );
+                                    setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                            onClick={() => {
+                              setAdoptionData((prev) => ({
+                                ...prev,
+                                contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                              }));
+                            }}
+                          >
+                            + Agregar Contacto
+                          </button>
+                        </div>
+
+                        {/* Note */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nota de Adopción *
+                          </label>
+                          <textarea
+                            className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                            placeholder="Escribe información sobre la adopción..."
+                            value={adoptionData.note}
+                            onChange={(e) =>
+                              setAdoptionData((prev) => ({ ...prev, note: e.target.value }))
+                            }
+                          />
+                        </div>
+
+                        <button
+                          className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={
+                            !adoptionData.contactName.trim() ||
+                            !adoptionData.note.trim() ||
+                            adoptionData.contacts.every((c) => !c.value.trim())
+                          }
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAdoption();
+                          }}
+                        >
+                          Registrar Adopción
+                        </button>
+                      </div>
+                    </section>
+                  </Modal>
+                )}
               </section>
-            </Modal>
-          </section>
+              <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
+                {/* Visible Toggle */}
+                <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
+                  <EyeIcon size={20} className="text-green-dark" />
+                  <span className="text-sm font-semibold text-green-dark">Visible:</span>
+                  <label className="flex items-center cursor-pointer" title="Cambiar visibilidad">
+                    <input
+                      type="checkbox"
+                      onChange={() => handleVisibleToggle(!animal.isVisible)}
+                      className="sr-only peer"
+                      checked={animal.isVisible}
+                    />
+                    <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                  </label>
+                </div>
+
+                {/* Avalible Toggle */}
+                <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
+                  <CheckIcon size={20} className="text-green-dark" />
+                  <span className="text-sm font-semibold text-green-dark">Disponible:</span>
+                  <label
+                    className="flex items-center cursor-pointer"
+                    title="Cambiar disponibilidad"
+                  >
+                    <input
+                      type="checkbox"
+                      onChange={() => handleAvalibleToggle(!animal.isAvalible)}
+                      className="sr-only peer"
+                      checked={animal.isAvalible}
+                    />
+                    <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                  </label>
+                </div>
+
+                <Link
+                  href={`/plam-admin/animales/editar/${animal.id}`}
+                  className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300 flex items-center gap-2"
+                >
+                  <EditIcon size={24} />
+                  Editar
+                </Link>
+                <Modal
+                  buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300"
+                  buttonText={
+                    <div className="flex flex-row gap-2 justify-center items-center">
+                      <TrashIcon size={24} />
+                      <span>Eliminar</span>
+                    </div>
+                  }
+                >
+                  <section className="flex flex-col items-center justify-around bg-white w-full min-h-full p-4 gap-1 text-center ">
+                    <h2 className="text-2xl font-bold">
+                      ¿Estás seguro de que quieres enviarlo a la papelera de reciclaje?
+                    </h2>
+                    <article className="grid grid-rows-[1fr_auto] rounded-xl overflow-hidden shadow-lg bg-cream-light w-3/5 h-auto">
+                      <div className="aspect-square">
+                        <Image
+                          className="w-full h-full object-cover bg-white"
+                          src={animal.images[0].imgUrl}
+                          alt={animal.images[0].imgAlt}
+                          width={300}
+                          height={300}
+                        />
+                      </div>
+                      <div className="flex flex-col items-center justify-between gap-1 p-2">
+                        <span className="uppercase text-2xl text-center font-extrabold">
+                          Nombre: {animal.name}
+                        </span>
+                        <span className="uppercase text-2xl text-center font-extrabold">
+                          Id :{animal.id}
+                        </span>
+                        <button
+                          onClick={() => handleDelete(animal.id)}
+                          className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </article>
+                  </section>
+                </Modal>
+              </section>
+            </section>
+          </>
         )}
+        <section className="flex flex-col items-center  bg-cream-light w-full  p-4 gap-1 text-center ">
+          <h4 className="font-extrabold text-4xl sm:text-7xl  text-green-dark">Linea del tiempo</h4>
+          <p className="text-green-dark text-md font-bold ">
+            Este animal ha tenido los siguientes estados a lo largo del tiempo:
+          </p>
+          <ul className="flex flex-col gap-5 list-disc p-2 text-green-dark max-w-2xl">
+            {allAnimalTransactions.map((transaction, index) => {
+              return (
+                <TransactionCard key={`${index}-${transaction.date}`} transaction={transaction} />
+              );
+            })}
+          </ul>
+        </section>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteIndex !== null}
+        title="Eliminar nota"
+        message="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        onConfirm={async () => {
+          if (confirmDeleteIndex !== null) {
+            await handleNoteDelete(confirmDeleteIndex);
+          }
+        }}
+        onCancel={() => setConfirmDeleteIndex(null)}
+      />
     </ProtectedRoute>
   );
 }
