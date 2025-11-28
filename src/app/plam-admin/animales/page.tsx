@@ -350,7 +350,7 @@ function AnimalsPageContent() {
             className="w-full grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4"
           >
             {sortedAnimals.map((animal) => (
-              <Card animal={animal} href={`/plam-admin/animales/${animal.id}`} />
+              <Card adminView animal={animal} href={`/plam-admin/animales/${animal.id}`} />
             ))}
           </div>
         )}

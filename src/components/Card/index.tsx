@@ -31,9 +31,11 @@ import { Animal } from '@/types';
 export default function Card({
   animal,
   href,
+  adminView,
 }: {
   animal: Animal;
   href?: string;
+  adminView?: boolean;
 }): React.ReactElement {
   const { id, name, gender, lifeStage, images } = animal;
   const img = images[0] ?? {
@@ -42,7 +44,7 @@ export default function Card({
   };
 
   return (
-    <article className="grid grid-rows-[1.8fr_auto] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
+    <article className="relative grid grid-rows-[1.8fr_auto] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
       <Link href={href || `/adopta/${id}`} className="block w-full h-full">
         <div className="aspect-square">
           <ViewTransition name={`animal-${id}`}>
@@ -60,6 +62,20 @@ export default function Card({
           <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
           <p className="text-center">{`${gender} | ${lifeStage} `}</p>
         </div>
+        {adminView && (
+          <div className="flex flex-col gap-1 absolute top-2 left-2">
+            {!animal.isVisible && (
+              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
+                No se esta mostrando
+              </span>
+            )}
+            {!animal.isAvalible && (
+              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
+                No esta disponible
+              </span>
+            )}
+          </div>
+        )}
       </Link>
     </article>
   );
