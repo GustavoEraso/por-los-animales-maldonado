@@ -26,6 +26,7 @@ const TRANSACTION_PARSE: Record<string, string> = {
   supply: 'Suministro',
   followup: 'Seguimiento',
   note: 'Nota',
+  deceased: 'Fallecimiento',
   other: 'Otro',
 };
 

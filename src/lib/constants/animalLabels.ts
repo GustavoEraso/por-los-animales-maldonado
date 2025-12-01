@@ -41,6 +41,7 @@ export const eventLabels: Record<string, string> = {
   emergency: 'Emergencia',
   supply: 'Suministro',
   followup: 'Seguimiento',
+  deceased: 'Fallecimiento',
   other: 'Otro',
 };
 

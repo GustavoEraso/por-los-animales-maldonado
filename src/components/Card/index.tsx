@@ -37,15 +37,22 @@ export default function Card({
   href?: string;
   adminView?: boolean;
 }): React.ReactElement {
-  const { id, name, gender, lifeStage, images } = animal;
+  const { id, name, gender, lifeStage, images, status } = animal;
   const img = images[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
   };
 
+  const isDeceased = status.toLowerCase() === 'fallecido';
+
   return (
-    <article className="relative grid grid-rows-[1.8fr_auto] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light">
-      <Link href={href || `/adopta/${id}`} className="block w-full h-full">
+    <article
+      className={` relative grid grid-rows-[1.8fr_auto] rounded-xl overflow-hidden hover:scale-105 shadow bg-cream-light`}
+    >
+      <Link
+        href={href || `/adopta/${id}`}
+        className={` ${isDeceased ? 'grayscale' : ''} block w-full h-full`}
+      >
         <div className="aspect-square">
           <ViewTransition name={`animal-${id}`}>
             <Image
@@ -60,7 +67,7 @@ export default function Card({
 
         <div className="flex flex-col items-center gap-1 p-2">
           <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
-          <p className="text-center">{`${gender} | ${lifeStage} `}</p>
+          {status != 'fallecido' && <p className="text-center">{`${gender} | ${lifeStage} `}</p>}
         </div>
         {adminView && (
           <div className="flex flex-col gap-1 absolute top-2 left-2">
@@ -77,6 +84,11 @@ export default function Card({
           </div>
         )}
       </Link>
+      {status === 'fallecido' && (
+        <p className=" absolute top-2 left-2 text-center bg-red-600 text-white px-2 py-1 rounded-lg">
+          Fallecido{' '}
+        </p>
+      )}
     </article>
   );
 }

@@ -76,6 +76,7 @@ export default function AnimalPage() {
       | 'emergency'
       | 'supply'
       | 'followup'
+      | 'deceased'
       | 'other';
     note: string;
     cost: string;
@@ -466,6 +467,9 @@ export default function AnimalPage() {
     const notePrefix = `[${eventLabels[eventData.eventType]}] - `;
     const costValue = eventData.cost.trim() ? parseFloat(eventData.cost) : undefined;
 
+    // Check if this is a deceased event
+    const isDeceased = eventData.eventType === 'deceased';
+
     // If vaccination, add to vaccinations array
     const isVaccination = eventData.eventType === 'vaccination';
     const newVaccination =
@@ -496,6 +500,16 @@ export default function AnimalPage() {
       }),
     };
 
+    // Update animal status if deceased
+    const updatedAnimal: Animal = isDeceased
+      ? {
+          ...animal,
+          status: 'fallecido',
+          isAvalible: false,
+          isVisible: false,
+        }
+      : animal;
+
     const newTransactionData: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
@@ -520,6 +534,13 @@ export default function AnimalPage() {
             totalCost: currentTotalCost,
           },
         }),
+        ...(isDeceased && {
+          before: {
+            status: animal.status,
+            isVisible: animal.isVisible,
+            isAvalible: animal.isAvalible,
+          },
+        }),
         after: {
           ...(shouldAddNote && {
             notes: [notePrefix + eventData.note],
@@ -533,6 +554,11 @@ export default function AnimalPage() {
           ...(costValue && {
             totalCost: newTotalCost,
           }),
+          ...(isDeceased && {
+            status: 'fallecido',
+            isVisible: false,
+            isAvalible: false,
+          }),
         },
       },
     };
@@ -540,6 +566,9 @@ export default function AnimalPage() {
     // Optimistic UI
     setPrivateInfo(updatedPrivateInfo);
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+    if (isDeceased) {
+      setAnimal(updatedAnimal);
+    }
 
     try {
       await handlePromiseToast(
@@ -553,6 +582,15 @@ export default function AnimalPage() {
             data: newTransactionData,
             currentCollection: 'animalTransactions',
           }),
+          ...(isDeceased
+            ? [
+                postFirestoreData<Animal>({
+                  data: updatedAnimal,
+                  currentCollection: 'animals',
+                  id: animal.id,
+                }),
+              ]
+            : []),
         ]),
         {
           messages: {
@@ -585,6 +623,9 @@ export default function AnimalPage() {
       // Revert optimistic updates
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+      if (isDeceased) {
+        setAnimal(animal);
+      }
     }
   };
 
@@ -1564,6 +1605,7 @@ export default function AnimalPage() {
                                 | 'emergency'
                                 | 'supply'
                                 | 'followup'
+                                | 'deceased'
                                 | 'other',
                             }))
                           }
@@ -1574,6 +1616,7 @@ export default function AnimalPage() {
                           <option value="emergency">Emergencia</option>
                           <option value="supply">Suministro alimento insumos etc</option>
                           <option value="followup">Seguimiento</option>
+                          <option value="deceased">Fallecimiento</option>
                           <option value="other">Otro</option>
                         </select>
                       </div>

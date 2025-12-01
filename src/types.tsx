@@ -25,7 +25,7 @@ export interface Animal {
   isSterilized: YesNoUnknown;
   isAvalible: boolean;
   isVisible: boolean;
-  status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' | 'hogar';
+  status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' | 'hogar' | 'fallecido';
   waitingSince: number;
   isDeleted?: boolean;
   hardDeleted?: boolean;
@@ -78,6 +78,7 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     | 'emergency'
     | 'supply'
     | 'followup'
+    | 'deceased'
     | 'note'
     | 'other';
   id: string;
