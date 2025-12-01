@@ -1253,6 +1253,7 @@ export default function AnimalPage() {
     name,
     description,
     isAvalible,
+    isVisible,
     images,
     gender,
     aproxBirthDate,
@@ -1262,6 +1263,7 @@ export default function AnimalPage() {
     waitingSince,
     compatibility,
     isSterilized,
+    isDeleted,
   } = animal;
   const {
     contactName,
@@ -1274,6 +1276,12 @@ export default function AnimalPage() {
   } = privateInfo;
   const img =
     images?.length > 0 ? images : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible' }];
+
+  // Derived state: check if case is closed (adopted or deceased)
+  const isCaseClosed = status === 'adoptado' || status === 'fallecido';
+  const isDeceased = status === 'fallecido';
+  const isAdopted = status === 'adoptado';
+
   if (isLoading) {
     return <Loader />;
   }
@@ -1294,8 +1302,13 @@ export default function AnimalPage() {
               />
               <ul className="list-disc pl-4 text-green-dark">
                 <li className="text-xl font-semibold">
-                  Estado:{' '}
-                  <span className="font-normal">{`${isAvalible ? 'Disponible' : 'De momento no se puede adoptar'}`}</span>
+                  Estado: <span className="font-normal">{status}</span>
+                </li>
+                <li className="text-xl font-semibold">
+                  Disponible: <span className="font-normal">{isAvalible ? 'Sí' : 'No'}</span>
+                </li>
+                <li className="text-xl font-semibold">
+                  Se muestra: <span className="font-normal">{isVisible ? 'Sí' : 'No'}</span>
                 </li>
                 <li className="text-xl font-semibold">
                   Género: <span className="font-normal">{gender}</span>
@@ -1406,9 +1419,10 @@ export default function AnimalPage() {
                 </li>
               ))}
             <li className="text-xl font-semibold">
-              {!notes || notes.length === 0 ? (
-                <p className="font-normal">No hay notas disponibles.</p>
-              ) : (
+              {!notes ||
+                (notes.length === 0 && <p className="font-normal">No hay notas disponibles.</p>)}
+
+              {notes && notes.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <h4>notas:</h4>
                   {Array.isArray(notes) &&
@@ -1495,7 +1509,7 @@ export default function AnimalPage() {
           </ul>
         </section>
 
-        {animal.isDeleted ? (
+        {isDeleted && (
           <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
             <Modal
               buttonStyles="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300"
@@ -1566,7 +1580,9 @@ export default function AnimalPage() {
               </section>
             </Modal>
           </section>
-        ) : (
+        )}
+
+        {!isDeleted && (
           <>
             <section className="flex flex-col  gap-2 px-9 py-4 w-full max-w-7xl items-center justify-center">
               <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
@@ -1610,13 +1626,15 @@ export default function AnimalPage() {
                             }))
                           }
                         >
-                          <option value="medical">Médico</option>
-                          <option value="vaccination">Vacunación</option>
-                          <option value="sterilization">Esterilización</option>
-                          <option value="emergency">Emergencia</option>
-                          <option value="supply">Suministro alimento insumos etc</option>
-                          <option value="followup">Seguimiento</option>
-                          <option value="deceased">Fallecimiento</option>
+                          {!isDeceased && <option value="medical">Médico</option>}
+                          {!isDeceased && <option value="vaccination">Vacunación</option>}
+                          {!isDeceased && <option value="sterilization">Esterilización</option>}
+                          {!isDeceased && <option value="emergency">Emergencia</option>}
+                          {!isDeceased && (
+                            <option value="supply">Suministro alimento insumos etc</option>
+                          )}
+                          {!isDeceased && <option value="followup">Seguimiento</option>}
+                          {!isDeceased && <option value="deceased">Fallecimiento</option>}
                           <option value="other">Otro</option>
                         </select>
                       </div>
@@ -1708,146 +1726,148 @@ export default function AnimalPage() {
                     </div>
                   </section>
                 </Modal>
-                <Modal
-                  buttonStyles="bg-purple-600 text-white text-3xl px-4 py-2 rounded hover:bg-purple-700 transition duration-300"
-                  buttonText={
-                    <div className="flex flex-row gap-2 justify-center items-center">
-                      <SwapIcon size={24} />
-                      <span>Cambiar Tránsito</span>
-                    </div>
-                  }
-                  isOpen={transitChangeModalOpen}
-                  setIsOpen={setTransitChangeModalOpen}
-                >
-                  <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
-                    <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
-                      Cambiar Tránsito
-                    </h2>
-
-                    <div className="w-full max-w-2xl space-y-4">
-                      {/* Contact Name */}
-                      <div>
-                        <label className="block text-green-dark font-semibold mb-2">
-                          Nombre del Nuevo Transitorio *
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
-                          placeholder="Nombre completo"
-                          value={transitChangeData.contactName}
-                          onChange={(e) =>
-                            setTransitChangeData((prev) => ({
-                              ...prev,
-                              contactName: e.target.value,
-                            }))
-                          }
-                        />
+                {!isCaseClosed && (
+                  <Modal
+                    buttonStyles="bg-purple-600 text-white text-3xl px-4 py-2 rounded hover:bg-purple-700 transition duration-300"
+                    buttonText={
+                      <div className="flex flex-row gap-2 justify-center items-center">
+                        <SwapIcon size={24} />
+                        <span>Cambiar Tránsito</span>
                       </div>
+                    }
+                    isOpen={transitChangeModalOpen}
+                    setIsOpen={setTransitChangeModalOpen}
+                  >
+                    <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
+                      <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+                        Cambiar Tránsito
+                      </h2>
 
-                      {/* Contacts */}
-                      <div>
-                        <label className="block text-green-dark font-semibold mb-2">
-                          Contactos *
-                        </label>
-                        {transitChangeData.contacts.map((contact, index) => (
-                          <div key={index} className="flex gap-2 mb-2">
-                            <select
-                              className="p-2 border-2 border-green-dark bg-white rounded-lg"
-                              value={contact.type}
-                              onChange={(e) => {
-                                const newContacts = [...transitChangeData.contacts];
-                                newContacts[index].type = e.target.value as
-                                  | 'celular'
-                                  | 'email'
-                                  | 'other';
-                                setTransitChangeData((prev) => ({
-                                  ...prev,
-                                  contacts: newContacts,
-                                }));
-                              }}
-                            >
-                              <option value="celular">Celular</option>
-                              <option value="email">Email</option>
-                              <option value="other">Otro</option>
-                            </select>
-                            <input
-                              type="text"
-                              className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
-                              placeholder="Valor del contacto"
-                              value={contact.value}
-                              onChange={(e) => {
-                                const newContacts = [...transitChangeData.contacts];
-                                newContacts[index].value = e.target.value;
-                                setTransitChangeData((prev) => ({
-                                  ...prev,
-                                  contacts: newContacts,
-                                }));
-                              }}
-                            />
-                            {transitChangeData.contacts.length > 1 && (
-                              <button
-                                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
-                                onClick={() => {
-                                  const newContacts = transitChangeData.contacts.filter(
-                                    (_, i) => i !== index
-                                  );
+                      <div className="w-full max-w-2xl space-y-4">
+                        {/* Contact Name */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nombre del Nuevo Transitorio *
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                            placeholder="Nombre completo"
+                            value={transitChangeData.contactName}
+                            onChange={(e) =>
+                              setTransitChangeData((prev) => ({
+                                ...prev,
+                                contactName: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+
+                        {/* Contacts */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Contactos *
+                          </label>
+                          {transitChangeData.contacts.map((contact, index) => (
+                            <div key={index} className="flex gap-2 mb-2">
+                              <select
+                                className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                                value={contact.type}
+                                onChange={(e) => {
+                                  const newContacts = [...transitChangeData.contacts];
+                                  newContacts[index].type = e.target.value as
+                                    | 'celular'
+                                    | 'email'
+                                    | 'other';
                                   setTransitChangeData((prev) => ({
                                     ...prev,
                                     contacts: newContacts,
                                   }));
                                 }}
                               >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                                <option value="celular">Celular</option>
+                                <option value="email">Email</option>
+                                <option value="other">Otro</option>
+                              </select>
+                              <input
+                                type="text"
+                                className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                                placeholder="Valor del contacto"
+                                value={contact.value}
+                                onChange={(e) => {
+                                  const newContacts = [...transitChangeData.contacts];
+                                  newContacts[index].value = e.target.value;
+                                  setTransitChangeData((prev) => ({
+                                    ...prev,
+                                    contacts: newContacts,
+                                  }));
+                                }}
+                              />
+                              {transitChangeData.contacts.length > 1 && (
+                                <button
+                                  className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                                  onClick={() => {
+                                    const newContacts = transitChangeData.contacts.filter(
+                                      (_, i) => i !== index
+                                    );
+                                    setTransitChangeData((prev) => ({
+                                      ...prev,
+                                      contacts: newContacts,
+                                    }));
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                            onClick={() => {
+                              setTransitChangeData((prev) => ({
+                                ...prev,
+                                contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                              }));
+                            }}
+                          >
+                            + Agregar Contacto
+                          </button>
+                        </div>
+
+                        {/* Note */}
+                        <div>
+                          <label className="block text-green-dark font-semibold mb-2">
+                            Nota del Cambio *
+                          </label>
+                          <textarea
+                            className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                            placeholder="Escribe información sobre el cambio de tránsito..."
+                            value={transitChangeData.note}
+                            onChange={(e) =>
+                              setTransitChangeData((prev) => ({ ...prev, note: e.target.value }))
+                            }
+                          />
+                        </div>
+
                         <button
-                          className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
-                          onClick={() => {
-                            setTransitChangeData((prev) => ({
-                              ...prev,
-                              contacts: [...prev.contacts, { type: 'celular', value: '' }],
-                            }));
+                          className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={
+                            !transitChangeData.contactName.trim() ||
+                            !transitChangeData.note.trim() ||
+                            transitChangeData.contacts.every((c) => !c.value.trim())
+                          }
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleTransitChange();
                           }}
                         >
-                          + Agregar Contacto
+                          Registrar Cambio
                         </button>
                       </div>
-
-                      {/* Note */}
-                      <div>
-                        <label className="block text-green-dark font-semibold mb-2">
-                          Nota del Cambio *
-                        </label>
-                        <textarea
-                          className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
-                          placeholder="Escribe información sobre el cambio de tránsito..."
-                          value={transitChangeData.note}
-                          onChange={(e) =>
-                            setTransitChangeData((prev) => ({ ...prev, note: e.target.value }))
-                          }
-                        />
-                      </div>
-
-                      <button
-                        className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={
-                          !transitChangeData.contactName.trim() ||
-                          !transitChangeData.note.trim() ||
-                          transitChangeData.contacts.every((c) => !c.value.trim())
-                        }
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleTransitChange();
-                        }}
-                      >
-                        Registrar Cambio
-                      </button>
-                    </div>
-                  </section>
-                </Modal>
-                {animal.status === 'adoptado' ? (
+                    </section>
+                  </Modal>
+                )}
+                {isAdopted && (
                   <Modal
                     buttonStyles="bg-amber-600 text-white text-3xl px-4 py-2 rounded hover:bg-amber-700 transition duration-300"
                     buttonText={
@@ -1997,7 +2017,8 @@ export default function AnimalPage() {
                       </div>
                     </section>
                   </Modal>
-                ) : (
+                )}
+                {!isCaseClosed && (
                   <Modal
                     buttonStyles="bg-green-600 text-white text-3xl px-4 py-2 rounded hover:bg-green-700 transition duration-300"
                     buttonText={
@@ -2129,37 +2150,41 @@ export default function AnimalPage() {
               </section>
               <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
                 {/* Visible Toggle */}
-                <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
-                  <EyeIcon size={20} className="text-green-dark" />
-                  <span className="text-sm font-semibold text-green-dark">Visible:</span>
-                  <label className="flex items-center cursor-pointer" title="Cambiar visibilidad">
-                    <input
-                      type="checkbox"
-                      onChange={() => handleVisibleToggle(!animal.isVisible)}
-                      className="sr-only peer"
-                      checked={animal.isVisible}
-                    />
-                    <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
-                  </label>
-                </div>
+                {!isCaseClosed && (
+                  <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
+                    <EyeIcon size={20} className="text-green-dark" />
+                    <span className="text-sm font-semibold text-green-dark">Visible:</span>
+                    <label className="flex items-center cursor-pointer" title="Cambiar visibilidad">
+                      <input
+                        type="checkbox"
+                        onChange={() => handleVisibleToggle(!animal.isVisible)}
+                        className="sr-only peer"
+                        checked={animal.isVisible}
+                      />
+                      <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                    </label>
+                  </div>
+                )}
 
                 {/* Avalible Toggle */}
-                <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
-                  <CheckIcon size={20} className="text-green-dark" />
-                  <span className="text-sm font-semibold text-green-dark">Disponible:</span>
-                  <label
-                    className="flex items-center cursor-pointer"
-                    title="Cambiar disponibilidad"
-                  >
-                    <input
-                      type="checkbox"
-                      onChange={() => handleAvalibleToggle(!animal.isAvalible)}
-                      className="sr-only peer"
-                      checked={animal.isAvalible}
-                    />
-                    <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
-                  </label>
-                </div>
+                {!isCaseClosed && (
+                  <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
+                    <CheckIcon size={20} className="text-green-dark" />
+                    <span className="text-sm font-semibold text-green-dark">Disponible:</span>
+                    <label
+                      className="flex items-center cursor-pointer"
+                      title="Cambiar disponibilidad"
+                    >
+                      <input
+                        type="checkbox"
+                        onChange={() => handleAvalibleToggle(!animal.isAvalible)}
+                        className="sr-only peer"
+                        checked={animal.isAvalible}
+                      />
+                      <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                    </label>
+                  </div>
+                )}
 
                 <Link
                   href={`/plam-admin/animales/editar/${animal.id}`}

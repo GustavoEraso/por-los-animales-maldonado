@@ -7,6 +7,7 @@ export const contactLabelMap: Record<string, string> = {
   calle: 'Contacto',
   protectora: 'Contacto',
   hogar: 'Con su dueño',
+  fallecido: 'Ultimo contacto',
 };
 
 /**
