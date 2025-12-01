@@ -471,7 +471,7 @@ function AnimalsPageContent() {
 
         <Link
           className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
-          href="/plam-admin/animales/adoptados"
+          href="/plam-admin/animales/casos-cerrados"
         >
           <HeartIcon size={20} title="Ver animales adoptados" color="white" />
           Casos Cerrados
