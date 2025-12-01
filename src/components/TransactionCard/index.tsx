@@ -113,7 +113,7 @@ export default function TransactionCard({
               alt="animal image"
               width={64}
               height={64}
-              className="w-full object-contain"
+              className="w-full aspect-square object-cover"
               onError={(e) => {
                 const img = e.currentTarget as HTMLImageElement;
                 // Prevent infinite loop if fallback also fails
