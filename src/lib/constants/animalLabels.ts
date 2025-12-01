@@ -47,6 +47,27 @@ export const eventLabels: Record<string, string> = {
 };
 
 /**
+ * Transaction type labels mapping for display
+ */
+export const transactionLabels: Record<string, string> = {
+  create: 'Creación',
+  update: 'Actualización',
+  delete: 'Eliminación',
+  transit_change: 'Cambio de tránsito',
+  adoption: 'Adopción',
+  return: 'Devolución',
+  medical: 'Evento médico',
+  vaccination: 'Vacunación',
+  sterilization: 'Esterilización',
+  emergency: 'Emergencia',
+  supply: 'Suministro',
+  followup: 'Seguimiento',
+  note: 'Nota',
+  deceased: 'Fallecimiento',
+  other: 'Otro',
+};
+
+/**
  * Get the translated label for a rescue reason
  * @param reason - The rescue reason key
  * @returns The translated label or the original reason if not found
@@ -54,4 +75,14 @@ export const eventLabels: Record<string, string> = {
 export function getRescueReasonLabel(reason?: string): string {
   if (!reason) return '';
   return RESCUE_REASON_PARSE[reason] || reason;
+}
+
+/**
+ * Get the translated label for a transaction type
+ * @param type - The transaction type key
+ * @returns The translated label or the original type if not found
+ */
+export function getTransactionLabel(type?: string): string {
+  if (!type) return 'Sin tipo';
+  return transactionLabels[type] || type;
 }

@@ -1,44 +1,13 @@
 import { AnimalTransactionType, beforeAfterType } from '@/types';
 import Image from 'next/image';
 import { formatedDateOnly } from '@/lib/dateUtils';
-import { getRescueReasonLabel } from '@/lib/constants/animalLabels';
+import { getRescueReasonLabel, getTransactionLabel } from '@/lib/constants/animalLabels';
 import { useRef } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
-
-/**
- * Transaction type labels mapping for display
- */
-const TRANSACTION_PARSE: Record<string, string> = {
-  create: 'Creación',
-  update: 'Actualización',
-  delete: 'Eliminación',
-  transit_change: 'Cambio de tránsito',
-  adoption: 'Adopción',
-  return: 'Devolución',
-  medical: 'Evento médico',
-  vaccination: 'Vacunación',
-  sterilization: 'Esterilización',
-  emergency: 'Emergencia',
-  supply: 'Suministro',
-  followup: 'Seguimiento',
-  note: 'Nota',
-  deceased: 'Fallecimiento',
-  other: 'Otro',
-};
-
-/**
- * Get the translated label for a transaction type
- * @param type - The transaction type key
- * @returns The translated label or the original type if not found
- */
-function getTransactionLabel(type?: string) {
-  if (!type) return 'Sin tipo';
-  return TRANSACTION_PARSE[type] || type;
-}
 
 /**
  * Format a timestamp into a localized date string with time
