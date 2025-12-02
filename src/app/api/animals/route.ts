@@ -81,12 +81,12 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  * @body {string | string[]} [filters.status] - Filter by status: "calle" | "protectora" | "transitorio" | "adoptado" (supports array for OR filtering)
  * @body {string | string[]} [filters.size] - Filter by size: "pequeño" | "mediano" | "grande" | "no_se_sabe" (supports array for OR filtering)
  * @body {string | string[]} [filters.lifeStage] - Filter by life stage: "cachorro" | "joven" | "adulto" (supports array for OR filtering)
- * @body {boolean} [filters.isAvalible] - Filter by availability status
+ * @body {boolean} [filters.isAvailable] - Filter by availability status
  * @body {boolean} [filters.isVisible] - Filter by visibility status
  * @body {boolean} [filters.isDeleted] - Filter by deleted status (automatically excludes deleted animals)
  * @body {string} [filters.nameIncludes] - Search animals whose name contains this text (accent-insensitive)
  * @body {number} [filters.minWaitingSince] - Filter animals waiting since at least this timestamp
- * @body {string} [filters.sortBy] - Field to sort by: "name" | "waitingSince" | "aproxBirthDate" | "isAvalible" | "gender" | "species" | "size" | "lifeStage"
+ * @body {string} [filters.sortBy] - Field to sort by: "name" | "waitingSince" | "aproxBirthDate" | "isAvailable" | "gender" | "species" | "size" | "lifeStage"
  * @body {string} [filters.sortOrder="asc"] - Sort order: "asc" | "desc"
  * @body {number} [filters.page=1] - Page number for pagination (1-indexed)
  * @body {number} [filters.limit=12] - Number of results per page
@@ -102,7 +102,7 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  *   headers: { 'Content-Type': 'application/json' },
  *   body: JSON.stringify({
  *     species: 'perro',
- *     isAvalible: true,
+ *     isAvailable: true,
  *     sortBy: 'name',
  *     sortOrder: 'asc'
  *   })
@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
         'name',
         'waitingSince',
         'aproxBirthDate',
-        'isAvalible',
+        'isAvailable',
         'isVisible',
         'gender',
         'species',

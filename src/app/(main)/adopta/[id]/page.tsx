@@ -32,7 +32,7 @@ export default async function AnimalPage({ params }: PageProps) {
   const {
     name,
     description,
-    isAvalible,
+    isAvailable,
     images,
     gender,
     aproxBirthDate,
@@ -73,7 +73,7 @@ export default async function AnimalPage({ params }: PageProps) {
             <ul className="list-disc pl-4 text-green-dark">
               <li className="text-xl font-semibold">
                 Estado:{' '}
-                <span className="font-normal">{`${isAvalible ? 'Disponible' : 'De momento no se puede adoptar'}`}</span>
+                <span className="font-normal">{`${isAvailable ? 'Disponible' : 'De momento no se puede adoptar'}`}</span>
               </li>
               <li className="text-xl font-semibold">
                 Género: <span className="font-normal">{gender}</span>
@@ -117,35 +117,44 @@ export default async function AnimalPage({ params }: PageProps) {
                 </ul>
               </li>
             </ul>
-            <Modal buttonText="Postularme para adopción">
-              <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 gap-1 text-center ">
-                <h4 className="font-extrabold text-2xl  text-green-dark">
-                  Antes de continuar, por favor lee con atención:
-                </h4>
-                <p className=" text-green-dark text-md font-bold ">
-                  Adoptar una mascota es un compromiso para toda la vida. No se trata de una
-                  decisión impulsiva, sino de una responsabilidad que requiere tiempo, dedicación,
-                  amor y recursos.
-                </p>
+            {isAvailable && (
+              <Modal buttonText="Postularme para adopción">
+                <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 gap-1 text-center ">
+                  <h4 className="font-extrabold text-2xl  text-green-dark">
+                    Antes de continuar, por favor lee con atención:
+                  </h4>
+                  <p className=" text-green-dark text-md font-bold ">
+                    Adoptar una mascota es un compromiso para toda la vida. No se trata de una
+                    decisión impulsiva, sino de una responsabilidad que requiere tiempo, dedicación,
+                    amor y recursos.
+                  </p>
 
-                <p className=" text-green-dark text-md font-bold ">
-                  Si estás completamente seguro de que puedes ofrecerle un hogar responsable y
-                  amoroso, entonces te invitamos a continuar con el formulario.
-                </p>
-                <p className=" text-green-dark text-md font-bold ">
-                  Gracias por querer cambiar una vida. 🐾❤️
-                </p>
-                {/* <a href="https://docs.google.com/forms/d/1csJabjokYazcnd5CB4inEXJF27_m_9UjK854l1p_G3o/edit?ts=62f54023#" target="_blank" */}
-                <a
-                  href={buildFormUrl({ dogName: name, dogId: id })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
-                >
-                  Llenar formulario
-                </a>
-              </section>
-            </Modal>
+                  <p className=" text-green-dark text-md font-bold ">
+                    Si estás completamente seguro de que puedes ofrecerle un hogar responsable y
+                    amoroso, entonces te invitamos a continuar con el formulario.
+                  </p>
+                  <p className=" text-green-dark text-md font-bold ">
+                    Gracias por querer cambiar una vida. 🐾❤️
+                  </p>
+                  {/* <a href="https://docs.google.com/forms/d/1csJabjokYazcnd5CB4inEXJF27_m_9UjK854l1p_G3o/edit?ts=62f54023#" target="_blank" */}
+                  <a
+                    href={buildFormUrl({ dogName: name, dogId: id })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+                  >
+                    Llenar formulario
+                  </a>
+                </section>
+              </Modal>
+            )}
+
+            {!isAvailable && (
+              <div className="text-red-600 font-bold text-xl">
+                Actualmente {name} no está disponible para adopción. Si deseas más información,
+                contáctanos a través de nuestras redes sociales o correo electrónico.
+              </div>
+            )}
           </div>
           {/* Photo Carrousel */}
           <div className="w-full md:w-2/5 h-auto rounded-lg bg-amber-sunset">

@@ -361,7 +361,7 @@ export default function PlamAdmin() {
     const total = animalsInPeriod.length;
     const adopted = animalsInPeriod.filter((animal) => animal.status === 'adoptado').length;
     const available = animalsInPeriod.filter(
-      (animal) => animal.status !== 'adoptado' && animal.isAvalible
+      (animal) => animal.status !== 'adoptado' && animal.isAvailable
     ).length;
 
     return {

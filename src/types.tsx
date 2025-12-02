@@ -23,7 +23,8 @@ export interface Animal {
   size: 'pequeño' | 'mediano' | 'grande' | 'no_se_sabe';
   compatibility: CompatibilityType;
   isSterilized: YesNoUnknown;
-  isAvalible: boolean;
+  isAvalible?: boolean; // Note: Typo is intentional to match existing code
+  isAvailable?: boolean;
   isVisible: boolean;
   status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' | 'hogar' | 'fallecido';
   waitingSince: number;

@@ -109,7 +109,7 @@ export default function Compartir() {
     size: false,
     compatibility: true,
     isSterilized: false,
-    isAvalible: false,
+    isAvailable: false,
   };
 
   const [animalDataToShow, setAnimalDataToShow] =
@@ -441,8 +441,8 @@ export default function Compartir() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    defaultChecked={animalDataToShow.isAvalible}
-                    name="isAvalible"
+                    defaultChecked={animalDataToShow.isAvailable}
+                    name="isAvailable"
                     onChange={(e) => handleAnimalDataToShow(e)}
                   />
                   <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
@@ -602,10 +602,10 @@ export default function Compartir() {
                     {animalDataToShow.lifeStage && (
                       <li className="  capitalize"> {animal.lifeStage}</li>
                     )}
-                    {animalDataToShow.isAvalible && (
+                    {animalDataToShow.isAvailable && (
                       <li className="  text-balance  leading-none">
                         {' '}
-                        {animal.isAvalible ? 'Pronto para encontrar hogar' : 'En recuperación'}
+                        {animal.isAvailable ? 'Pronto para encontrar hogar' : 'En recuperación'}
                       </li>
                     )}
                     {animalDataToShow.isSterilized && (

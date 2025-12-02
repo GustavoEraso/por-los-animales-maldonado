@@ -116,13 +116,13 @@ export default function AnimalsPage() {
       const animal = sortedAnimals.find((animal) => animal.id === currentId);
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
-      const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvalible: false };
+      const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvailable: false };
       const newTransactionData: AnimalTransactionType = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: false,
         isVisible: false,
-        isAvalible: false,
+        isAvailable: false,
         id: currentId,
         name: animal.name,
         since: Date.now(),

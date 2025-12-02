@@ -146,7 +146,7 @@ export default function ClosedCasesPage() {
         ...animalToDelete,
         isDeleted: true,
         isVisible: false,
-        isAvalible: false,
+        isAvailable: false,
       };
 
       const newTransaction: AnimalTransactionType = {
@@ -157,7 +157,7 @@ export default function ClosedCasesPage() {
         modifiedBy: auth.currentUser?.email || '',
         isDeleted: true,
         isVisible: false,
-        isAvalible: false,
+        isAvailable: false,
       };
 
       const promises = Promise.all([

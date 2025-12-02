@@ -246,10 +246,17 @@ function ChangeList({
           Tamaño: <span className="font-normal">{list.size}</span>
         </li>
       )}
+      {/*Note: isAvalible is a typo (should be isAvailable), kept for backward compatibility with existing database records*/}
       {list.isAvalible !== undefined && (
         <li className="font-semibold">
           Estado:{' '}
           <span className="font-normal">{`${list.isAvalible ? 'Disponible' : 'No disponible'}`}</span>
+        </li>
+      )}
+      {list.isAvailable !== undefined && (
+        <li className="font-semibold">
+          Estado:{' '}
+          <span className="font-normal">{`${list.isAvailable ? 'Disponible' : 'No disponible'}`}</span>
         </li>
       )}
       {list.isVisible !== undefined && (

@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       authorized: true,
+      id: email,
       role: authorizedUser.role || 'user',
       name: authorizedUser.name || '',
     });

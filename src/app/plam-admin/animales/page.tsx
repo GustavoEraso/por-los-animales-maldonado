@@ -114,7 +114,7 @@ function AnimalsPageContent() {
           // Available filter
           if (estaDisponible) {
             const isAvailable = estaDisponible === 'si';
-            filteredData = filteredData.filter((animal) => animal.isAvalible === isAvailable);
+            filteredData = filteredData.filter((animal) => animal.isAvailable === isAvailable);
           }
 
           // Sterilized filter
@@ -403,8 +403,8 @@ function AnimalsPageContent() {
                   <th className="w-fit hidden sm:table-cell" scope="col">
                     <button
                       className=" py-3 px-2 md:px-4 lg:px-6 w-full text-start hover:bg-gray-300"
-                      onClick={() => sortAnimalBy({ reference: 'isAvalible' })}
-                    >{`VISIBLE ${renderDirection('isAvalible')}`}</button>
+                      onClick={() => sortAnimalBy({ reference: 'isAvailable' })}
+                    >{`VISIBLE ${renderDirection('isAvailable')}`}</button>
                   </th>
                   <th scope="col" className=" py-3">
                     <span className="sr-only">Ver Detalles</span>

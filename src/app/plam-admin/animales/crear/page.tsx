@@ -29,7 +29,7 @@ const initialAnimal: Animal = {
     kids: 'no_se',
   },
   isSterilized: 'no_se',
-  isAvalible: false,
+  isAvailable: false,
   isVisible: false,
   isDeleted: false,
   status: 'transitorio',
@@ -47,7 +47,7 @@ const initialPrivateInfo: PrivateInfoType = {
 const initialTransaction: AnimalTransactionType = {
   id: '',
   name: '',
-  isAvalible: false,
+  isAvailable: false,
   isVisible: false,
   isDeleted: false,
   status: 'transitorio',
@@ -98,7 +98,7 @@ export default function CreateAnimalForm() {
     { type: 'celular' | 'email' | 'other'; value: string | number }[]
   >([{ type: 'celular', value: '' }]);
 
-  const [isAvalible, setIsAvalible] = useState<boolean>(true);
+  const [isAvailable, setisAvailable] = useState<boolean>(true);
   const [isVisible, setIsVisible] = useState<boolean>(true);
 
   const [compatibility, setCompatibility] = useState<CompatibilityType>({
@@ -222,7 +222,7 @@ export default function CreateAnimalForm() {
         ...animal,
         id: id,
         images: images,
-        isAvalible: isAvalible,
+        isAvailable: isAvailable,
         isVisible: isVisible,
       };
       const newPrivateInfo: PrivateInfoType = {
@@ -253,7 +253,7 @@ export default function CreateAnimalForm() {
             aproxBirthDate: animal.aproxBirthDate,
             waitingSince: animal.waitingSince,
             status: animal.status,
-            isAvalible: isAvalible,
+            isAvailable: isAvailable,
             isVisible: isVisible,
             isDeleted: false,
             contactName: privateInfo.contactName,
@@ -647,9 +647,9 @@ export default function CreateAnimalForm() {
             <input
               type="checkbox"
               className="sr-only peer"
-              defaultChecked={animal.isAvalible}
-              name="isAvalible"
-              onChange={(e) => setIsAvalible(e.target.checked)}
+              defaultChecked={animal.isAvailable}
+              name="isAvailable"
+              onChange={(e) => setisAvailable(e.target.checked)}
             />
             <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cream-light   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
           </label>
@@ -658,7 +658,7 @@ export default function CreateAnimalForm() {
             <input
               type="checkbox"
               className="sr-only peer"
-              defaultChecked={animal.isAvalible}
+              defaultChecked={animal.isAvailable}
               name="isVisible"
               onChange={(e) => setIsVisible(e.target.checked)}
             />
