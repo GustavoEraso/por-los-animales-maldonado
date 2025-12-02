@@ -14,8 +14,9 @@ import {
 } from '@/lib/animalFilters';
 import Loader from '@/components/Loader';
 import { Modal } from '@/components/Modal';
-import Image from 'next/image';
-import SmartLink from '@/lib/SmartLink';
+import TransactionCard from '@/components/TransactionCard';
+import { getTransactionLabel } from '@/lib/constants/animalLabels';
+import Link from 'next/link';
 
 // Types for chart data
 type ChartDataState = {
@@ -93,9 +94,32 @@ export default function PlamAdmin() {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [transactions, setTransactions] = useState<AnimalTransactionType[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [searchController, setSearchController] = useState<boolean>(false);
 
-  // Month selector state
-  const [selectedMonths, setSelectedMonths] = useState<number>(6);
+  // Date filter refs - usando refs para evitar re-renders innecesarios
+  const getInitialStartDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 15);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+  };
+
+  const getInitialEndDate = () => {
+    const date = new Date();
+    date.setHours(23, 59, 59, 999);
+    return date.getTime();
+  };
+
+  const dateFilterRef = useRef<{ startDate: number; endDate: number }>({
+    startDate: getInitialStartDate(),
+    endDate: getInitialEndDate(),
+  });
+
+  // Temporary date filter for inputs (before applying)
+  const [tempDateFilter, setTempDateFilter] = useState<{ startDate: number; endDate: number }>({
+    startDate: getInitialStartDate(),
+    endDate: getInitialEndDate(),
+  });
 
   // Loading state with reducer
   const [loadingState, dispatchLoading] = useReducer(loadingReducer, initialLoadingState);
@@ -104,9 +128,9 @@ export default function PlamAdmin() {
   // Chart data state with reducer
   const [chartData, dispatchChartData] = useReducer(chartDataReducer, initialChartState);
 
-  // Function to regenerate chart data with new month selection
+  // Function to regenerate chart data with new date range
   const regenerateCharts = useCallback(
-    (months: number) => {
+    (startDate: number, endDate: number) => {
       if (animals.length === 0 || transactions.length === 0) {
         handleToast({
           type: 'warning',
@@ -115,6 +139,9 @@ export default function PlamAdmin() {
         });
         return;
       }
+
+      // Calculate months from date range for existing functions
+      const months = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24 * 30));
 
       const activeAnimalsData = generateActiveAnimalsChartData({
         animals,
@@ -128,14 +155,12 @@ export default function PlamAdmin() {
         months,
       });
 
-      // Now transactions by user also depends on months
       const transactionsByUserData = generateTransactionsByUserData({
         transactions,
         users,
-        months, // Add month filtering
+        months,
       });
 
-      // Status doesn't depend on months, so we keep it as-is
       dispatchChartData({
         type: 'SET_CHART_DATA',
         payload: {
@@ -149,20 +174,34 @@ export default function PlamAdmin() {
     [animals, transactions, users, chartData.status]
   );
 
-  // Handle month selection change
-  const handleMonthChange = (months: number) => {
-    setSelectedMonths(months);
-    regenerateCharts(months);
+  // Format timestamp to local date string for input
+  const formatToLocalDateString = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
-    // Show info toast about filter change
+  // Handle date filter change
+  const handleDateFilterChange = () => {
+    // Apply the temporary filter to the actual filter
+    dateFilterRef.current = tempDateFilter;
+    // Trigger transactions reload
+    setSearchController(!searchController);
+    regenerateCharts(tempDateFilter.startDate, tempDateFilter.endDate);
+
+    const days = Math.ceil(
+      (tempDateFilter.endDate - tempDateFilter.startDate) / (1000 * 60 * 60 * 24)
+    );
     handleToast({
       type: 'info',
       title: 'Filtro actualizado',
-      text: `Mostrando datos de los últimos ${months} ${months === 1 ? 'mes' : 'meses'}`,
+      text: `Mostrando datos de ${days} días`,
     });
   };
 
-  // Load real data from Firestore
+  // Load animals and users data from Firestore (only once)
   useEffect(() => {
     const loadData = async () => {
       dispatchLoading({ type: 'START_LOADING' });
@@ -170,45 +209,24 @@ export default function PlamAdmin() {
       // Create the promise for loading data
       const promises = Promise.all([
         getFirestoreData({ currentCollection: 'animals' }),
-        getFirestoreData({ currentCollection: 'animalTransactions' }),
         getFirestoreData({ currentCollection: 'authorizedEmails' }),
       ])
-        .then(([animalsData, transactionsData, usersData]) => {
+        .then(([animalsData, usersData]) => {
           const fetchedAnimals = animalsData as Animal[];
-          const fetchedTransactions = transactionsData as AnimalTransactionType[];
           const fetchedUsers = usersData as UserType[];
 
-          // Sort in-place to avoid creating new array
-          fetchedTransactions.sort((a, b) => b.date - a.date);
-
           setAnimals(fetchedAnimals);
-          setTransactions(fetchedTransactions);
           setUsers(fetchedUsers);
 
-          // Generate chart data using filter functions (pass data, don't fetch)
-          const activeAnimalsData = generateActiveAnimalsChartData({
-            animals: fetchedAnimals,
-            transactions: fetchedTransactions,
-            months: selectedMonths,
-          });
-          const transactionsByUserData = generateTransactionsByUserData({
-            transactions: fetchedTransactions,
-            users: fetchedUsers,
-            months: selectedMonths, // Add month filtering from the start
-          });
-          const animalsInOutData = generateAnimalsInOutData({
-            animals: fetchedAnimals,
-            transactions: fetchedTransactions,
-            months: selectedMonths,
-          });
+          // Generate status chart (doesn't depend on time)
           const statusData = generateAnimalStatusData({ animals: fetchedAnimals });
 
           dispatchChartData({
             type: 'SET_CHART_DATA',
             payload: {
-              activeAnimals: activeAnimalsData,
-              transactionsByUser: transactionsByUserData,
-              animalsInOut: animalsInOutData,
+              activeAnimals: [],
+              transactionsByUser: [],
+              animalsInOut: [],
               status: statusData,
             },
           });
@@ -247,11 +265,83 @@ export default function PlamAdmin() {
     loadData();
   }, []); // Solo cargar una vez al inicio
 
+  // Load transactions data with date filter
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (animals.length === 0 || users.length === 0) return;
+
+      try {
+        const transactionsData = await getFirestoreData({
+          currentCollection: 'animalTransactions',
+          orderBy: 'date',
+          direction: 'desc',
+          filter: [
+            ['date', '>=', dateFilterRef.current.startDate],
+            ['date', '<=', dateFilterRef.current.endDate],
+          ],
+        });
+
+        const fetchedTransactions = transactionsData as AnimalTransactionType[];
+        setTransactions(fetchedTransactions);
+
+        // Calculate days and interval
+        const totalDays = Math.ceil(
+          (dateFilterRef.current.endDate - dateFilterRef.current.startDate) / (1000 * 60 * 60 * 24)
+        );
+
+        // Determine interval based on days
+        let dayInterval = 30; // default: monthly
+        if (totalDays < 7) {
+          dayInterval = 1;
+        } else if (totalDays < 15) {
+          dayInterval = 2;
+        } else if (totalDays < 30) {
+          dayInterval = 5;
+        } else if (totalDays < 60) {
+          dayInterval = 10;
+        }
+
+        const activeAnimalsData = generateActiveAnimalsChartData({
+          animals,
+          transactions: fetchedTransactions,
+          startDate: dateFilterRef.current.startDate,
+          endDate: dateFilterRef.current.endDate,
+          dayInterval,
+        });
+        const transactionsByUserData = generateTransactionsByUserData({
+          transactions: fetchedTransactions,
+          users,
+          months: Math.ceil(totalDays / 30),
+        });
+        const animalsInOutData = generateAnimalsInOutData({
+          animals,
+          transactions: fetchedTransactions,
+          startDate: dateFilterRef.current.startDate,
+          endDate: dateFilterRef.current.endDate,
+          dayInterval,
+        });
+
+        dispatchChartData({
+          type: 'SET_CHART_DATA',
+          payload: {
+            activeAnimals: activeAnimalsData,
+            transactionsByUser: transactionsByUserData,
+            animalsInOut: animalsInOutData,
+            status: chartData.status,
+          },
+        });
+      } catch (error) {
+        console.error('Error loading transactions:', error);
+      }
+    };
+
+    loadTransactions();
+  }, [searchController, animals, users]); // Reload when filter changes or data is ready
+
   // Calculate summary statistics filtered by selected time period (memoized for performance)
   const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
-    // Calculate cutoff date based on selected months
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - selectedMonths);
+    // Use date filter range
+    const cutoffDate = new Date(dateFilterRef.current.startDate);
 
     // Filter animals based on transactions in the selected period
     const animalsInPeriod = animals.filter((animal) => {
@@ -279,27 +369,21 @@ export default function PlamAdmin() {
       adoptedAnimals: adopted,
       availableAnimals: available,
     };
-  }, [animals, transactions, selectedMonths]);
-
-  // Animación de los componentes al cargar
+  }, [animals, transactions, searchController]);
   useEffect(() => {
     if (isLoading) return;
 
     // Show welcome toast on first load
-    if (animals.length > 0) {
-      setTimeout(() => {
-        handleToast({
-          type: 'info',
-          title: '¡Bienvenido al Dashboard!',
-          text: 'Usa el selector de período para filtrar los datos temporales',
-        });
-      }, 1500); // Delay para que las animaciones terminen
-    }
+    const welcomeTimeout = setTimeout(() => {
+      handleToast({
+        type: 'info',
+        title: '¡Bienvenido al Dashboard!',
+        text: 'Usa el selector de período para filtrar los datos temporales',
+      });
+    }, 1500);
 
-    // Timeline para coordinar las animaciones
     const tl = gsap.timeline();
 
-    // Animar el selector primero
     if (selectorRef.current) {
       tl.fromTo(
         selectorRef.current,
@@ -318,7 +402,6 @@ export default function PlamAdmin() {
       );
     }
 
-    // Luego animar las cards con stagger
     if (cardsRef.current) {
       const cards = cardsRef.current.children;
       tl.fromTo(
@@ -336,10 +419,12 @@ export default function PlamAdmin() {
           stagger: 0.15,
           ease: 'back.out(1.7)',
         },
-        '-=0.3' // Empezar un poco antes de que termine la animación del selector
+        '-=0.3'
       );
     }
-  }, [isLoading, animals.length]);
+
+    return () => clearTimeout(welcomeTimeout);
+  }, [isLoading]);
 
   if (isLoading) {
     return <Loader />;
@@ -358,26 +443,41 @@ export default function PlamAdmin() {
           </div>
         )}
 
-        {/* Month Selector */}
+        {/* Date Filter */}
         <div ref={selectorRef} className="bg-white rounded-3xl p-6 shadow-lg mb-6 opacity-0">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h2 className="text-3xl font-bold text-gray-800">Período de Análisis</h2>
-            <div className="flex items-center gap-3">
-              <label htmlFor="months-selector" className="text-lg font-semibold  text-gray-700">
-                Últimos:
-              </label>
-              <select
-                id="months-selector"
-                value={selectedMonths}
-                onChange={(e) => handleMonthChange(Number(e.target.value))}
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="text-lg font-semibold text-gray-700">Desde:</label>
+              <input
+                type="date"
+                value={formatToLocalDateString(tempDateFilter.startDate)}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  const [year, month, day] = e.target.value.split('-').map(Number);
+                  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+                  setTempDateFilter((prev) => ({ ...prev, startDate: date.getTime() }));
+                }}
                 className="px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <label className="text-lg font-semibold text-gray-700">Hasta:</label>
+              <input
+                type="date"
+                value={formatToLocalDateString(tempDateFilter.endDate)}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  const [year, month, day] = e.target.value.split('-').map(Number);
+                  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+                  setTempDateFilter((prev) => ({ ...prev, endDate: date.getTime() }));
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <button
+                onClick={handleDateFilterChange}
+                className="px-4 py-2 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition font-semibold"
               >
-                <option value={1}>1 mes</option>
-                <option value={3}>3 meses</option>
-                <option value={6}>6 meses</option>
-                <option value={9}>9 meses</option>
-                <option value={12}>12 meses</option>
-              </select>
+                Aplicar
+              </button>
             </div>
           </div>
         </div>
@@ -387,9 +487,7 @@ export default function PlamAdmin() {
           <div className="bg-green-dark rounded-3xl p-6 pb-2 shadow-lg">
             <h3 className="text-lg  text-white mb-2">Total Animales</h3>
             <p className="text-7xl  text-white">{totalAnimals}</p>
-            <p className="text-sm text-cream-light mt-1">
-              Con actividad en últimos {selectedMonths} {selectedMonths === 1 ? 'mes' : 'meses'}
-            </p>
+            <p className="text-sm text-cream-light mt-1">En el período seleccionado</p>
           </div>
           <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
             <h3 className="text-lg  text-green-dark mb-2">Adoptados</h3>
@@ -408,9 +506,7 @@ export default function PlamAdmin() {
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Animales Activos por Mes
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                (Últimos {selectedMonths} meses)
-              </span>
+              <span className="text-sm font-normal text-gray-500 ml-2">(Período seleccionado)</span>
             </h2>
             {chartData.activeAnimals.length > 0 ? (
               <Chart type="line" data={chartData.activeAnimals} colors={['#dda15e']} />
@@ -438,9 +534,7 @@ export default function PlamAdmin() {
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Transacciones por Usuario
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                (Últimos {selectedMonths} meses)
-              </span>
+              <span className="text-sm font-normal text-gray-500 ml-2">(Período seleccionado)</span>
             </h2>
             {chartData.transactionsByUser.length > 0 ? (
               <Chart
@@ -456,15 +550,10 @@ export default function PlamAdmin() {
           </div>
 
           <div className="bg-white rounded-3xl p-6 shadow-lg row-span-2">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Ultimas transacciones
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                (Últimos {selectedMonths} meses)
-              </span>
-            </h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Ultimos eventos</h2>
             <section className="max-h-[800px] overflow-y-auto">
               {transactions.length > 0 ? (
-                transactions.map((tx, index) => {
+                transactions.slice(0, 5).map((tx) => {
                   const animal = animals.find((a) => a.id === tx.id);
                   const user = users.find((u) => u.id === tx.modifiedBy);
                   const keys = Object.keys(tx || {});
@@ -485,6 +574,9 @@ export default function PlamAdmin() {
                       <div className="w-full flex flex-col gap-2">
                         <div className="flex gap-2 items-center justify-between w-full">
                           <p className="font-semibold text-2xl text-gray-800">{animal?.name}</p>
+                          <p className="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl ">
+                            {getTransactionLabel(tx.transactionType)}
+                          </p>
                           <span className="font-normal text-sm text-amber-sunset text-center text-balance">
                             Modificado por {user?.name}
                           </span>
@@ -518,129 +610,7 @@ export default function PlamAdmin() {
                             <h2 className="text-2xl font-semibold p-2">
                               Detalles de la modificación
                             </h2>
-                            <div className="w-full flex items-center justify-center max-w-md">
-                              {animal?.images?.[0] && (
-                                <Image
-                                  src={animal?.images[0].imgUrl}
-                                  alt={animal?.name}
-                                  width={200}
-                                  height={100}
-                                  className="object-cover rounded-lg"
-                                />
-                              )}
-                            </div>
-                            <ul
-                              key={`${index}-${tx.date}`}
-                              className="text-xl text-start font-semibold flex flex-col gap- p-2  "
-                            >
-                              <li className="font-semibold">
-                                {' '}
-                                Fecha: <span className="font-normal">{date} hs</span>
-                              </li>
-                              {tx.modifiedBy !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Actualizado por:{' '}
-                                  <span className="font-normal">{tx.modifiedBy}</span>
-                                </li>
-                              )}
-                              {tx.name !== undefined && (
-                                <li className="font-semibold">
-                                  Nombre: <span className="font-normal">{tx.name}</span>
-                                </li>
-                              )}
-                              {tx.description !== undefined && (
-                                <li className="font-semibold">
-                                  Descripción: <span className="font-normal">{tx.description}</span>
-                                </li>
-                              )}
-                              {tx.gender !== undefined && (
-                                <li className="font-semibold">
-                                  Género: <span className="font-normal">{tx.gender}</span>
-                                </li>
-                              )}
-                              {tx.aproxBirthDate !== undefined && (
-                                <li className="font-semibold">
-                                  Fecha de nacimiento aproximada:{' '}
-                                  <span className="font-normal">{tx.aproxBirthDate}</span>
-                                </li>
-                              )}
-                              {tx.isSterilized !== undefined && (
-                                <li className="font-semibold">
-                                  Esterilizado:{' '}
-                                  <span className="font-normal">{`${tx.isSterilized ? 'Si' : 'No'}`}</span>
-                                </li>
-                              )}
-                              {tx.lifeStage !== undefined && (
-                                <li className="font-semibold">
-                                  Etapa de vida: <span className="font-normal">{tx.lifeStage}</span>
-                                </li>
-                              )}
-                              {tx.isAvalible !== undefined && (
-                                <li className="font-semibold">
-                                  Estado:{' '}
-                                  <span className="font-normal">{`${tx.isAvalible ? 'Disponible' : 'No disponible'}`}</span>
-                                </li>
-                              )}
-                              {tx.isVisible !== undefined && (
-                                <li className="font-semibold">
-                                  Mostrar:{' '}
-                                  <span className="font-normal">{`${tx.isVisible ? 'Mostrar' : 'Ocultar'}`}</span>
-                                </li>
-                              )}
-                              {tx.isDeleted !== undefined && (
-                                <li className="font-semibold">
-                                  Eliminado:{' '}
-                                  <span className="font-normal">{`${tx.isDeleted ? 'Si' : 'No'}`}</span>
-                                </li>
-                              )}
-                              {tx.status !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Situación actual: <span className="font-normal">{tx.status}</span>
-                                </li>
-                              )}
-                              {tx.size !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Tamaño: <span className="font-normal">{tx.size}</span>
-                                </li>
-                              )}
-                              {tx.species !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Especie: <span className="font-normal">{tx.species}</span>
-                                </li>
-                              )}
-                              {tx.contactName !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Contacto: <span className="font-normal">{tx.contactName}</span>
-                                </li>
-                              )}
-                              {tx.notes !== undefined && (
-                                <li className="font-semibold">
-                                  {' '}
-                                  Notas: <span className="font-normal">{tx.notes}</span>
-                                </li>
-                              )}
-                              {tx.contacts &&
-                                tx.contacts.map((contact, index) => (
-                                  <li
-                                    key={`${index}-${contact.value}`}
-                                    className="text-xl font-semibold capitalize"
-                                  >
-                                    {contact.type}:{' '}
-                                    <span className="font-normal">{contact.value}</span>
-                                  </li>
-                                ))}
-                            </ul>
-                            <SmartLink
-                              href={`/plam-admin/animales/${tx.id}`}
-                              className="mt-4 inline-block rounded bg-caramel-deep px-4 py-2 text-white hover:bg-green-forest transition"
-                            >
-                              Ver detalles
-                            </SmartLink>
+                            <TransactionCard transaction={tx} showImg />
                           </section>
                         </Modal>
                       </div>
@@ -653,6 +623,14 @@ export default function PlamAdmin() {
                 </div>
               )}
             </section>
+            <div className="flex items-center justify-center w-full mt-4">
+              <Link
+                href="/plam-admin/animales/linea-tiempo"
+                className="text-md px-3 py-2 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition"
+              >
+                Ver todos los eventos
+              </Link>
+            </div>
           </div>
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Estado de Animales</h2>
@@ -672,9 +650,7 @@ export default function PlamAdmin() {
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Nuevos Ingresos vs Adopciones
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                (Últimos {selectedMonths} meses)
-              </span>
+              <span className="text-sm font-normal text-gray-500 ml-2">(Período seleccionado)</span>
             </h2>
             {chartData.animalsInOut.length > 0 ? (
               <Chart type="line" data={chartData.animalsInOut} colors={['#bc6c25', '#606c38']} />

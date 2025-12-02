@@ -14,7 +14,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Card from '@/components/Card';
 import { EditIcon, EyeIcon, GridViewIcon, TableViewIcon, TrashIcon } from '@/components/Icons';
 
-export default function AnimalsPage() {
+export default function ClosedCasesPage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function AnimalsPage() {
     const fetchData = async () => {
       await getFirestoreData({
         currentCollection: 'animals',
-        filter: [['status', '==', 'adoptado']],
+        filter: [['status', 'in', ['adoptado', 'fallecido']]],
       })
         .then((data) => {
           setAnimalsToShow(data as Animal[]);
@@ -210,7 +210,7 @@ export default function AnimalsPage() {
       <section className="bg-gradient-to-tr from-cream-light to-amber-sunset w-full p-2 sm:px-6 md:px-10 lg:px-20 flex flex-col gap-2  items-center pb-28">
         {loading && <Loader />}
         <div className="w-full flex justify-between items-center px-4">
-          <h3 className="text-2xl font-bold underline">Animales Adoptados</h3>
+          <h3 className="text-2xl font-bold underline">Casos Cerrados</h3>
 
           {/* View Mode Toggle */}
           <div className="flex gap-2">

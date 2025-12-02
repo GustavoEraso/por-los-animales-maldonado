@@ -64,7 +64,7 @@ function AnimalsPageContent() {
       // Apply all filters client-side to avoid Firestore index issues
       await getFirestoreData({
         currentCollection: 'animals',
-        filter: [['status', 'not-in', ['adoptado']]], // Only basic filter to avoid index requirements
+        filter: [['status', 'not-in', ['adoptado', 'fallecido']]], // Only basic filter to avoid index requirements
       })
         .then((data) => {
           let filteredData = data as Animal[];
@@ -471,10 +471,10 @@ function AnimalsPageContent() {
 
         <Link
           className="bg-green-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
-          href="/plam-admin/animales/adoptados"
+          href="/plam-admin/animales/casos-cerrados"
         >
           <HeartIcon size={20} title="Ver animales adoptados" color="white" />
-          Ver Adoptados
+          Casos Cerrados
         </Link>
         <Link
           className="bg-red-600 text-white text-xl px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 flex items-center gap-2"
