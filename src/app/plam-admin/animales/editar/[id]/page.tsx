@@ -30,7 +30,7 @@ const initialAnimal: Animal = {
     kids: 'no_se',
   },
   isSterilized: 'no_se',
-  isAvalible: false,
+  isAvailable: false,
   isVisible: false,
   status: 'calle',
   waitingSince: Date.now(),
@@ -50,7 +50,7 @@ const initialPrivateInfo: PrivateInfoType = {
 const initialTransactionInfo: AnimalTransactionType = {
   id: '',
   name: '',
-  isAvalible: false,
+  isAvailable: false,
   isVisible: false,
   status: 'transitorio',
   since: Date.now(),

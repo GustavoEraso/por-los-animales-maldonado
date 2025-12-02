@@ -22,7 +22,7 @@ export type Filters = Partial<{
   aproxBirthDate: Animal['aproxBirthDate'];
   lifeStage: Animal['lifeStage'] | Animal['lifeStage'][];
   size: Animal['size'] | Animal['size'][];
-  isAvalible: Animal['isAvalible'];
+  isAvailable: Animal['isAvailable'];
   isVisible: Animal['isVisible'];
   isDeleted: Animal['isDeleted'];
   status: Animal['status'] | Animal['status'][];
@@ -31,7 +31,7 @@ export type Filters = Partial<{
     Animal,
     | 'name'
     | 'waitingSince'
-    | 'isAvalible'
+    | 'isAvailable'
     | 'aproxBirthDate'
     | 'gender'
     | 'species'
@@ -57,12 +57,12 @@ export type Filters = Partial<{
  *   - aproxBirthDate: number
  *   - lifeStage: 'cachorro' | 'joven' | 'adulto' or array (multiple)
  *   - size: 'pequeño' | 'mediano' | 'grande' | 'no_se_sabe' or array (multiple)
- *   - isAvalible: boolean
+ *   - isAvailable: boolean
  *   - isVisible: boolean
  *   - isDeleted: boolean
  *   - status: 'calle' | 'protectora' | 'transitorio' | 'adoptado' or array (multiple)
  *   - minWaitingSince: number
- *   - sortBy: 'name' | 'waitingSince' | 'isAvalible' | 'aproxBirthDate' | 'gender' | 'species' | 'size' | 'lifeStage'
+ *   - sortBy: 'name' | 'waitingSince' | 'isAvailable' | 'aproxBirthDate' | 'gender' | 'species' | 'size' | 'lifeStage'
  *   - sortOrder: 'asc' | 'desc'
  *   - page: number (1-indexed, for pagination)
  *   - limit: number (results per page, max 100)
@@ -85,7 +85,7 @@ export type Filters = Partial<{
  *
  * @example
  * // Fetch only available dogs, sorted by name
- * const animals = await fetchAnimals({ species: 'perro', isAvalible: true, sortBy: 'name', sortOrder: 'asc' });
+ * const animals = await fetchAnimals({ species: 'perro', isAvailable: true, sortBy: 'name', sortOrder: 'asc' });
  *
  * @example
  * // Fetch animals with name including "Luna"
@@ -151,7 +151,7 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
 4) Fetch only available dogs, sorted by name
    const animals = await fetchAnimals({
      species: 'perro',
-     isAvalible: true,
+     isAvailable: true,
      sortBy: 'name',
      sortOrder: 'asc'
    });

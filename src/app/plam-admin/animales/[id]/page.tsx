@@ -280,7 +280,7 @@ export default function AnimalPage() {
     const updatedAnimal = {
       ...animal,
       status: newStatus,
-      isAvalible: !isGoingToNewAdopter,
+      isAvailable: !isGoingToNewAdopter,
       isVisible: !isGoingToNewAdopter,
     };
 
@@ -293,21 +293,21 @@ export default function AnimalPage() {
       modifiedBy: auth.currentUser?.email || 'system',
       since: Date.now(),
       status: newStatus,
-      isAvalible: !isGoingToNewAdopter,
+      isAvailable: !isGoingToNewAdopter,
       isVisible: !isGoingToNewAdopter,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
       changes: {
         before: {
           status: animal.status,
-          isAvalible: animal.isAvalible,
+          isAvailable: animal.isAvailable,
           isVisible: animal.isVisible,
           contactName: privateInfo.contactName,
           contacts: privateInfo.contacts,
         },
         after: {
           status: newStatus,
-          isAvalible: !isGoingToNewAdopter,
+          isAvailable: !isGoingToNewAdopter,
           isVisible: !isGoingToNewAdopter,
           contactName: adoptionData.contactName,
           contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
@@ -505,7 +505,7 @@ export default function AnimalPage() {
       ? {
           ...animal,
           status: 'fallecido',
-          isAvalible: false,
+          isAvailable: false,
           isVisible: false,
         }
       : animal;
@@ -538,7 +538,7 @@ export default function AnimalPage() {
           before: {
             status: animal.status,
             isVisible: animal.isVisible,
-            isAvalible: animal.isAvalible,
+            isAvailable: animal.isAvailable,
           },
         }),
         after: {
@@ -557,7 +557,7 @@ export default function AnimalPage() {
           ...(isDeceased && {
             status: 'fallecido',
             isVisible: false,
-            isAvalible: false,
+            isAvailable: false,
           }),
         },
       },
@@ -645,7 +645,7 @@ export default function AnimalPage() {
     const updatedAnimal = {
       ...animal,
       status: 'adoptado' as const,
-      isAvalible: false,
+      isAvailable: false,
       isVisible: false,
     };
 
@@ -658,21 +658,21 @@ export default function AnimalPage() {
       modifiedBy: auth.currentUser?.email || 'system',
       since: Date.now(),
       status: 'adoptado',
-      isAvalible: false,
+      isAvailable: false,
       isVisible: false,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
       changes: {
         before: {
           status: animal.status,
-          isAvalible: animal.isAvalible,
+          isAvailable: animal.isAvailable,
           isVisible: animal.isVisible,
           contactName: privateInfo.contactName,
           contacts: privateInfo.contacts,
         },
         after: {
           status: 'adoptado',
-          isAvalible: false,
+          isAvailable: false,
           isVisible: false,
           contactName: adoptionData.contactName,
           contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
@@ -930,11 +930,11 @@ export default function AnimalPage() {
     }
   };
 
-  const handleAvalibleToggle = async (newValue: boolean) => {
+  const handleAvailableToggle = async (newValue: boolean) => {
     const start = Date.now();
     setIsLoading(true);
 
-    const updatedAnimal = { ...animal, isAvalible: newValue };
+    const updatedAnimal = { ...animal, isAvailable: newValue };
     const newTransaction: AnimalTransactionType = {
       id: animal.id,
       name: animal.name,
@@ -943,13 +943,13 @@ export default function AnimalPage() {
       date: Date.now(),
       modifiedBy: auth.currentUser?.email || 'system',
       since: Date.now(),
-      isAvalible: newValue,
+      isAvailable: newValue,
       changes: {
         before: {
-          isAvalible: animal.isAvalible,
+          isAvailable: animal.isAvailable,
         },
         after: {
-          isAvalible: newValue,
+          isAvailable: newValue,
         },
       },
     };
@@ -1010,7 +1010,7 @@ export default function AnimalPage() {
     try {
       if (!animal) throw new Error(`Animal with id ${currentId} not found`);
 
-      const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvalible: false };
+      const updatedAnimal = { ...animal, isDeleted: true, isVisible: false, isAvailable: false };
       const newTransaction: AnimalTransactionType = {
         id: currentId,
         name: animal.name,
@@ -1023,12 +1023,12 @@ export default function AnimalPage() {
           before: {
             isDeleted: animal.isDeleted || false,
             isVisible: animal.isVisible,
-            isAvalible: animal.isAvalible,
+            isAvailable: animal.isAvailable,
           },
           after: {
             isDeleted: true,
             isVisible: false,
-            isAvalible: false,
+            isAvailable: false,
           },
         },
       };
@@ -1071,7 +1071,7 @@ export default function AnimalPage() {
     const start = Date.now();
     setIsLoading(true);
     try {
-      const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvalible: false };
+      const updatedAnimal = { ...animal, isDeleted: false, isVisible: false, isAvailable: false };
       const newTransactionData: AnimalTransactionType = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
@@ -1084,12 +1084,12 @@ export default function AnimalPage() {
           before: {
             isDeleted: animal.isDeleted || false,
             isVisible: animal.isVisible,
-            isAvalible: animal.isAvalible,
+            isAvailable: animal.isAvailable,
           },
           after: {
             isDeleted: false,
             isVisible: false,
-            isAvalible: false,
+            isAvailable: false,
           },
         },
       };
@@ -1189,7 +1189,7 @@ export default function AnimalPage() {
             status: animal.status,
             isDeleted: animal.isDeleted || false,
             isVisible: animal.isVisible,
-            isAvalible: animal.isAvalible,
+            isAvailable: animal.isAvailable,
             images: animal.images,
           },
           after: {
@@ -1252,7 +1252,7 @@ export default function AnimalPage() {
   const {
     name,
     description,
-    isAvalible,
+    isAvailable,
     isVisible,
     images,
     gender,
@@ -1305,7 +1305,7 @@ export default function AnimalPage() {
                   Estado: <span className="font-normal">{status}</span>
                 </li>
                 <li className="text-xl font-semibold">
-                  Disponible: <span className="font-normal">{isAvalible ? 'Sí' : 'No'}</span>
+                  Disponible: <span className="font-normal">{isAvailable ? 'Sí' : 'No'}</span>
                 </li>
                 <li className="text-xl font-semibold">
                   Se muestra: <span className="font-normal">{isVisible ? 'Sí' : 'No'}</span>
@@ -2166,7 +2166,7 @@ export default function AnimalPage() {
                   </div>
                 )}
 
-                {/* Avalible Toggle */}
+                {/* Available Toggle */}
                 {!isCaseClosed && (
                   <div className="flex items-center gap-3 bg-cream-light px-4 py-3 rounded-lg shadow-sm">
                     <CheckIcon size={20} className="text-green-dark" />
@@ -2177,9 +2177,9 @@ export default function AnimalPage() {
                     >
                       <input
                         type="checkbox"
-                        onChange={() => handleAvalibleToggle(!animal.isAvalible)}
+                        onChange={() => handleAvailableToggle(!animal.isAvailable)}
                         className="sr-only peer"
-                        checked={animal.isAvalible}
+                        checked={animal.isAvailable}
                       />
                       <div className="relative w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
                     </label>

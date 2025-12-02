@@ -37,7 +37,7 @@ export default function Card({
   href?: string;
   adminView?: boolean;
 }): React.ReactElement {
-  const { id, name, gender, lifeStage, images, status } = animal;
+  const { id, name, gender, lifeStage, images, status, isAvailable } = animal;
   const img = images[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
@@ -76,7 +76,7 @@ export default function Card({
                 No se esta mostrando
               </span>
             )}
-            {!animal.isAvalible && (
+            {!animal.isAvailable && (
               <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
                 No esta disponible
               </span>
@@ -87,6 +87,11 @@ export default function Card({
       {status === 'fallecido' && (
         <p className=" absolute top-2 left-2 text-center bg-red-600 text-white px-2 py-1 rounded-lg">
           Fallecido{' '}
+        </p>
+      )}
+      {typeof isAvailable == 'undefined' && (
+        <p className=" absolute top-8 left-2 text-center bg-red-600 text-white px-2 py-1 rounded-lg">
+          falat{' '}
         </p>
       )}
     </article>

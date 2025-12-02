@@ -32,7 +32,7 @@ export default async function AnimalPage({ params }: PageProps) {
   const {
     name,
     description,
-    isAvalible,
+    isAvailable,
     images,
     gender,
     aproxBirthDate,
@@ -73,7 +73,7 @@ export default async function AnimalPage({ params }: PageProps) {
             <ul className="list-disc pl-4 text-green-dark">
               <li className="text-xl font-semibold">
                 Estado:{' '}
-                <span className="font-normal">{`${isAvalible ? 'Disponible' : 'De momento no se puede adoptar'}`}</span>
+                <span className="font-normal">{`${isAvailable ? 'Disponible' : 'De momento no se puede adoptar'}`}</span>
               </li>
               <li className="text-xl font-semibold">
                 Género: <span className="font-normal">{gender}</span>
@@ -117,7 +117,7 @@ export default async function AnimalPage({ params }: PageProps) {
                 </ul>
               </li>
             </ul>
-            {isAvalible && (
+            {isAvailable && (
               <Modal buttonText="Postularme para adopción">
                 <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 gap-1 text-center ">
                   <h4 className="font-extrabold text-2xl  text-green-dark">
@@ -149,7 +149,7 @@ export default async function AnimalPage({ params }: PageProps) {
               </Modal>
             )}
 
-            {!isAvalible && (
+            {!isAvailable && (
               <div className="text-red-600 font-bold text-xl">
                 Actualmente {name} no está disponible para adopción. Si deseas más información,
                 contáctanos a través de nuestras redes sociales o correo electrónico.
