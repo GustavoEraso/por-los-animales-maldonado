@@ -109,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
 
           const userData: UserType = {
-            id: user.uid,
+            id: result.id,
             name: result.name,
             role: result.role,
           };
