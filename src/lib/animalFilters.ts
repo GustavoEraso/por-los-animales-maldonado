@@ -89,28 +89,94 @@ export function getActiveAnimalsByMonth({
 export function generateActiveAnimalsChartData({
   animals,
   transactions,
-  months = 6,
+  months,
+  startDate,
+  endDate,
+  dayInterval = 30,
 }: {
   animals: Animal[];
   transactions: AnimalTransactionType[];
   months?: number;
+  startDate?: number;
+  endDate?: number;
+  dayInterval?: number;
 }): { label: string; value: number }[] {
   const chartData = [];
-  const currentDate = new Date();
 
-  for (let monthIndex = months - 1; monthIndex >= 0; monthIndex--) {
-    const targetDate = new Date(currentDate);
-    targetDate.setMonth(targetDate.getMonth() - monthIndex);
+  // Use new date range logic if provided
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const periods: { periodStart: Date; periodEnd: Date }[] = [];
 
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
+    // Calculate periods from endDate backwards
+    const currentEnd = new Date(end);
 
-    const activeAnimals = getActiveAnimalsByMonth({ animals, transactions, year, month });
+    while (currentEnd >= start) {
+      const periodStart = new Date(currentEnd);
+      periodStart.setDate(periodStart.getDate() - dayInterval + 1);
 
-    chartData.push({
-      label: targetDate.toLocaleDateString('es-ES', { month: 'short' }),
-      value: activeAnimals.length,
+      // Adjust if we go before startDate
+      if (periodStart < start) {
+        periodStart.setTime(start.getTime());
+      }
+
+      periods.unshift({ periodStart, periodEnd: new Date(currentEnd) });
+
+      // Move to next period (backwards)
+      currentEnd.setDate(currentEnd.getDate() - dayInterval);
+    }
+
+    // Generate chart data for each period
+    periods.forEach(({ periodStart, periodEnd }) => {
+      // Count active animals in this period
+      const activeCount = animals.filter((animal) => {
+        const createdDate = new Date(animal.waitingSince);
+        if (createdDate > periodEnd) return false;
+
+        // Check if adopted before this period
+        const adoptedTransaction = transactions.find(
+          (t) => t.id === animal.id && t.status === 'adoptado'
+        );
+        if (adoptedTransaction) {
+          const adoptedDate = new Date(adoptedTransaction.date);
+          if (adoptedDate < periodStart) return false;
+        }
+
+        return true;
+      }).length;
+
+      const label =
+        dayInterval === 1
+          ? periodEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+          : dayInterval < 30
+            ? `${periodEnd.getDate()}/${periodEnd.getMonth() + 1}`
+            : periodEnd.toLocaleDateString('es-ES', { month: 'short' });
+
+      chartData.push({
+        label,
+        value: activeCount,
+      });
     });
+  } else {
+    // Legacy monthly logic
+    const currentDate = new Date();
+    const monthsToUse = months || 6;
+
+    for (let monthIndex = monthsToUse - 1; monthIndex >= 0; monthIndex--) {
+      const targetDate = new Date(currentDate);
+      targetDate.setMonth(targetDate.getMonth() - monthIndex);
+
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth();
+
+      const activeAnimals = getActiveAnimalsByMonth({ animals, transactions, year, month });
+
+      chartData.push({
+        label: targetDate.toLocaleDateString('es-ES', { month: 'short' }),
+        value: activeAnimals.length,
+      });
+    }
   }
 
   return chartData;
@@ -218,55 +284,129 @@ export function generateTransactionsByUserData({
 export function generateAnimalsInOutData({
   animals,
   transactions,
-  months = 6,
+  months,
+  startDate,
+  endDate,
+  dayInterval = 30,
 }: {
   animals: Animal[];
   transactions: AnimalTransactionType[];
   months?: number;
+  startDate?: number;
+  endDate?: number;
+  dayInterval?: number;
 }): {
   label: string;
   datasets: { name: string; value: number }[];
 }[] {
   const chartData = [];
-  const currentDate = new Date();
 
-  for (let monthIndex = months - 1; monthIndex >= 0; monthIndex--) {
-    const targetDate = new Date(currentDate);
-    targetDate.setMonth(targetDate.getMonth() - monthIndex);
+  // Use new date range logic if provided
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const periods: { periodStart: Date; periodEnd: Date }[] = [];
 
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const startOfMonth = new Date(year, month, 1);
-    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    // Calculate periods from endDate backwards
+    const currentEnd = new Date(end);
+    currentEnd.setHours(23, 59, 59, 999);
 
-    // Animals that arrived this month (unique animals by ID)
-    const newAnimals = animals.filter((animal) => {
-      const animalCreated = new Date(animal.waitingSince);
-      return animalCreated >= startOfMonth && animalCreated <= endOfMonth;
-    });
+    while (currentEnd >= start) {
+      const periodStart = new Date(currentEnd);
+      periodStart.setDate(periodStart.getDate() - dayInterval + 1);
+      periodStart.setHours(0, 0, 0, 0);
 
-    // Adoptions this month - Count unique animals that were adopted
-    // Find transactions in this month that changed status to 'adoptado'
-    const adoptedAnimalIds = new Set<string>();
-    transactions.forEach((transaction) => {
-      const transactionDate = new Date(transaction.date);
-      // Check if this transaction happened this month and has status = 'adoptado'
-      if (
-        transactionDate >= startOfMonth &&
-        transactionDate <= endOfMonth &&
-        transaction.status === 'adoptado'
-      ) {
-        adoptedAnimalIds.add(transaction.id);
+      // Adjust if we go before startDate
+      if (periodStart < start) {
+        periodStart.setTime(start.getTime());
       }
-    });
 
-    chartData.push({
-      label: targetDate.toLocaleDateString('es-ES', { month: 'short' }),
-      datasets: [
-        { name: 'Ingresos', value: newAnimals.length },
-        { name: 'Adopciones', value: adoptedAnimalIds.size }, // Count unique animals
-      ],
+      periods.unshift({ periodStart, periodEnd: new Date(currentEnd) });
+
+      // Move to next period (backwards)
+      currentEnd.setDate(currentEnd.getDate() - dayInterval);
+      currentEnd.setHours(23, 59, 59, 999);
+    }
+
+    // Generate chart data for each period
+    periods.forEach(({ periodStart, periodEnd }) => {
+      // Animals that arrived in this period
+      const newAnimals = animals.filter((animal) => {
+        const animalCreated = new Date(animal.waitingSince);
+        return animalCreated >= periodStart && animalCreated <= periodEnd;
+      });
+
+      // Adoptions in this period - Count unique animals that were adopted
+      const adoptedAnimalIds = new Set<string>();
+      transactions.forEach((transaction) => {
+        const transactionDate = new Date(transaction.date);
+        if (
+          transactionDate >= periodStart &&
+          transactionDate <= periodEnd &&
+          transaction.status === 'adoptado'
+        ) {
+          adoptedAnimalIds.add(transaction.id);
+        }
+      });
+
+      const label =
+        dayInterval === 1
+          ? periodEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+          : dayInterval < 30
+            ? `${periodEnd.getDate()}/${periodEnd.getMonth() + 1}`
+            : periodEnd.toLocaleDateString('es-ES', { month: 'short' });
+
+      chartData.push({
+        label,
+        datasets: [
+          { name: 'Ingresos', value: newAnimals.length },
+          { name: 'Adopciones', value: adoptedAnimalIds.size },
+        ],
+      });
     });
+  } else {
+    // Legacy monthly logic
+    const currentDate = new Date();
+    const monthsToUse = months || 6;
+
+    for (let monthIndex = monthsToUse - 1; monthIndex >= 0; monthIndex--) {
+      const targetDate = new Date(currentDate);
+      targetDate.setMonth(targetDate.getMonth() - monthIndex);
+
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth();
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+      // Animals that arrived this month (unique animals by ID)
+      const newAnimals = animals.filter((animal) => {
+        const animalCreated = new Date(animal.waitingSince);
+        return animalCreated >= startOfMonth && animalCreated <= endOfMonth;
+      });
+
+      // Adoptions this month - Count unique animals that were adopted
+      // Find transactions in this month that changed status to 'adoptado'
+      const adoptedAnimalIds = new Set<string>();
+      transactions.forEach((transaction) => {
+        const transactionDate = new Date(transaction.date);
+        // Check if this transaction happened this month and has status = 'adoptado'
+        if (
+          transactionDate >= startOfMonth &&
+          transactionDate <= endOfMonth &&
+          transaction.status === 'adoptado'
+        ) {
+          adoptedAnimalIds.add(transaction.id);
+        }
+      });
+
+      chartData.push({
+        label: targetDate.toLocaleDateString('es-ES', { month: 'short' }),
+        datasets: [
+          { name: 'Ingresos', value: newAnimals.length },
+          { name: 'Adopciones', value: adoptedAnimalIds.size }, // Count unique animals
+        ],
+      });
+    }
   }
 
   return chartData;
