@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { BannerType } from '@/types';
 
 /**
- * Fetches contacts data from the internal cache API with Next.js native caching.
+ * Fetches banners data from the internal cache API with Next.js native caching.
  * This function uses Next.js fetch with revalidation for reliable caching in Vercel.
  *
- * @returns {Promise<WpContactType[]>} Promise that resolves to array of WhatsApp contacts
+ * @returns {Promise<BannerType[]>} Promise that resolves to array of banners
  * @throws {Error} If the cache API request fails
  */
 async function getBannersFromCache(): Promise<BannerType[]> {
@@ -22,44 +22,43 @@ async function getBannersFromCache(): Promise<BannerType[]> {
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch contacts cache: ${res.status}`);
+    throw new Error(`Failed to fetch banners cache: ${res.status}`);
   }
 
   return res.json();
 }
 
 /**
- * GET /api/contacts - Retrieve WhatsApp contacts with Next.js native caching
+ * GET /api/banners - Retrieve banners with Next.js native caching
  *
- * Public API endpoint that retrieves all WhatsApp contact information for the
+ * Public API endpoint that retrieves all banner information for the
  * organization. Uses Next.js fetch with revalidation for reliable caching in
- * Vercel serverless environment. Used by contact components and WhatsApp
- * integration throughout the application.
+ * Vercel serverless environment. Used by banner components throughout the application.
  *
- * @returns {NextResponse<WpContactType[]>} JSON response with contacts array
+ * @returns {NextResponse<BannerType[]>} JSON response with banners array
  * @returns {NextResponse<{error: string}>} Error response with 500 status on failure
  *
  * @example
  * ```typescript
- * // Fetch contacts for WhatsApp integration
- * const response = await fetch('/api/contacts');
- * const contacts = await response.json();
+ * // Fetch banners for display
+ * const response = await fetch('/api/banners');
+ * const banners = await response.json();
  *
- * // Use in WhatsApp component
- * contacts.forEach(contact => {
- *   console.log(`${contact.name}: +${contact.countryCode}${contact.phone}`);
+ * // Use in banner component
+ * banners.forEach(banner => {
+ *   console.log(`${banner.title}: ${banner.description}`);
  * });
  * ```
  *
  * @example
  * ```typescript
  * // React component usage
- * const [contacts, setContacts] = useState<WpContactType[]>([]);
+ * const [banners, setBanners] = useState<BannerType[]>([]);
  *
  * useEffect(() => {
- *   fetch('/api/contacts')
+ *   fetch('/api/banners')
  *     .then(res => res.json())
- *     .then(setContacts);
+ *     .then(setBanners);
  * }, []);
  * ```
  *
@@ -68,7 +67,7 @@ async function getBannersFromCache(): Promise<BannerType[]> {
  * does not require authentication.
  */
 
-export async function GET() {
+export async function GET(): Promise<NextResponse<BannerType[] | { error: string }>> {
   try {
     // Get banners from cache using Next.js native caching
     const data = await getBannersFromCache();

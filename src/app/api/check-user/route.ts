@@ -11,6 +11,14 @@ interface AuthorizedUserData {
 }
 
 /**
+ * Response types for check-user endpoint
+ */
+type CheckUserResponse =
+  | { authorized: false }
+  | { authorized: true; id: string; role: UserRole; name: string }
+  | { error: string };
+
+/**
  * POST /api/check-user - Verify if user email is authorized and get user details
  *
  * Public API endpoint that checks if a given email address is in the authorized
@@ -62,7 +70,7 @@ interface AuthorizedUserData {
  * Returns role "user" as default if no specific role is assigned.
  * This endpoint does not require authentication as it only returns authorization status.
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<CheckUserResponse>> {
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
