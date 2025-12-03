@@ -89,11 +89,6 @@ export default function Card({
           Fallecido{' '}
         </p>
       )}
-      {typeof isAvailable == 'undefined' && (
-        <p className=" absolute top-8 left-2 text-center bg-red-600 text-white px-2 py-1 rounded-lg">
-          falat{' '}
-        </p>
-      )}
     </article>
   );
 }
