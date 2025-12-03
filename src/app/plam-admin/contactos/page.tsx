@@ -138,12 +138,30 @@ export default function ContactsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Clean and format phone number
+    let cleanedPhone = formData.phone.replace(/\s+/g, '');
+
+    // Validate Uruguayan phone number format if country code is +598
+    if (formData.countryCode === '+598') {
+      const uruguayanPhoneRegex = /^09[0-9]{7}$/;
+
+      if (!uruguayanPhoneRegex.test(cleanedPhone)) {
+        handleToast({
+          type: 'error',
+          title: 'Formato inválido',
+          text: 'Los números de Uruguay deben tener 9 dígitos y comenzar con 09 (ej: 091234567)',
+        });
+        return;
+      }
+    }
+
     const start = Date.now();
     setLoading(true);
 
     try {
       const contactData = {
         ...formData,
+        phone: cleanedPhone,
         id: editingContact?.id || `contact-${Date.now()}`,
       };
 
