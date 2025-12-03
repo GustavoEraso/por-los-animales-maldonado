@@ -80,9 +80,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </RoleGuard>
 
                 <RoleGuard requiredRole="admin">
-                  <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                  <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
-                      className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      className="  flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/usuarios'}
                     >
                       <span className="hidden md:block">Usuarios</span>
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </RoleGuard>
 
                 <RoleGuard requiredRole="rescatista">
-                  <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                  <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/contactos'}
@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </RoleGuard>
 
                 <RoleGuard requiredRole="admin">
-                  <li className=" rounded flex hover:bg-cream-light hover:text-green-dark">
+                  <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/banners'}
