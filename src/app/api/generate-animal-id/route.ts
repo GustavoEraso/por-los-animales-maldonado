@@ -25,6 +25,11 @@ function normalizeName(name: string): string {
 }
 
 /**
+ * Response types for generate-animal-id endpoint
+ */
+type GenerateAnimalIdResponse = { id: string } | { error: string };
+
+/**
  * POST /api/generate-animal-id - Generate unique animal ID from name
  *
  * Internal API endpoint that generates a unique document ID for new animals
@@ -85,7 +90,7 @@ function normalizeName(name: string): string {
  * Uses incremental suffixes (name-1, name-2, etc.) for duplicate names.
  */
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse<GenerateAnimalIdResponse>> {
   const token = req.headers.get('x-internal-token');
   if (token !== process.env.INTERNAL_API_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

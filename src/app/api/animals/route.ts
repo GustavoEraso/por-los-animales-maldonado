@@ -179,7 +179,23 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  * - Returns paginated results with metadata when page/limit provided.
  * - For backward compatibility, if no pagination params provided, returns all results.
  */
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest
+): Promise<
+  | NextResponse<Animal[]>
+  | NextResponse<{
+      data: Animal[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    }>
+  | NextResponse<{ error: string }>
+> {
   try {
     const { sortBy, sortOrder = 'asc', page, limit, ...filters } = await req.json();
 

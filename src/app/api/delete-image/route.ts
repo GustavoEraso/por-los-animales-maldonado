@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import cloudinary from '@/cloudinary';
 
 /**
+ * Response types for delete-image endpoint
+ */
+type DeleteImageResponse = { success: true; result: unknown } | { error: string };
+
+/**
  * DELETE /api/delete-image - Delete image from Cloudinary storage
  *
  * Internal API endpoint that deletes images from Cloudinary using the public ID.
@@ -14,7 +19,7 @@ import cloudinary from '@/cloudinary';
  *
  * @query {string} publicId - Cloudinary public ID of the image to delete
  *
- * @returns {NextResponse<{success: true, result: any}>} Success response with Cloudinary result
+ * @returns {NextResponse<{success: true, result: unknown}>} Success response with Cloudinary result
  * @returns {NextResponse<{error: string}>} 401 error if token is invalid or missing
  * @returns {NextResponse<{error: string}>} 400 error if publicId is missing
  * @returns {NextResponse<{error: string}>} 500 error if deletion fails or internal error
@@ -55,7 +60,7 @@ import cloudinary from '@/cloudinary';
  * Used for cleaning up images when animals are deleted or images are replaced.
  * Cloudinary public IDs must be exact matches for successful deletion.
  */
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<NextResponse<DeleteImageResponse>> {
   try {
     const { searchParams } = new URL(req.url);
     const publicId = searchParams.get('publicId');

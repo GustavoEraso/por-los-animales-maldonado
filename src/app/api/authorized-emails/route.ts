@@ -54,7 +54,9 @@ const CACHE_DURATION = 300000; // 5 minutes in milliseconds
  * Returns user emails as document IDs with additional user data.
  * Requires INTERNAL_API_SECRET environment variable for authentication.
  */
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest
+): Promise<NextResponse<AuthorizedUser[] | { error: string }>> {
   const token = req.headers.get('x-internal-token');
 
   if (token !== process.env.INTERNAL_API_SECRET) {

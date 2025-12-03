@@ -1,4 +1,5 @@
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { WpContactType } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,9 @@ export const revalidate = 60; // Cache response for 60 seconds
  * Requires INTERNAL_API_SECRET environment variable for authentication.
  * Used by /api/contacts for public contact data access.
  */
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest
+): Promise<NextResponse<WpContactType[] | { error: string }>> {
   try {
     const token = req.headers.get('x-internal-token');
 

@@ -1,4 +1,5 @@
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { Animal } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export const revalidate = 60; // Cache response for 60 seconds
  * Response is cached for 60 seconds using Next.js revalidate export.
  * Requires INTERNAL_API_SECRET environment variable for authentication.
  */
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse<Animal[] | { error: string }>> {
   try {
     const token = req.headers.get('x-internal-token');
 

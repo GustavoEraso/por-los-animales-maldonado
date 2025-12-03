@@ -68,7 +68,7 @@ async function getContactsFromCache(): Promise<WpContactType[]> {
  * does not require authentication.
  */
 
-export async function GET() {
+export async function GET(): Promise<NextResponse<WpContactType[] | { error: string }>> {
   try {
     // Get contacts from cache using Next.js native caching
     const contacts = await getContactsFromCache();
