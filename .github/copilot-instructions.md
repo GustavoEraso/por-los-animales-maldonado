@@ -15,6 +15,9 @@
 - **Avoid type assertions (`as`)** - prefer explicit type annotations
   - ❌ Bad: `const animal = {} as Animal`
   - ✅ Good: `const animal: Animal = { id: '', name: '', ... }`
+- **Use `const` by default, `let` only when reassignment is needed** - never use `var`
+  - ❌ Bad: `var name = 'Max'` or `let name = 'Max'` (if not reassigned)
+  - ✅ Good: `const name = 'Max'`
 - Always add explicit return types for functions
 - Prefer interfaces over types for object shapes
 - Use type inference where obvious, explicit types where clarity is needed
