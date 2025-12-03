@@ -139,7 +139,7 @@ export default function ContactsPage() {
     e.preventDefault();
 
     // Clean and format phone number
-    let cleanedPhone = formData.phone.replace(/\s+/g, '');
+    const cleanedPhone = formData.phone.replace(/\s+/g, '');
 
     // Validate Uruguayan phone number format if country code is +598
     if (formData.countryCode === '+598') {
