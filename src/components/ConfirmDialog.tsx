@@ -20,8 +20,8 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'warning' | 'primary';
   /** Callback when user confirms */
   onConfirm: () => void;
-  /** Callback when user cancels */
-  onCancel: () => void;
+  /** Callback when user cancels (optional - if not provided, cancel button won't render) */
+  onCancel?: () => void;
 }
 
 /**
@@ -71,7 +71,9 @@ export default function ConfirmDialog({
   // Handle ESC key and backdrop click
   const handleCancel = (e: React.SyntheticEvent<HTMLDialogElement>) => {
     e.preventDefault();
-    onCancel();
+    if (onCancel) {
+      onCancel();
+    }
   };
 
   // Handle backdrop click (click outside dialog)
@@ -89,7 +91,9 @@ export default function ConfirmDialog({
       e.clientY < rect.top ||
       e.clientY > rect.bottom
     ) {
-      onCancel();
+      if (onCancel) {
+        onCancel();
+      }
     }
   };
 
@@ -120,13 +124,15 @@ export default function ConfirmDialog({
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-          >
-            {cancelText}
-          </button>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+            >
+              {cancelText}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}

@@ -78,6 +78,26 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
     return `${countryCode} ${phone}`;
   };
 
+  const renderSimpleButton = () => (
+    <div className="fixed bottom-6 right-6 z-50">
+      <button
+        onClick={() => {
+          openWhatsApp(contacts[0]);
+        }}
+        className={`bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
+        aria-label="Abrir WhatsApp"
+      >
+        <WhatsAppIcon size={24} color="currentColor" title="WhatsApp" />
+        {contacts?.length > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+            {contacts.length}
+          </span>
+        )}
+        <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+      </button>
+    </div>
+  );
+
   // Renders the floating WhatsApp button
   const renderFloatingButton = () => (
     <div className="fixed bottom-6 right-6 z-50">
@@ -162,6 +182,9 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
       </div>
     </div>
   );
+
+  // If no contacts, only render the simple button
+  if (contacts.length === 1) return renderSimpleButton();
 
   return (
     <>

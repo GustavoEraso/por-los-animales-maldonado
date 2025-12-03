@@ -145,6 +145,7 @@ export interface SystemAuditLog {
 }
 
 export interface WpContactType {
+  id: string;
   name: string;
   phone: string;
   countryCode: string;
