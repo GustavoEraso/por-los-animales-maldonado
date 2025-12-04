@@ -19,14 +19,16 @@ export default function PlamAdminBanners() {
   const router = useRouter();
   const [banners, setBanners] = useState<BannerType[]>([]);
 
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
   const fetchBanners = async () => {
     const res = await getFirestoreData({ currentCollection: 'banners' });
     setBanners(res);
   };
+
+  useEffect(() => {
+    // Initial data fetch on mount is an intentional side effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchBanners();
+  }, []);
 
   const handleDelete = async (bannerId: string) => {
     const currentBanner = banners.find((b) => b.id === bannerId);

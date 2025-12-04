@@ -96,7 +96,7 @@ export default function PlamAdmin() {
   const [users, setUsers] = useState<UserType[]>([]);
   const [searchController, setSearchController] = useState<boolean>(false);
 
-  // Date filter refs - usando refs para evitar re-renders innecesarios
+  // Date filter helper functions
   const getInitialStartDate = () => {
     const date = new Date();
     date.setDate(date.getDate() - 15);
@@ -110,7 +110,8 @@ export default function PlamAdmin() {
     return date.getTime();
   };
 
-  const dateFilterRef = useRef<{ startDate: number; endDate: number }>({
+  // Date filter state (changed from ref to state to allow usage in useMemo)
+  const [dateFilter, setDateFilter] = useState<{ startDate: number; endDate: number }>({
     startDate: getInitialStartDate(),
     endDate: getInitialEndDate(),
   });
@@ -186,7 +187,7 @@ export default function PlamAdmin() {
   // Handle date filter change
   const handleDateFilterChange = () => {
     // Apply the temporary filter to the actual filter
-    dateFilterRef.current = tempDateFilter;
+    setDateFilter(tempDateFilter);
     // Trigger transactions reload
     setSearchController(!searchController);
     regenerateCharts(tempDateFilter.startDate, tempDateFilter.endDate);
@@ -276,8 +277,8 @@ export default function PlamAdmin() {
           orderBy: 'date',
           direction: 'desc',
           filter: [
-            ['date', '>=', dateFilterRef.current.startDate],
-            ['date', '<=', dateFilterRef.current.endDate],
+            ['date', '>=', dateFilter.startDate],
+            ['date', '<=', dateFilter.endDate],
           ],
         });
 
@@ -286,7 +287,7 @@ export default function PlamAdmin() {
 
         // Calculate days and interval
         const totalDays = Math.ceil(
-          (dateFilterRef.current.endDate - dateFilterRef.current.startDate) / (1000 * 60 * 60 * 24)
+          (dateFilter.endDate - dateFilter.startDate) / (1000 * 60 * 60 * 24)
         );
 
         // Determine interval based on days
@@ -304,8 +305,8 @@ export default function PlamAdmin() {
         const activeAnimalsData = generateActiveAnimalsChartData({
           animals,
           transactions: fetchedTransactions,
-          startDate: dateFilterRef.current.startDate,
-          endDate: dateFilterRef.current.endDate,
+          startDate: dateFilter.startDate,
+          endDate: dateFilter.endDate,
           dayInterval,
         });
         const transactionsByUserData = generateTransactionsByUserData({
@@ -316,8 +317,8 @@ export default function PlamAdmin() {
         const animalsInOutData = generateAnimalsInOutData({
           animals,
           transactions: fetchedTransactions,
-          startDate: dateFilterRef.current.startDate,
-          endDate: dateFilterRef.current.endDate,
+          startDate: dateFilter.startDate,
+          endDate: dateFilter.endDate,
           dayInterval,
         });
 
@@ -336,12 +337,12 @@ export default function PlamAdmin() {
     };
 
     loadTransactions();
-  }, [searchController, animals, users]); // Reload when filter changes or data is ready
+  }, [searchController, animals, users, dateFilter, chartData.status]); // Reload when filter changes or data is ready
 
   // Calculate summary statistics filtered by selected time period (memoized for performance)
   const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
     // Use date filter range
-    const cutoffDate = new Date(dateFilterRef.current.startDate);
+    const cutoffDate = new Date(dateFilter.startDate);
 
     // Filter animals based on transactions in the selected period
     const animalsInPeriod = animals.filter((animal) => {
@@ -369,7 +370,7 @@ export default function PlamAdmin() {
       adoptedAnimals: adopted,
       availableAnimals: available,
     };
-  }, [animals, transactions, searchController]);
+  }, [animals, transactions, dateFilter]);
   useEffect(() => {
     if (isLoading) return;
 

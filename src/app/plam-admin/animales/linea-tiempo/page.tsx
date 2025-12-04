@@ -76,7 +76,7 @@ export default function LineaTiempoPage() {
       }
     };
     loadData();
-  }, [searchControler]);
+  }, [searchControler, dateFilter.startDate, dateFilter.endDate]);
 
   // Animación de las cards cuando cargan los datos
   useGSAP(
