@@ -153,7 +153,7 @@ export default function Chart({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
+  const renderChart = () => {
     if (!chartRef.current || !data.length) return;
 
     const svg = select(chartRef.current);
@@ -179,7 +179,7 @@ export default function Chart({
     } else if (type === 'pie') {
       renderPieChart(svg, data as PieData[], chartWidth, chartHeight, isMobile);
     }
-  }, [type, data, width, height, colors, animationDuration, windowWidth]);
+  };
 
   const renderLineOrBarChart = (
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
@@ -472,6 +472,11 @@ export default function Chart({
       delay: 0.8,
     });
   };
+
+  useEffect(() => {
+    renderChart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, data, width, height, colors, animationDuration, windowWidth]);
 
   // Helper function to get datasets from multiline data
   const getDatasets = () => {
