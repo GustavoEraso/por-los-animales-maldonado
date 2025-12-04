@@ -162,7 +162,9 @@ export default function AdjustableImage({
     let alive = true;
     const url = imageUrls[currentImageIndex];
     if (!url) {
-      setSrc(null);
+      // Don't call setState synchronously in effect
+      // Instead, schedule it asynchronously
+      Promise.resolve().then(() => alive && setSrc(null));
       return;
     }
 

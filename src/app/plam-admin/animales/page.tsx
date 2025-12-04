@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
@@ -54,7 +54,6 @@ function AnimalsPageContent() {
   const [animalsToShow, setAnimalsToShow] = useState<Animal[]>([]);
   const [sortReference, setSortReference] = useState<string | boolean>('name');
   const [sortOrder, setSortOrder] = useState('>');
-  const [sortedAnimals, setSortedAnimals] = useState<Animal[]>([]);
 
   useEffect(() => {
     const start = Date.now();
@@ -189,13 +188,10 @@ function AnimalsPageContent() {
     });
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!animalsToShow) {
-      return;
-    }
-
-    if (animalsToShow.length < 1) {
-      return;
+  // Calculate sorted animals using useMemo instead of useEffect to avoid cascading renders
+  const sortedAnimals = useMemo(() => {
+    if (!animalsToShow || animalsToShow.length < 1) {
+      return [];
     }
 
     // Check if there's sorting from searchParams
@@ -256,7 +252,7 @@ function AnimalsPageContent() {
       }
     }
 
-    setSortedAnimals(sortedData);
+    return sortedData;
   }, [animalsToShow, sortOrder, sortReference, searchParams]);
 
   // GSAP animation for grid
