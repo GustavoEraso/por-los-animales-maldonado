@@ -175,7 +175,7 @@ export default function HeroCarrousel({
     }
 
     if (!customItems || !replaceDefault) fetchBanners();
-  }, []);
+  }, [customItems, replaceDefault]);
 
   // Determine final items array based on props
   const items = React.useMemo(() => {
@@ -204,19 +204,19 @@ export default function HeroCarrousel({
   );
 
   // Interval helpers
-  const clearIntervalIfNeeded = () => {
+  const clearIntervalIfNeeded = useCallback(() => {
     if (intervalIdRef.current !== null) {
       clearInterval(intervalIdRef.current);
       intervalIdRef.current = null;
     }
-  };
+  }, []);
 
-  const startInterval = () => {
+  const startInterval = useCallback(() => {
     clearIntervalIfNeeded();
     intervalIdRef.current = window.setInterval(() => {
       handleImg('next');
     }, 10000);
-  };
+  }, [clearIntervalIfNeeded, handleImg]);
 
   // Auto slide + mouse hover pause/resume
   useEffect(() => {
@@ -238,7 +238,7 @@ export default function HeroCarrousel({
         carrouselElement.removeEventListener('mouseleave', handleMouseLeave);
       }
     };
-  }, [handleImg]);
+  }, [handleImg, startInterval, clearIntervalIfNeeded]);
 
   // Swipe gestures
   useEffect(() => {
@@ -273,7 +273,7 @@ export default function HeroCarrousel({
         carrouselElement.removeEventListener('touchmove', handleTouchMove);
       }
     };
-  }, [handleImg]);
+  }, [handleImg, clearIntervalIfNeeded]);
 
   return (
     <div ref={carrouselRef} className="relative w-full ">

@@ -124,7 +124,7 @@ export default function CreateAnimalForm() {
       }));
     };
     getName();
-  }, [auth.currentUser?.email]);
+  }, []);
 
   useEffect(() => {
     setAnimal((prev) => ({
