@@ -6,7 +6,7 @@ import { Modal } from '@/components/Modal';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from '@/lib/dateUtils';
 import ShareButton from '@/elements/ShareButton';
-import { unstable_ViewTransition as ViewTransition } from 'react';
+import { ViewTransition } from 'react';
 
 import { buildFormUrl } from '@/lib/buildFormUrl';
 
