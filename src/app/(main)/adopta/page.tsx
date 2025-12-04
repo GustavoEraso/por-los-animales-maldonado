@@ -50,7 +50,8 @@ export default async function Adopta({ searchParams }: AdoptaProps) {
   const animals: Animal[] = Array.isArray(result) ? result : result.data;
   const pagination = Array.isArray(result) ? null : result.pagination;
 
-  const currentRandomAnimal = animals[Math.floor(Math.random() * animals.length)];
+  // Use first animal for cover image (deterministic, no Math.random during render)
+  const currentRandomAnimal = animals[0];
   const cover = currentRandomAnimal?.images.length
     ? currentRandomAnimal.images[0].imgUrl
     : undefined;
