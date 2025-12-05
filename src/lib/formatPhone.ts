@@ -16,7 +16,7 @@ interface Props {
  *
  * @example
  * // Format a Uruguayan phone number
- * const formatted = formatPhone({ countryCode: '+598', phone: '94144657' });
+ * const formatted = formatPhone({ countryCode: '+598', phone: '094144657' });
  * // Result: "+598 94 144 657"
  *
  * @example
@@ -36,8 +36,8 @@ interface Props {
  */
 export function formatPhone({ countryCode, phone }: Props): string {
   switch (countryCode) {
-    case '+598': // Uruguay (ej: 94144657 → 94 144 657)
-      return `${countryCode} ${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
+    case '+598': // Uruguay (ej: 094144657 → 94 144 657)
+      return `${countryCode} ${phone.slice(1, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
 
     case '+54': // Argentina (ej: 911234567 → 9 11 2345 67)
       return `${countryCode} ${phone.slice(0, 1)} ${phone.slice(1, 3)} ${phone.slice(3, 7)} ${phone.slice(7)}`;
@@ -53,7 +53,7 @@ export function formatPhone({ countryCode, phone }: Props): string {
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
 
 1) Format a Uruguayan phone number
-   const formatted = formatPhone({ countryCode: '+598', phone: '94144657' });
+   const formatted = formatPhone({ countryCode: '+598', phone: '094144657' });
    // Result: "+598 94 144 657"
 
 2) Format an Argentine phone number
