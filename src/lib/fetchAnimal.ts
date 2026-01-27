@@ -1,4 +1,4 @@
-import { Animal } from '@/types';
+import type { Animal } from '@/types';
 
 export type PaginationMeta = {
   page: number;
@@ -125,7 +125,7 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(filters),
-    next: { revalidate: 60 },
+    cache: 'no-store',
   });
 
   if (!res.ok) {
