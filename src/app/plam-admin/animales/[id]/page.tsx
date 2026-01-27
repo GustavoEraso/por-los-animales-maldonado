@@ -37,6 +37,7 @@ import {
   getRescueReasonLabel,
   eventLabels,
 } from '@/lib/constants/animalLabels';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 export default function AnimalPage() {
   const router = useRouter();
@@ -359,6 +360,9 @@ export default function AnimalPage() {
         }
       );
 
+      // Invalidate animals cache
+      await revalidateCache('animals');
+
       // Reset form
       setAdoptionData({
         contactName: '',
@@ -610,6 +614,11 @@ export default function AnimalPage() {
         }
       );
 
+      // Invalidate animals cache if deceased (animal data was modified)
+      if (isDeceased) {
+        await revalidateCache('animals');
+      }
+
       // Reset form
       setEventData({
         eventType: 'medical',
@@ -721,6 +730,9 @@ export default function AnimalPage() {
           },
         }
       );
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
 
       // Reset form
       setAdoptionData({
@@ -912,6 +924,9 @@ export default function AnimalPage() {
           },
         }
       );
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
     } catch (error) {
       console.error('Error updating visibility:', error);
       // Revert optimistic updates
@@ -988,6 +1003,9 @@ export default function AnimalPage() {
           },
         }
       );
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
     } catch (error) {
       console.error('Error updating availability:', error);
       // Revert optimistic updates
@@ -1061,6 +1079,9 @@ export default function AnimalPage() {
         },
       });
 
+      // Invalidate animals cache
+      await revalidateCache('animals');
+
       router.push('/plam-admin/animales');
     } catch (error) {
       console.error("Error changing the animal's status:", error);
@@ -1122,6 +1143,9 @@ export default function AnimalPage() {
           },
         },
       });
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
 
       router.push('/plam-admin/animales');
     } catch (error) {
@@ -1221,6 +1245,9 @@ export default function AnimalPage() {
           },
         },
       });
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
 
       router.push('/plam-admin/animales');
     } catch (error) {

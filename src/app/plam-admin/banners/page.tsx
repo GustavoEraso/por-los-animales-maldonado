@@ -14,6 +14,7 @@ import Link from 'next/link';
 import FloatButton from '@/elements/FloatButton';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 export default function PlamAdminBanners() {
   const router = useRouter();
@@ -62,6 +63,9 @@ export default function PlamAdminBanners() {
           },
         },
       });
+
+      // Invalidate banners cache
+      await revalidateCache('banners');
 
       await fetchBanners();
     } catch (error) {

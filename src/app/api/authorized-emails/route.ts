@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDocs, collection } from 'firebase/firestore';
 import { db } from '@/firebase'; // Firestore client instance
 import { UserRole } from '@/types';
-
-export const revalidate = 300; // Cache response for 5 minutes
+import { cacheLife, cacheTag } from 'next/cache';
 
 /**
  * User data structure from Firestore authorizedEmails collection
@@ -15,9 +14,25 @@ interface AuthorizedUser {
   [key: string]: unknown;
 }
 
-// In-memory cache for development
-let cachedData: { users: AuthorizedUser[]; timestamp: number } | null = null;
-const CACHE_DURATION = 300000; // 5 minutes in milliseconds
+/**
+ * Fetches authorized users from Firestore with caching.
+ * Uses 'use cache' for automatic caching and revalidation.
+ *
+ * @returns {Promise<AuthorizedUser[]>} Array of authorized users
+ */
+async function getAuthorizedEmails(): Promise<AuthorizedUser[]> {
+  'use cache';
+  cacheTag('authorized-emails', 'users', 'revalidate-all');
+  cacheLife('minutes'); // stale: 5min, revalidate: 1min, expire: 1h
+
+  const snapshot = await getDocs(collection(db, 'authorizedEmails'));
+  const users: AuthorizedUser[] = snapshot.docs.map((doc) => ({
+    email: doc.id,
+    ...doc.data(),
+  }));
+
+  return users;
+}
 
 /**
  * GET /api/authorized-emails - Retrieve authorized user emails from Firestore
@@ -64,25 +79,7 @@ export async function GET(
   }
 
   try {
-    const now = Date.now();
-
-    // Check if we have cached data and it's still valid
-    if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
-      return NextResponse.json(cachedData.users);
-    }
-
-    const snapshot = await getDocs(collection(db, 'authorizedEmails'));
-    const users: AuthorizedUser[] = snapshot.docs.map((doc) => ({
-      email: doc.id,
-      ...doc.data(),
-    }));
-
-    // Update cache
-    cachedData = {
-      users,
-      timestamp: now,
-    };
-
+    const users = await getAuthorizedEmails();
     return NextResponse.json(users);
   } catch (err) {
     console.error('Error fetching authorized emails:', err);

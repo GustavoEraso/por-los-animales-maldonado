@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import NextImage from 'next/image';
 import QRCode from 'react-qr-code';
@@ -83,8 +83,14 @@ const formatPresets: FormatPreset[] = [
 ];
 
 const titles = ['EN ADOPCIóN RESPONSABLE', 'NECESITA TRANSITORIO', 'NECESITA TU AYUDA'];
-
-export default function Compartir() {
+export default function CompartirPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <CompartirContain />
+    </Suspense>
+  );
+}
+function CompartirContain() {
   const [loading, setLoading] = useState(true);
   const { id } = useParams<{ id: string }>();
   const [contacts, setContacts] = useState<WpContactType[]>([]);

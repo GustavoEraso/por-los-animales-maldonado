@@ -1,5 +1,5 @@
 import { Analytics } from '@vercel/analytics/react';
-import type { Metadata } from 'next';
+
 import { Roboto } from 'next/font/google';
 import './globals.css';
 import { GoogleAnalytics } from '@next/third-parties/google';
@@ -18,27 +18,6 @@ const roboto = Roboto({
   display: 'swap',
   weight: ['400', '500', '600', '700'],
 });
-
-export const metadata: Metadata = {
-  title: 'Por Los Animales Maldonado',
-  description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
-  openGraph: {
-    title: 'Por Los Animales Maldonado',
-    description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
-    url: 'https://porlosanimalesmaldonado.org',
-    siteName: 'Por Los Animales Maldonado',
-    images: [
-      {
-        url: 'https://porlosanimalesmaldonado.org/logo300.webp',
-        width: 300,
-        height: 300,
-        alt: 'Logo de Por Los Animales Maldonado',
-      },
-    ],
-    locale: 'es_ES',
-    type: 'website',
-  },
-};
 
 export default function RootLayout({
   children,

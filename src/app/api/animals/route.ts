@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Animal } from '@/types';
+import { cacheLife, cacheTag } from 'next/cache';
 
 // Fields that should not be normalized for text comparison
 const EXCLUDE_NORMALIZATION: (keyof Animal)[] = ['id', 'waitingSince'];
@@ -42,6 +43,14 @@ function normalize(str: string): string {
  * @throws {Error} If the cache API request fails
  */
 async function getAnimalsFromCache(): Promise<Animal[]> {
+  'use cache';
+  cacheTag('animals', 'revalidate-all');
+  cacheLife({
+    stale: 30,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
+
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
@@ -51,7 +60,7 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
     headers: {
       'x-internal-token': process.env.INTERNAL_API_SECRET!,
     },
-    next: { revalidate: 60 }, // Next.js will cache for 60 seconds
+    cache: 'no-store',
   });
 
   if (!res.ok) {
@@ -179,9 +188,7 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
  * - Returns paginated results with metadata when page/limit provided.
  * - For backward compatibility, if no pagination params provided, returns all results.
  */
-export async function POST(
-  req: NextRequest
-): Promise<
+export async function POST(req: NextRequest): Promise<
   | NextResponse<Animal[]>
   | NextResponse<{
       data: Animal[];

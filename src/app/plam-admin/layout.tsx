@@ -11,11 +11,14 @@ import {
   PetsIcon,
   UserIcon,
   WhatsAppIcon,
+  RefreshIcon,
 } from '@/components/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
 import RoleGuard from '@/components/RoleGuard';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
+import { handlePromiseToast } from '@/lib/handleToast';
 
 /**
  * Dashboard layout component with role-based access control.
@@ -112,6 +115,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span className="hidden md:block">banners</span>
                       <ImageIcon size={32} className="w-8 h-8 mb-2" title="banners" />
                     </Link>
+                  </li>
+                </RoleGuard>
+
+                <RoleGuard requiredRole="admin">
+                  <li className="rounded-2xl flex hover:bg-red-500 hover:text-white">
+                    <button
+                      className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1"
+                      onClick={async () => {
+                        await handlePromiseToast(revalidateCache('revalidate-all'), {
+                          messages: {
+                            pending: {
+                              title: 'Invalidando caché...',
+                              text: 'Por favor espera mientras se actualiza el caché',
+                            },
+                            success: {
+                              title: 'Caché invalidado',
+                              text: 'El caché fue invalidado exitosamente',
+                            },
+                            error: {
+                              title: 'Error',
+                              text: 'No se pudo invalidar el caché',
+                            },
+                          },
+                        });
+                      }}
+                      title="Forzar actualización de todos los datos cacheados"
+                    >
+                      <span className="hidden md:block">Revalidar</span>
+                      <RefreshIcon size={32} className="w-8 h-8 mb-2" title="Revalidar caché" />
+                    </button>
                   </li>
                 </RoleGuard>
               </ul>

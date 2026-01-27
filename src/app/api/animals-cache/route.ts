@@ -2,9 +2,6 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { Animal } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Cache response for 60 seconds
-
 /**
  * GET /api/animals-cache - Retrieve all animals data from Firestore with caching
  *

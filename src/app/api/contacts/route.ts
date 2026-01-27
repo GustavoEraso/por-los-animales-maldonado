@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { WpContactType } from '@/types';
+import { cacheLife } from 'next/dist/server/use-cache/cache-life';
+import { cacheTag } from 'next/dist/server/use-cache/cache-tag';
 
 /**
  * Fetches contacts data from the internal cache API with Next.js native caching.
@@ -9,6 +11,14 @@ import { WpContactType } from '@/types';
  * @throws {Error} If the cache API request fails
  */
 async function getContactsFromCache(): Promise<WpContactType[]> {
+  'use cache';
+  cacheTag('contacts', 'revalidate-all');
+  cacheLife({
+    stale: 30,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
+
   const baseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
@@ -18,7 +28,6 @@ async function getContactsFromCache(): Promise<WpContactType[]> {
     headers: {
       'x-internal-token': process.env.INTERNAL_API_SECRET!,
     },
-    next: { revalidate: 60 }, // Next.js will cache for 60 seconds
   });
 
   if (!res.ok) {

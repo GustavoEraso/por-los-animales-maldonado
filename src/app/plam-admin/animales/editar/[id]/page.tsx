@@ -13,6 +13,7 @@ import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import generateId from '@/lib/generateId';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 const initialAnimal: Animal = {
   id: '',
@@ -333,6 +334,11 @@ export default function EditAnimalForm() {
           },
         },
       });
+
+      // Invalidate animals cache if animal data was modified
+      if (Object.keys(animalChanges).length > 0) {
+        await revalidateCache('animals');
+      }
 
       router.replace('/plam-admin/animales');
     } catch (error) {
