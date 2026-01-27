@@ -1,5 +1,5 @@
-import { Animal } from '@/types';
-import { Filters } from '@/lib/fetchAnimal';
+import type { Animal } from '@/types';
+import type { Filters } from '@/lib/fetchAnimal';
 
 /**
  * Type guards for validating URL search parameters
