@@ -19,8 +19,6 @@ import { FacebookIcon, InstagramIcon, ChevronDownIcon } from '../Icons';
  * <Footer />
  */
 export default function Footer(): React.ReactElement {
-  const currentYear = new Date().getFullYear();
-
   return (
     <footer className="bg-caramel-deep text-white pt-8 flex flex-col gap-8">
       <section className="  flex flex-col  items-center justify-center md:flex-row md:justify-around gap-4">
@@ -105,7 +103,7 @@ export default function Footer(): React.ReactElement {
       </section>
       <div className="w-full bg-gray-800 py-4">
         <p className="text-center text-sm text-gray-400">
-          © {currentYear} Por los Animales Maldonado
+          © 2026 Por los Animales Maldonado
           <span className="mx-1">|</span>
           Desarrollado por{' '}
           <a
