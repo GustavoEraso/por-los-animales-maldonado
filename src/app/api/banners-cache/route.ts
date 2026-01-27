@@ -2,9 +2,6 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { BannerType } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 600; // Cache response for 600 seconds
-
 /**
  * GET /api/banners-cache - Retrieve all banners data from Firestore with caching
  *

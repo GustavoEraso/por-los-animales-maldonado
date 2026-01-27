@@ -16,6 +16,7 @@ import { deleteImage } from '@/lib/deleteIgame';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { TrashIcon, EyeIcon, ArrowLeftIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -151,6 +152,9 @@ export default function AnimalsPage() {
         },
       });
 
+      // Invalidate animals cache
+      await revalidateCache('animals');
+
       setRefresh(!refresh);
     } catch (error) {
       const elapsed = Date.now() - start;
@@ -229,6 +233,9 @@ export default function AnimalsPage() {
           error: { title: 'Error', text: `Hubo un error al eliminar a ${animal.name}.` },
         },
       });
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
     } catch (error) {
       console.error('Error to delete animal:', error);
     } finally {

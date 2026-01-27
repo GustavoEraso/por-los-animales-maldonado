@@ -13,6 +13,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 export default function ContactsPage() {
   const { currentUser, checkIsAdmin } = useAuth();
@@ -120,6 +121,9 @@ export default function ContactsPage() {
         }
       );
 
+      // Invalidate contacts cache
+      await revalidateCache('contacts');
+
       setRefresh(!refresh);
       setShowCacheInfoDialog(true);
     } catch (error) {
@@ -220,6 +224,9 @@ export default function ContactsPage() {
           },
         }
       );
+
+      // Invalidate contacts cache
+      await revalidateCache('contacts');
 
       setIsModalOpen(false);
       setEditingContact(null);

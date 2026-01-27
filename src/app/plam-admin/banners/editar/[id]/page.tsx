@@ -12,6 +12,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import Image from 'next/image';
 import { PlusIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 const initialBanner: BannerType = {
   id: '',
@@ -140,6 +141,9 @@ export default function EditBannerForm() {
           },
         },
       });
+
+      // Invalidate banners cache
+      await revalidateCache('banners');
 
       router.replace('/plam-admin/banners');
     } catch (error) {

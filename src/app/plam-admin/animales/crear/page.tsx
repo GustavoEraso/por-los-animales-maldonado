@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
+import { revalidateCache } from '@/lib/revalidateCache';
 import { PlusIcon } from '@/components/Icons';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -363,6 +364,10 @@ export default function CreateAnimalForm() {
           },
         },
       });
+
+      // Revalidate animals cache after successful creation
+      await revalidateCache('animals');
+
       router.replace('/plam-admin/animales');
     } catch (error) {
       console.error('Error al guardar el animal:', error);

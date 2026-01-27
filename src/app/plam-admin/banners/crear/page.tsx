@@ -10,6 +10,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { PlusIcon } from '@/components/Icons';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
 
 const initialBanner: BannerType = {
   id: '',
@@ -86,6 +87,10 @@ export default function CreateAnimalForm() {
           },
         },
       });
+
+      // Invalidate banners cache
+      await revalidateCache('banners');
+
       router.replace('/plam-admin/banners');
     } catch (error) {
       console.error('Error al guardar el banner:', error);

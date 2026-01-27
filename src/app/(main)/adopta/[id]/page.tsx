@@ -3,10 +3,11 @@ import { fetchAnimals } from '@/lib/fetchAnimal';
 import Hero from '@/components/Hero';
 import PhotoCarrousel from '@/components/PhotoCarrousel';
 import { Modal } from '@/components/Modal';
+import Loader from '@/components/Loader';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from '@/lib/dateUtils';
 import ShareButton from '@/elements/ShareButton';
-import { ViewTransition } from 'react';
+import { Suspense, ViewTransition } from 'react';
 
 import { buildFormUrl } from '@/lib/buildFormUrl';
 
@@ -14,8 +15,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function AnimalPage({ params }: PageProps) {
+/**
+ * Animal details component that fetches and displays animal data.
+ * Receives params promise and awaits it inside Suspense boundary.
+ */
+async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
   const [animal] = await fetchAnimals({ id });
 
   if (!animal) {
@@ -193,5 +199,26 @@ export default async function AnimalPage({ params }: PageProps) {
         </section>
       </Modal>
     </div>
+  );
+}
+
+/**
+ * Loading fallback for animal details.
+ * Must be completely static - no data fetching or dynamic components.
+ */
+function AnimalDetailsFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-8 w-full min-h-screen bg-white">
+      <Loader />
+      <p className="text-green-dark text-lg">Cargando información...</p>
+    </div>
+  );
+}
+
+export default async function AnimalPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<AnimalDetailsFallback />}>
+      <AnimalDetails params={params} />
+    </Suspense>
   );
 }

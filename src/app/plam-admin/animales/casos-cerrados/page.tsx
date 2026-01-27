@@ -11,6 +11,7 @@ import { auth } from '@/firebase';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { revalidateCache } from '@/lib/revalidateCache';
 import Card from '@/components/Card';
 import { EditIcon, EyeIcon, GridViewIcon, TableViewIcon, TrashIcon } from '@/components/Icons';
 
@@ -188,6 +189,9 @@ export default function ClosedCasesPage() {
           },
         },
       });
+
+      // Invalidate animals cache
+      await revalidateCache('animals');
 
       setRefresh(!refresh);
     } catch (error) {
