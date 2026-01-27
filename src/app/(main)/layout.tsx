@@ -1,20 +1,34 @@
-'use client';
-import React, { useState, useEffect } from 'react';
+import type { Metadata } from 'next';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
-
 import { fetchContacts } from '@/lib/fetchContacts';
-import { WpContactType } from '@/types';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const [contacts, setContacts] = useState<WpContactType[] | undefined>(undefined);
+export const metadata: Metadata = {
+  title: 'Por Los Animales Maldonado',
+  description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
+  openGraph: {
+    title: 'Por Los Animales Maldonado',
+    description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
+    url: 'https://porlosanimalesmaldonado.org',
+    siteName: 'Por Los Animales Maldonado',
+    images: [
+      {
+        url: 'https://porlosanimalesmaldonado.org/logo300.webp',
+        width: 300,
+        height: 300,
+        alt: 'Logo de Por Los Animales Maldonado',
+      },
+    ],
+    locale: 'es_ES',
+    type: 'website',
+  },
+};
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const contacts = await fetchContacts();
-      setContacts(contacts);
-    };
-    fetchData();
-  }, []);
+/**
+ * Main layout component for public-facing pages.
+ * Server Component that fetches contacts and renders WhatsAppFloat.
+ */
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const contacts = await fetchContacts();
 
   return (
     <>
