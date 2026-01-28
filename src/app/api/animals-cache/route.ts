@@ -1,6 +1,20 @@
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { Animal } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheLife, cacheTag } from 'next/cache';
+
+async function fetchAnimalsFromFirestore(): Promise<Animal[]> {
+  'use cache';
+  cacheLife({
+    stale: 30,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
+  cacheTag('animals', 'revalidate-all');
+
+  const data = await getFirestoreData({ currentCollection: 'animals' });
+  return data;
+}
 
 /**
  * GET /api/animals-cache - Retrieve all animals data from Firestore with caching
@@ -39,7 +53,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<Animal[] | { e
     if (token !== process.env.INTERNAL_API_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-    const data = await getFirestoreData({ currentCollection: 'animals' }); // Fetch from Firestore
+    const data = await fetchAnimalsFromFirestore(); // Fetch from Firestore
     return NextResponse.json(data);
   } catch (err) {
     console.error('Error fetching animals from Firestore:', err);

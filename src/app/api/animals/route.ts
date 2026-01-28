@@ -56,11 +56,10 @@ async function getAnimalsFromCache(): Promise<Animal[]> {
       ? 'http://localhost:3000'
       : 'https://www.porlosanimalesmaldonado.org';
 
-  const res = await fetch(`${baseUrl}/api/animals-cache`, {
+  const res = await fetch(`${baseUrl}/api/animalsprev`, {
     headers: {
       'x-internal-token': process.env.INTERNAL_API_SECRET!,
     },
-    cache: 'no-store',
   });
 
   if (!res.ok) {
