@@ -17,6 +17,7 @@ import { Modal } from '@/components/Modal';
 import TransactionCard from '@/components/TransactionCard';
 import { getTransactionLabel } from '@/lib/constants/animalLabels';
 import Link from 'next/link';
+import { fetchAnimals } from '@/lib/fetchAnimal';
 
 // Types for chart data
 type ChartDataState = {
@@ -99,7 +100,7 @@ export default function PlamAdmin() {
   // Date filter helper functions
   const getInitialStartDate = () => {
     const date = new Date();
-    date.setDate(date.getDate() - 15);
+    date.setDate(date.getDate() - 7);
     date.setHours(0, 0, 0, 0);
     return date.getTime();
   };
@@ -209,7 +210,8 @@ export default function PlamAdmin() {
 
       // Create the promise for loading data
       const promises = Promise.all([
-        getFirestoreData({ currentCollection: 'animals' }),
+        // getFirestoreData({ currentCollection: 'animals' }),
+        fetchAnimals(), // Fetch only non-deleted animals
         getFirestoreData({ currentCollection: 'authorizedEmails' }),
       ])
         .then(([animalsData, usersData]) => {

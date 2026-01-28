@@ -22,6 +22,7 @@ import SearchBox from '@/components/SearchBox';
 import Card from '@/components/Card';
 import { gsap } from 'gsap';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { fetchAnimals } from '@/lib/fetchAnimal';
 
 function AnimalsPageContent() {
   const router = useRouter();
@@ -61,10 +62,11 @@ function AnimalsPageContent() {
     const fetchData = async () => {
       // Fetch ALL animals (excluding deleted by default)
       // Apply all filters client-side to avoid Firestore index issues
-      await getFirestoreData({
-        currentCollection: 'animals',
-        filter: [['status', 'not-in', ['adoptado', 'fallecido']]], // Only basic filter to avoid index requirements
-      })
+      // await getFirestoreData({
+      //   currentCollection: 'animals',
+      //   filter: [['status', 'not-in', ['adoptado', 'fallecido']]], // Only basic filter to avoid index requirements
+      // })
+      await fetchAnimals({ isDeleted: false, status: ['calle', 'protectora', 'transitorio'] })
         .then((data) => {
           let filteredData = data as Animal[];
 
