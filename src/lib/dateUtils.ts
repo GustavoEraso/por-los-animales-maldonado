@@ -78,3 +78,17 @@ export function formatedDateOnly(date: number): string {
     timeZone: 'UTC',
   });
 }
+
+/**
+ * Returns the current timestamp in milliseconds.
+ * Extracted to a module-level utility to avoid React Compiler
+ * flagging Date.now() as an impure function call during render.
+ *
+ * @returns {number} The current timestamp in milliseconds.
+ *
+ * @example
+ * const now = createTimestamp(); // 1740700800000
+ */
+export function createTimestamp(): number {
+  return Date.now();
+}
