@@ -87,6 +87,46 @@ export async function getActiveAnimalsData(): Promise<Animal[]> {
 }
 
 /**
+ * Internal cached function that fetches ALL animals from Firestore.
+ * No filters applied — returns every document including non-visible,
+ * adopted, deceased, etc. Used for admin dashboards and analytics.
+ * Only executes on cache MISS.
+ */
+async function fetchAllAnimalsFromFirestore(): Promise<Animal[]> {
+  'use cache';
+  cacheTag('animals', 'revalidate-all');
+  cacheLife({
+    stale: 600,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
+
+  console.log('[animals:all] 🔥 Cache MISS — fetching from Firestore');
+
+  return getFirestoreData({ currentCollection: 'animals' });
+}
+
+/**
+ * Fetches ALL animals with server-side caching and logging.
+ *
+ * Returns every animal without filters (including non-visible,
+ * adopted, deceased, etc.). Intended for admin dashboards and analytics.
+ *
+ * Cache is invalidated on-demand via `revalidateTag('animals')`.
+ *
+ * @returns All animals from the 'animals' Firestore collection
+ */
+export async function getAllAnimalsData(): Promise<Animal[]> {
+  const start = performance.now();
+  const data = await fetchAllAnimalsFromFirestore();
+  const elapsed = (performance.now() - start).toFixed(1);
+
+  console.log(`[animals:all] ✅ Returned ${data.length} animals in ${elapsed}ms`);
+
+  return data;
+}
+
+/**
  * Internal cached function that fetches a single animal by ID from Firestore.
  * Only executes on cache MISS.
  */
