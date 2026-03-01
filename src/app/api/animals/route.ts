@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Animal } from '@/types';
-import { cacheLife, cacheTag } from 'next/cache';
+import { getAnimalsData } from '@/lib/data/animals';
 
 // Fields that should not be normalized for text comparison
 const EXCLUDE_NORMALIZATION: (keyof Animal)[] = ['id', 'waitingSince'];
@@ -33,40 +33,6 @@ function normalize(str: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
-}
-
-/**
- * Fetches animals data from the internal cache API with Next.js native caching.
- * This function uses Next.js fetch with revalidation for reliable caching in Vercel.
- *
- * @returns {Promise<Animal[]>} Promise that resolves to array of animals
- * @throws {Error} If the cache API request fails
- */
-async function getAnimalsFromCache(): Promise<Animal[]> {
-  'use cache';
-  cacheTag('animals', 'revalidate-all');
-  cacheLife({
-    stale: 30,
-    revalidate: 2600000,
-    expire: 2600000,
-  });
-
-  const baseUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.org';
-
-  const res = await fetch(`${baseUrl}/api/animalsprev`, {
-    headers: {
-      'x-internal-token': process.env.INTERNAL_API_SECRET!,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch animals cache: ${res.status}`);
-  }
-
-  return res.json();
 }
 
 /**
@@ -205,8 +171,8 @@ export async function POST(req: NextRequest): Promise<
   try {
     const { sortBy, sortOrder = 'asc', page, limit, ...filters } = await req.json();
 
-    // Get animals from cache using Next.js native caching
-    const animals = await getAnimalsFromCache();
+    // Get animals from cached data layer (direct Firestore access, no HTTP intermediaries)
+    const animals = await getAnimalsData();
 
     // Main filtering logic
     const filtered = animals?.filter((animal: Animal) => {

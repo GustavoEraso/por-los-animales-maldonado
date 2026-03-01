@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
-import { fetchContacts } from '@/lib/fetchContacts';
+import { getContactsData } from '@/lib/data/contacts';
 
 export const metadata: Metadata = {
   title: 'Por Los Animales Maldonado',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
  * Server Component that fetches contacts and renders WhatsAppFloat.
  */
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const contacts = await fetchContacts();
+  const contacts = await getContactsData();
 
   return (
     <>

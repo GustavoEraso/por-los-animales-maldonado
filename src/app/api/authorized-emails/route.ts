@@ -23,7 +23,11 @@ interface AuthorizedUser {
 async function getAuthorizedEmails(): Promise<AuthorizedUser[]> {
   'use cache';
   cacheTag('authorized-emails', 'users', 'revalidate-all');
-  cacheLife('minutes'); // stale: 5min, revalidate: 1min, expire: 1h
+  cacheLife({
+    stale: 30,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
 
   const snapshot = await getDocs(collection(db, 'authorizedEmails'));
   const users: AuthorizedUser[] = snapshot.docs.map((doc) => ({

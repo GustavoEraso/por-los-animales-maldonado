@@ -1,5 +1,5 @@
 // app/animals/[id]/page.tsx (Server Component)
-import { fetchAnimals } from '@/lib/fetchAnimal';
+import { getAnimalById } from '@/lib/data/animals';
 import Hero from '@/components/Hero';
 import PhotoCarrousel from '@/components/PhotoCarrousel';
 import { Modal } from '@/components/Modal';
@@ -22,7 +22,7 @@ type PageProps = {
 async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [animal] = await fetchAnimals({ id });
+  const animal = await getAnimalById(id);
 
   if (!animal) {
     return (
