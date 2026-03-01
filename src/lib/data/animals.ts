@@ -47,6 +47,46 @@ export async function getAnimalsData(): Promise<Animal[]> {
 }
 
 /**
+ * Internal cached function that fetches active animals from Firestore.
+ * Excludes animals with status 'adoptado' or 'fallecido'.
+ * Only executes on cache MISS.
+ */
+async function fetchActiveAnimalsFromFirestore(): Promise<Animal[]> {
+  'use cache';
+  cacheTag('animals', 'revalidate-all');
+  cacheLife({
+    stale: 600,
+    revalidate: 2600000,
+    expire: 2600000,
+  });
+
+  console.log('[animals:active] 🔥 Cache MISS — fetching from Firestore');
+
+  return getFirestoreData({
+    currentCollection: 'animals',
+    filter: [['status', 'not-in', ['adoptado', 'fallecido']]],
+  });
+}
+
+/**
+ * Fetches active animals (excluding adopted and deceased) with server-side caching.
+ *
+ * Uses Next.js `'use cache'` directive internally.
+ * Cache is invalidated on-demand via `revalidateTag('animals')`.
+ *
+ * @returns Animals whose status is not 'adoptado' or 'fallecido'
+ */
+export async function getActiveAnimalsData(): Promise<Animal[]> {
+  const start = performance.now();
+  const data = await fetchActiveAnimalsFromFirestore();
+  const elapsed = (performance.now() - start).toFixed(1);
+
+  console.log(`[animals:active] ✅ Returned ${data.length} animals in ${elapsed}ms`);
+
+  return data;
+}
+
+/**
  * Internal cached function that fetches a single animal by ID from Firestore.
  * Only executes on cache MISS.
  */
