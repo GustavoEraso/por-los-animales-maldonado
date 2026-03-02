@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { fetchAnimals } from '@/lib/fetchAnimal';
+import { getAnimalById } from '@/lib/data/animals';
 
 type RouteParams = { id: string };
 
@@ -9,7 +9,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { id } = await params;
 
-  const [animal] = await fetchAnimals({ id });
+  const animal = await getAnimalById(id);
   if (!animal) {
     return {
       title: 'Animal no encontrado',

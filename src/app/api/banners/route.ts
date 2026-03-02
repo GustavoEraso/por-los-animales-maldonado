@@ -1,41 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BannerType } from '@/types';
-import { cacheLife } from 'next/dist/server/use-cache/cache-life';
-import { cacheTag } from 'next/dist/server/use-cache/cache-tag';
-
-/**
- * Fetches banners data from the internal cache API with Next.js native caching.
- * This function uses Next.js fetch with revalidation for reliable caching in Vercel.
- *
- * @returns {Promise<BannerType[]>} Promise that resolves to array of banners
- * @throws {Error} If the cache API request fails
- */
-async function getBannersFromCache(): Promise<BannerType[]> {
-  'use cache';
-  cacheTag('banners', 'revalidate-all');
-  cacheLife({
-    stale: 30,
-    revalidate: 2600000,
-    expire: 2600000,
-  });
-
-  const baseUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.org';
-
-  const res = await fetch(`${baseUrl}/api/banners-cache`, {
-    headers: {
-      'x-internal-token': process.env.INTERNAL_API_SECRET!,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch banners cache: ${res.status}`);
-  }
-
-  return res.json();
-}
+import { getBannersData } from '@/lib/data/banners';
 
 /**
  * GET /api/banners - Retrieve banners with Next.js native caching
@@ -78,8 +43,7 @@ async function getBannersFromCache(): Promise<BannerType[]> {
 
 export async function GET(): Promise<NextResponse<BannerType[] | { error: string }>> {
   try {
-    // Get banners from cache using Next.js native caching
-    const data = await getBannersFromCache();
+    const data = await getBannersData();
 
     return NextResponse.json(data);
   } catch (err) {

@@ -1,4 +1,16 @@
-import { Animal, AnimalTransactionType, UserType } from '@/types';
+import { Animal, UserType, MonthlyAggregate } from '@/types';
+
+/**
+ * Minimal transaction shape needed for chart data generation.
+ * Both AnimalTransactionType and LeanTransaction satisfy this interface,
+ * allowing chart functions to work with either full or lean transactions.
+ */
+interface ChartTransaction {
+  id: string;
+  date: number;
+  modifiedBy: string;
+  status?: string;
+}
 
 /**
  * Filters animals that were active (not adopted) in a specific month
@@ -32,7 +44,7 @@ export function getActiveAnimalsByMonth({
   month,
 }: {
   animals: Animal[];
-  transactions: AnimalTransactionType[];
+  transactions: ChartTransaction[];
   year: number;
   month: number; // 0-11 (JavaScript months)
 }): Animal[] {
@@ -95,7 +107,7 @@ export function generateActiveAnimalsChartData({
   dayInterval = 30,
 }: {
   animals: Animal[];
-  transactions: AnimalTransactionType[];
+  transactions: ChartTransaction[];
   months?: number;
   startDate?: number;
   endDate?: number;
@@ -211,7 +223,7 @@ export function generateTransactionsByUserData({
   users,
   months,
 }: {
-  transactions: AnimalTransactionType[];
+  transactions: ChartTransaction[];
   users: UserType[];
   months?: number;
 }): { name: string; value: number }[] {
@@ -290,7 +302,7 @@ export function generateAnimalsInOutData({
   dayInterval = 30,
 }: {
   animals: Animal[];
-  transactions: AnimalTransactionType[];
+  transactions: ChartTransaction[];
   months?: number;
   startDate?: number;
   endDate?: number;
@@ -469,4 +481,204 @@ export function generateAnimalStatusData({
     { name: 'Transitorio', value: statusCounts.temporary },
     { name: 'Protectora', value: statusCounts.shelter },
   ].filter((statusItem) => statusItem.value > 0); // Only show categories with data
+}
+
+// ─────────────────────────────────────────────────────────
+// Functions for monthly aggregate data (dashboard presets)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * Returns an array of YYYY-MM keys for the last N months, starting from the current month.
+ *
+ * @param months - Number of months to generate (including current)
+ * @returns Array of month keys like ["2026-01", "2026-02", "2026-03"]
+ */
+function getMonthKeys(months: number): string[] {
+  const keys: string[] = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    keys.push(`${year}-${month}`);
+  }
+  return keys;
+}
+
+/**
+ * Returns a short month label for a YYYY-MM key.
+ *
+ * @param monthKey - Key like "2026-03"
+ * @returns Short label like "mar"
+ */
+function monthKeyToLabel(monthKey: string): string {
+  const [yearStr, monthStr] = monthKey.split('-');
+  const d = new Date(Number(yearStr), Number(monthStr) - 1, 1);
+  return d.toLocaleDateString('es-ES', { month: 'short' });
+}
+
+/**
+ * Generates "transactions by user" chart data from monthly aggregates.
+ * Merges byUser counts from each selected month and returns top 10 users.
+ *
+ * @param params.monthly - Record of monthly aggregates from dashboard analytics
+ * @param params.users - Array of all users (for email→name mapping)
+ * @param params.months - Number of months to include
+ * @returns Array of { name, value } pairs sorted by transaction count (top 10)
+ *
+ * @example
+ * const userData = generateTransactionsByUserFromAggregates({
+ *   monthly: analytics.monthly,
+ *   users: initialUsers,
+ *   months: 6,
+ * });
+ */
+export function generateTransactionsByUserFromAggregates({
+  monthly,
+  users,
+  months,
+}: {
+  monthly: Record<string, MonthlyAggregate>;
+  users: UserType[];
+  months: number;
+}): { name: string; value: number }[] {
+  const keys = getMonthKeys(months);
+
+  // Merge byUser counts
+  const merged: Record<string, number> = {};
+  keys.forEach((key) => {
+    const agg = monthly[key];
+    if (!agg) return;
+    Object.entries(agg.byUser).forEach(([email, count]) => {
+      merged[email] = (merged[email] || 0) + count;
+    });
+  });
+
+  // Email to name mapping
+  const emailToName: Record<string, string> = {};
+  users.forEach((user) => {
+    emailToName[user.id] = user.name;
+  });
+
+  return Object.entries(merged)
+    .map(([email, count]) => ({
+      name: emailToName[email] || email.split('@')[0],
+      value: count,
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+}
+
+/**
+ * Generates "Ingresos vs Adopciones" multi-line chart from monthly aggregates.
+ * For each month: Ingresos = animals created in that month (from animals array),
+ * Adopciones = adoptionCount from the aggregate.
+ *
+ * @param params.animals - Array of all animals (for waitingSince dates)
+ * @param params.monthly - Record of monthly aggregates
+ * @param params.months - Number of months to include
+ * @returns Array of multi-line chart data points
+ *
+ * @example
+ * const flowData = generateAnimalsInOutFromAggregates({
+ *   animals: initialAnimals,
+ *   monthly: analytics.monthly,
+ *   months: 6,
+ * });
+ */
+export function generateAnimalsInOutFromAggregates({
+  animals,
+  monthly,
+  months,
+}: {
+  animals: Animal[];
+  monthly: Record<string, MonthlyAggregate>;
+  months: number;
+}): {
+  label: string;
+  datasets: { name: string; value: number }[];
+}[] {
+  const keys = getMonthKeys(months);
+
+  return keys.map((key) => {
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr) - 1;
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    // Animals that arrived this month
+    const newAnimals = animals.filter((animal) => {
+      const created = new Date(animal.waitingSince);
+      return created >= startOfMonth && created <= endOfMonth;
+    });
+
+    const agg = monthly[key];
+
+    return {
+      label: monthKeyToLabel(key),
+      datasets: [
+        { name: 'Ingresos', value: newAnimals.length },
+        { name: 'Adopciones', value: agg?.adoptionCount ?? 0 },
+      ],
+    };
+  });
+}
+
+/**
+ * Generates "Active Animals" line chart from monthly aggregates.
+ * For each month: active = (animals created before end of month) - (adopted before end of month).
+ * Uses adoptedAnimalIds accumulated from aggregates to track adoptions.
+ *
+ * @param params.animals - Array of all animals (for waitingSince dates)
+ * @param params.monthly - Record of monthly aggregates
+ * @param params.months - Number of months to include
+ * @returns Array of { label, value } pairs for the line chart
+ *
+ * @example
+ * const activeData = generateActiveAnimalsFromAggregates({
+ *   animals: initialAnimals,
+ *   monthly: analytics.monthly,
+ *   months: 6,
+ * });
+ */
+export function generateActiveAnimalsFromAggregates({
+  animals,
+  monthly,
+  months,
+}: {
+  animals: Animal[];
+  monthly: Record<string, MonthlyAggregate>;
+  months: number;
+}): { label: string; value: number }[] {
+  const keys = getMonthKeys(months);
+
+  // Accumulate adopted animal IDs up to each month
+  const allMonthKeys = Object.keys(monthly).sort();
+  const adoptedByMonth = new Map<string, Set<string>>();
+  const runningAdopted = new Set<string>();
+
+  allMonthKeys.forEach((key) => {
+    const agg = monthly[key];
+    if (agg) {
+      agg.adoptedAnimalIds.forEach((id) => runningAdopted.add(id));
+    }
+    adoptedByMonth.set(key, new Set(runningAdopted));
+  });
+
+  return keys.map((key) => {
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr) - 1;
+    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    // Animals created before end of this month
+    const created = animals.filter((a) => new Date(a.waitingSince) <= endOfMonth);
+
+    // Adopted before or during this month
+    const adopted = adoptedByMonth.get(key) ?? new Set<string>();
+
+    const active = created.filter((a) => !adopted.has(a.id));
+    return { label: monthKeyToLabel(key), value: active.length };
+  });
 }

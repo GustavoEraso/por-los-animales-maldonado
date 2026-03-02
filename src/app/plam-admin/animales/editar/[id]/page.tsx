@@ -4,6 +4,7 @@ import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType 
 import UploadImages from '@/elements/UploadImage';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { useRouter, useParams } from 'next/navigation';
 import { auth } from '@/firebase';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
@@ -290,9 +291,8 @@ export default function EditAnimalForm() {
         return;
       } else {
         promisesList.push(
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransactionInfo,
-            currentCollection: 'animalTransactions',
             id: newTransactionInfo.transactionId!,
           })
         );

@@ -8,6 +8,7 @@ import Loader from '@/components/Loader';
 import { Animal, AnimalTransactionType } from '@/types';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import { Modal } from '@/components/Modal';
@@ -121,6 +122,7 @@ export default function AnimalsPage() {
       const newTransactionData: AnimalTransactionType = {
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
+        transactionType: 'update',
         isDeleted: false,
         isVisible: false,
         isAvailable: false,
@@ -135,9 +137,8 @@ export default function AnimalsPage() {
           currentCollection: 'animals',
           id: currentId,
         }),
-        postFirestoreData<AnimalTransactionType>({
+        postTransactionData({
           data: newTransactionData,
-          currentCollection: 'animals',
         }),
       ]);
 
@@ -210,6 +211,7 @@ export default function AnimalsPage() {
       const newTransaction: AnimalTransactionType = {
         id: animal.id,
         name: animal.name,
+        transactionType: 'delete',
         hardDeleted: true,
         date: Date.now(),
         since: Date.now(),
@@ -218,9 +220,8 @@ export default function AnimalsPage() {
 
       const promises = Promise.all([
         deleteFirestoreData({ collection: 'animals', docId: animal.id }),
-        postFirestoreData<AnimalTransactionType>({
+        postTransactionData({
           data: newTransaction,
-          currentCollection: 'animalTransactions',
         }),
       ]);
       await handlePromiseToast(promises, {

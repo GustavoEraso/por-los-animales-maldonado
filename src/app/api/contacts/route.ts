@@ -1,41 +1,6 @@
 import { NextResponse } from 'next/server';
 import { WpContactType } from '@/types';
-import { cacheLife } from 'next/dist/server/use-cache/cache-life';
-import { cacheTag } from 'next/dist/server/use-cache/cache-tag';
-
-/**
- * Fetches contacts data from the internal cache API with Next.js native caching.
- * This function uses Next.js fetch with revalidation for reliable caching in Vercel.
- *
- * @returns {Promise<WpContactType[]>} Promise that resolves to array of WhatsApp contacts
- * @throws {Error} If the cache API request fails
- */
-async function getContactsFromCache(): Promise<WpContactType[]> {
-  'use cache';
-  cacheTag('contacts', 'revalidate-all');
-  cacheLife({
-    stale: 30,
-    revalidate: 2600000,
-    expire: 2600000,
-  });
-
-  const baseUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.org';
-
-  const res = await fetch(`${baseUrl}/api/contacts-cache`, {
-    headers: {
-      'x-internal-token': process.env.INTERNAL_API_SECRET!,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch contacts cache: ${res.status}`);
-  }
-
-  return res.json();
-}
+import { getContactsData } from '@/lib/data/contacts';
 
 /**
  * GET /api/contacts - Retrieve WhatsApp contacts with Next.js native caching
@@ -79,8 +44,7 @@ async function getContactsFromCache(): Promise<WpContactType[]> {
 
 export async function GET(): Promise<NextResponse<WpContactType[] | { error: string }>> {
   try {
-    // Get contacts from cache using Next.js native caching
-    const contacts = await getContactsFromCache();
+    const contacts = await getContactsData();
 
     return NextResponse.json(contacts);
   } catch (err) {

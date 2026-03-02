@@ -6,6 +6,7 @@ import Loader from '@/components/Loader';
 import { Animal, AnimalTransactionType } from '@/types';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { auth } from '@/firebase';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -156,6 +157,7 @@ export default function ClosedCasesPage() {
         since: Date.now(),
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
+        transactionType: 'delete',
         isDeleted: true,
         isVisible: false,
         isAvailable: false,
@@ -167,9 +169,8 @@ export default function ClosedCasesPage() {
           currentCollection: 'animals',
           id: animalToDelete.id,
         }),
-        postFirestoreData<AnimalTransactionType>({
+        postTransactionData({
           data: newTransaction,
-          currentCollection: 'animalTransactions',
         }),
       ]);
 

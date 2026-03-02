@@ -1,5 +1,6 @@
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { postFirestoreData } from './postFirestoreData';
+import { postTransactionData } from './dashboardAnalytics';
 import { getFirestoreDocById } from './getFirestoreDocById';
 import { auth } from '@/firebase';
 
@@ -13,9 +14,9 @@ interface NoteData {
  * Returns a promise that resolves when both privateInfo and transaction are written to Firestore.
  * The caller is responsible for handling UI feedback (toasts, loading states, etc.).
  *
- * @returns Promise<[void, void]> - Resolves when both Firestore writes complete
+ * @returns Promise<[void, string]> - Resolves when both Firestore writes complete (string is the transactionId)
  */
-async function postNewAnimalNote({ note, animalId }: NoteData): Promise<[void, void]> {
+async function postNewAnimalNote({ note, animalId }: NoteData): Promise<[void, string]> {
   const [prePrivateInfo, animal] = await Promise.all([
     getFirestoreDocById<PrivateInfoType>({
       currentCollection: 'animalPrivateInfo',
@@ -57,9 +58,8 @@ async function postNewAnimalNote({ note, animalId }: NoteData): Promise<[void, v
       currentCollection: 'animalPrivateInfo',
       id: prePrivateInfo.id,
     }),
-    postFirestoreData<AnimalTransactionType>({
+    postTransactionData({
       data: newTransactionData,
-      currentCollection: 'animalTransactions',
     }),
   ]);
 }
