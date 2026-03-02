@@ -13,7 +13,9 @@ export default function AnimalTimelineSection({
 }: AnimalTimelineSectionProps): React.ReactElement {
   return (
     <section className="flex flex-col items-center bg-cream-light w-full p-4 gap-1 text-center">
-      <h4 className="font-extrabold text-4xl sm:text-7xl text-green-dark">Linea del tiempo</h4>
+      <h4 id="linea-del-tiempo" className="font-extrabold text-4xl sm:text-7xl text-green-dark">
+        Linea del tiempo
+      </h4>
       <p className="text-green-dark text-md font-bold">
         Este animal ha tenido los siguientes estados a lo largo del tiempo:
       </p>

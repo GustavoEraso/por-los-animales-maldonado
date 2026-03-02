@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { postNewAnimalNote } from '@/lib/firebase/postAnimalNote';
 import { Modal } from '@/components/Modal';
@@ -79,9 +80,8 @@ export default function AnimalPrivateInfoSection({
               currentCollection: 'animalPrivateInfo',
               id: privateInfo.id,
             }),
-            postFirestoreData<AnimalTransactionType>({
+            postTransactionData({
               data: newTransactionData,
-              currentCollection: 'animalTransactions',
             }),
           ]),
           {
@@ -153,9 +153,8 @@ export default function AnimalPrivateInfoSection({
             currentCollection: 'animalPrivateInfo',
             id: privateInfo.id,
           }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransactionData,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {

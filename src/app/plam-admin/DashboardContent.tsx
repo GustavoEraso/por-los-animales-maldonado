@@ -1,315 +1,237 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useReducer, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { gsap } from 'gsap/dist/gsap';
 import Chart from '@/components/Chart';
-import { Animal, AnimalTransactionType, UserType } from '@/types';
-import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
-import { handleToast } from '@/lib/handleToast';
+import { Animal, DashboardAnalyticsData, LeanTransaction, UserType } from '@/types';
 import {
   generateActiveAnimalsChartData,
   generateTransactionsByUserData,
   generateAnimalsInOutData,
   generateAnimalStatusData,
+  generateTransactionsByUserFromAggregates,
+  generateAnimalsInOutFromAggregates,
+  generateActiveAnimalsFromAggregates,
 } from '@/lib/animalFilters';
-import { Modal } from '@/components/Modal';
-import TransactionCard from '@/components/TransactionCard';
 import { getTransactionLabel } from '@/lib/constants/animalLabels';
 import Link from 'next/link';
+import { createTimestamp } from '@/lib/dateUtils';
 
-// Types for chart data
-type ChartDataState = {
+// ─── Preset configuration ────────────────────────────────
+
+/** Available time period preset keys */
+type PresetKey = '7d' | '30d' | '3m' | '6m' | '1a';
+
+/** Preset definitions with display labels and time range values */
+const PRESETS: { key: PresetKey; label: string; days?: number; months?: number }[] = [
+  { key: '7d', label: '7 días', days: 7 },
+  { key: '30d', label: '30 días', days: 30 },
+  { key: '3m', label: '3 meses', months: 3 },
+  { key: '6m', label: '6 meses', months: 6 },
+  { key: '1a', label: '1 año', months: 12 },
+];
+
+/** Short presets use filtered recentTransactions; long presets use monthly aggregates */
+function isShortPreset(key: PresetKey): boolean {
+  return key === '7d' || key === '30d';
+}
+
+/** Get the configuration for a specific preset key */
+function getPresetConfig(key: PresetKey): { days?: number; months?: number } {
+  const preset = PRESETS.find((p) => p.key === key);
+  return { days: preset?.days, months: preset?.months };
+}
+
+/**
+ * Returns an array of YYYY-MM keys for the last N months (including current).
+ * Used for long preset stat card calculations.
+ */
+function getMonthKeys(months: number): string[] {
+  const keys: string[] = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    keys.push(`${year}-${month}`);
+  }
+  return keys;
+}
+
+// ─── Chart data types ────────────────────────────────────
+
+/** Shape of all chart datasets used in the dashboard */
+interface ChartDataState {
   activeAnimals: { label: string; value: number }[];
   transactionsByUser: { name: string; value: number }[];
   animalsInOut: { label: string; datasets: { name: string; value: number }[] }[];
   status: { name: string; value: number }[];
-};
-
-// Actions for chart data reducer
-type ChartDataAction =
-  | { type: 'SET_CHART_DATA'; payload: ChartDataState }
-  | { type: 'RESET_CHARTS' };
-
-// Initial state for charts
-const initialChartState: ChartDataState = {
-  activeAnimals: [],
-  transactionsByUser: [],
-  animalsInOut: [],
-  status: [],
-};
-
-// Chart data reducer
-function chartDataReducer(state: ChartDataState, action: ChartDataAction): ChartDataState {
-  switch (action.type) {
-    case 'SET_CHART_DATA':
-      return action.payload;
-    case 'RESET_CHARTS':
-      return initialChartState;
-    default:
-      return state;
-  }
 }
 
 interface DashboardContentProps {
   initialAnimals: Animal[];
   initialUsers: UserType[];
+  initialAnalytics: DashboardAnalyticsData | null;
 }
 
 /**
  * Client-side interactive content for the admin dashboard.
- * Receives pre-fetched animals and users from the Server Component.
- * Handles transactions loading with dynamic date filters.
+ * Receives pre-fetched data from the Server Component including cached analytics.
+ * Uses preset period filters (7d, 30d, 3m, 6m, 1a) instead of date inputs.
+ *
+ * - Short presets (7d, 30d): filter recentTransactions from analytics
+ * - Long presets (3m, 6m, 1a): use monthly aggregates from analytics
+ * - "Ver Detalles" loads full transaction on-demand via getFullTransaction (client-side auth)
  */
-export default function DashboardContent({ initialAnimals, initialUsers }: DashboardContentProps) {
+export default function DashboardContent({
+  initialAnimals,
+  initialUsers,
+  initialAnalytics,
+}: DashboardContentProps): React.ReactNode {
   const cardsRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
 
-  // Transactions loaded dynamically based on date filter
-  const [transactions, setTransactions] = useState<AnimalTransactionType[]>([]);
-  const [searchController, setSearchController] = useState<boolean>(false);
+  const [activePreset, setActivePreset] = useState<PresetKey>('7d');
 
-  // Date filter helper functions
-  const getInitialStartDate = (): number => {
-    const date = new Date();
-    date.setDate(date.getDate() - 7);
-    date.setHours(0, 0, 0, 0);
-    return date.getTime();
-  };
-
-  const getInitialEndDate = (): number => {
-    const date = new Date();
-    date.setHours(23, 59, 59, 999);
-    return date.getTime();
-  };
-
-  // Date filter state
-  const [dateFilter, setDateFilter] = useState<{ startDate: number; endDate: number }>({
-    startDate: getInitialStartDate(),
-    endDate: getInitialEndDate(),
-  });
-
-  // Temporary date filter for inputs (before applying)
-  const [tempDateFilter, setTempDateFilter] = useState<{ startDate: number; endDate: number }>({
-    startDate: getInitialStartDate(),
-    endDate: getInitialEndDate(),
-  });
-
-  // Chart data state with reducer
-  const [chartData, dispatchChartData] = useReducer(chartDataReducer, initialChartState);
-
-  // Generate status chart on mount (doesn't depend on time)
-  useEffect(() => {
-    const statusData = generateAnimalStatusData({ animals: initialAnimals });
-    dispatchChartData({
-      type: 'SET_CHART_DATA',
-      payload: {
-        activeAnimals: [],
-        transactionsByUser: [],
-        animalsInOut: [],
-        status: statusData,
-      },
-    });
-  }, [initialAnimals]);
-
-  // Function to regenerate chart data with new date range
-  const regenerateCharts = useCallback(
-    (startDate: number, endDate: number) => {
-      if (initialAnimals.length === 0 || transactions.length === 0) {
-        handleToast({
-          type: 'warning',
-          title: 'Sin datos',
-          text: 'No hay datos disponibles para actualizar los gráficos',
-        });
-        return;
-      }
-
-      const months = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24 * 30));
-
-      const activeAnimalsData = generateActiveAnimalsChartData({
-        animals: initialAnimals,
-        transactions,
-        months,
-      });
-
-      const animalsInOutData = generateAnimalsInOutData({
-        animals: initialAnimals,
-        transactions,
-        months,
-      });
-
-      const transactionsByUserData = generateTransactionsByUserData({
-        transactions,
-        users: initialUsers,
-        months,
-      });
-
-      dispatchChartData({
-        type: 'SET_CHART_DATA',
-        payload: {
-          activeAnimals: activeAnimalsData,
-          transactionsByUser: transactionsByUserData,
-          animalsInOut: animalsInOutData,
-          status: chartData.status,
-        },
-      });
-    },
-    [initialAnimals, transactions, initialUsers, chartData.status]
+  // Status chart data (independent of time preset — depends only on current animal status)
+  const statusData = useMemo(
+    () => generateAnimalStatusData({ animals: initialAnimals }),
+    [initialAnimals]
   );
 
-  // Format timestamp to local date string for input
-  const formatToLocalDateString = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // Chart data computed from active preset
+  const chartData = useMemo((): ChartDataState => {
+    if (!initialAnalytics) {
+      return { activeAnimals: [], transactionsByUser: [], animalsInOut: [], status: statusData };
+    }
 
-  // Handle date filter change
-  const handleDateFilterChange = (): void => {
-    setDateFilter(tempDateFilter);
-    setSearchController(!searchController);
-    regenerateCharts(tempDateFilter.startDate, tempDateFilter.endDate);
+    if (isShortPreset(activePreset)) {
+      // Short presets: filter recentTransactions then use existing chart functions
+      const { days } = getPresetConfig(activePreset);
+      const daysValue = days ?? 7;
+      const now = createTimestamp();
+      const cutoff = now - daysValue * 24 * 60 * 60 * 1000;
+      const filtered = initialAnalytics.recentTransactions.filter((tx) => tx.date >= cutoff);
 
-    const days = Math.ceil(
-      (tempDateFilter.endDate - tempDateFilter.startDate) / (1000 * 60 * 60 * 24)
-    );
-    handleToast({
-      type: 'info',
-      title: 'Filtro actualizado',
-      text: `Mostrando datos de ${days} días`,
-    });
-  };
+      let dayInterval = 30;
+      if (daysValue < 7) dayInterval = 1;
+      else if (daysValue < 15) dayInterval = 2;
+      else if (daysValue < 30) dayInterval = 5;
+      else if (daysValue < 60) dayInterval = 10;
 
-  // Load transactions data with date filter
-  useEffect(() => {
-    const loadTransactions = async (): Promise<void> => {
-      if (initialAnimals.length === 0 || initialUsers.length === 0) return;
-
-      try {
-        const transactionsData = await getFirestoreData({
-          currentCollection: 'animalTransactions',
-          orderBy: 'date',
-          direction: 'desc',
-          filter: [
-            ['date', '>=', dateFilter.startDate],
-            ['date', '<=', dateFilter.endDate],
-          ],
-        });
-
-        const fetchedTransactions = transactionsData as AnimalTransactionType[];
-        setTransactions(fetchedTransactions);
-
-        // Calculate days and interval
-        const totalDays = Math.ceil(
-          (dateFilter.endDate - dateFilter.startDate) / (1000 * 60 * 60 * 24)
-        );
-
-        // Determine interval based on days
-        let dayInterval = 30;
-        if (totalDays < 7) {
-          dayInterval = 1;
-        } else if (totalDays < 15) {
-          dayInterval = 2;
-        } else if (totalDays < 30) {
-          dayInterval = 5;
-        } else if (totalDays < 60) {
-          dayInterval = 10;
-        }
-
-        const activeAnimalsData = generateActiveAnimalsChartData({
+      return {
+        activeAnimals: generateActiveAnimalsChartData({
           animals: initialAnimals,
-          transactions: fetchedTransactions,
-          startDate: dateFilter.startDate,
-          endDate: dateFilter.endDate,
+          transactions: filtered,
+          startDate: cutoff,
+          endDate: now,
           dayInterval,
-        });
-        const transactionsByUserData = generateTransactionsByUserData({
-          transactions: fetchedTransactions,
+        }),
+        transactionsByUser: generateTransactionsByUserData({
+          transactions: filtered,
           users: initialUsers,
-          months: Math.ceil(totalDays / 30),
-        });
-        const animalsInOutData = generateAnimalsInOutData({
+          months: Math.ceil(daysValue / 30),
+        }),
+        animalsInOut: generateAnimalsInOutData({
           animals: initialAnimals,
-          transactions: fetchedTransactions,
-          startDate: dateFilter.startDate,
-          endDate: dateFilter.endDate,
+          transactions: filtered,
+          startDate: cutoff,
+          endDate: now,
           dayInterval,
-        });
+        }),
+        status: statusData,
+      };
+    }
 
-        dispatchChartData({
-          type: 'SET_CHART_DATA',
-          payload: {
-            activeAnimals: activeAnimalsData,
-            transactionsByUser: transactionsByUserData,
-            animalsInOut: animalsInOutData,
-            status: chartData.status,
-          },
-        });
-      } catch (error) {
-        console.error('Error loading transactions:', error);
-      }
-    };
-
-    loadTransactions();
-  }, [searchController, initialAnimals, initialUsers, dateFilter, chartData.status]);
-
-  // Calculate summary statistics filtered by selected time period
-  const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
-    const cutoffDate = new Date(dateFilter.startDate);
-
-    const animalsInPeriod = initialAnimals.filter((animal) => {
-      const hasRecentTransaction = transactions.some((transaction) => {
-        const transactionDate = new Date(transaction.date);
-        return transaction.id === animal.id && transactionDate >= cutoffDate;
-      });
-
-      const animalCreated = new Date(animal.waitingSince);
-      const createdInPeriod = animalCreated >= cutoffDate;
-
-      return hasRecentTransaction || createdInPeriod;
-    });
-
-    const total = animalsInPeriod.length;
-    const adopted = animalsInPeriod.filter((animal) => animal.status === 'adoptado').length;
-    const available = animalsInPeriod.filter(
-      (animal) => animal.status !== 'adoptado' && animal.isAvailable
-    ).length;
+    // Long presets: use monthly aggregates (no client-side Firestore reads)
+    const { months } = getPresetConfig(activePreset);
+    const monthsValue = months ?? 3;
 
     return {
-      totalAnimals: total,
-      adoptedAnimals: adopted,
+      activeAnimals: generateActiveAnimalsFromAggregates({
+        animals: initialAnimals,
+        monthly: initialAnalytics.monthly,
+        months: monthsValue,
+      }),
+      transactionsByUser: generateTransactionsByUserFromAggregates({
+        monthly: initialAnalytics.monthly,
+        users: initialUsers,
+        months: monthsValue,
+      }),
+      animalsInOut: generateAnimalsInOutFromAggregates({
+        animals: initialAnimals,
+        monthly: initialAnalytics.monthly,
+        months: monthsValue,
+      }),
+      status: statusData,
+    };
+  }, [activePreset, initialAnalytics, initialAnimals, initialUsers, statusData]);
+
+  // Summary statistics for stat cards
+  const { totalAnimals, adoptedAnimals, availableAnimals } = useMemo(() => {
+    const available = initialAnimals.filter((a) => a.status !== 'adoptado' && a.isAvailable).length;
+
+    if (!initialAnalytics) {
+      return { totalAnimals: 0, adoptedAnimals: 0, availableAnimals: available };
+    }
+
+    if (isShortPreset(activePreset)) {
+      const { days } = getPresetConfig(activePreset);
+      const daysValue = days ?? 7;
+      const cutoff = createTimestamp() - daysValue * 24 * 60 * 60 * 1000;
+      const filtered = initialAnalytics.recentTransactions.filter((tx) => tx.date >= cutoff);
+
+      // Animal IDs with activity in period + animals created in period
+      const animalIds = new Set(filtered.map((tx) => tx.id));
+      initialAnimals.forEach((animal) => {
+        if (new Date(animal.waitingSince).getTime() >= cutoff) {
+          animalIds.add(animal.id);
+        }
+      });
+
+      // Count adoptions from transactions (initialAnimals excludes adopted animals)
+      const adoptedIds = new Set(
+        filtered.filter((tx) => tx.status === 'adoptado').map((tx) => tx.id)
+      );
+
+      return {
+        totalAnimals: animalIds.size,
+        adoptedAnimals: adoptedIds.size,
+        availableAnimals: available,
+      };
+    }
+
+    // Long presets: use monthly aggregate IDs
+    const { months } = getPresetConfig(activePreset);
+    const monthsValue = months ?? 3;
+    const keys = getMonthKeys(monthsValue);
+
+    const allAnimalIds = new Set<string>();
+    const adoptedIds = new Set<string>();
+
+    keys.forEach((key) => {
+      const agg = initialAnalytics.monthly[key];
+      if (!agg) return;
+      agg.animalIdsWithTx.forEach((id) => allAnimalIds.add(id));
+      agg.adoptedAnimalIds.forEach((id) => adoptedIds.add(id));
+    });
+
+    return {
+      totalAnimals: allAnimalIds.size,
+      adoptedAnimals: adoptedIds.size,
       availableAnimals: available,
     };
-  }, [initialAnimals, transactions, dateFilter]);
+  }, [activePreset, initialAnalytics, initialAnimals]);
 
   // GSAP entrance animations
   useEffect(() => {
-    const welcomeTimeout = setTimeout(() => {
-      handleToast({
-        type: 'info',
-        title: '¡Bienvenido al Dashboard!',
-        text: 'Usa el selector de período para filtrar los datos temporales',
-      });
-    }, 1500);
-
     const tl = gsap.timeline();
 
     if (selectorRef.current) {
       tl.fromTo(
         selectorRef.current,
-        {
-          opacity: 0,
-          y: -30,
-          scale: 0.95,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.6,
-          ease: 'back.out(1.2)',
-        }
+        { opacity: 0, y: -30, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.2)' }
       );
     }
 
@@ -317,11 +239,7 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
       const cards = cardsRef.current.children;
       tl.fromTo(
         cards,
-        {
-          opacity: 0,
-          y: 50,
-          scale: 0.8,
-        },
+        { opacity: 0, y: 50, scale: 0.8 },
         {
           opacity: 1,
           y: 0,
@@ -333,52 +251,33 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
         '-=0.3'
       );
     }
-
-    return () => clearTimeout(welcomeTimeout);
   }, []);
 
   return (
-    <div className="min-h-screen  p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
           Dashboard - Por Los Animales Maldonado
         </h1>
 
-        {/* Date Filter */}
+        {/* Preset Period Filter */}
         <div ref={selectorRef} className="bg-white rounded-3xl p-6 shadow-lg mb-6 opacity-0">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h2 className="text-3xl font-bold text-gray-800">Período de Análisis</h2>
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="text-lg font-semibold text-gray-700">Desde:</label>
-              <input
-                type="date"
-                value={formatToLocalDateString(tempDateFilter.startDate)}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  const [year, month, day] = e.target.value.split('-').map(Number);
-                  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
-                  setTempDateFilter((prev) => ({ ...prev, startDate: date.getTime() }));
-                }}
-                className="px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <label className="text-lg font-semibold text-gray-700">Hasta:</label>
-              <input
-                type="date"
-                value={formatToLocalDateString(tempDateFilter.endDate)}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  const [year, month, day] = e.target.value.split('-').map(Number);
-                  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
-                  setTempDateFilter((prev) => ({ ...prev, endDate: date.getTime() }));
-                }}
-                className="px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <button
-                onClick={handleDateFilterChange}
-                className="px-4 py-2 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition font-semibold"
-              >
-                Aplicar
-              </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.key}
+                  onClick={() => setActivePreset(preset.key)}
+                  className={`px-4 py-2 rounded-3xl font-semibold transition ${
+                    activePreset === preset.key
+                      ? 'bg-amber-sunset text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -386,52 +285,40 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
         {/* Statistics Cards */}
         <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-green-dark rounded-3xl p-6 pb-2 shadow-lg">
-            <h3 className="text-lg  text-white mb-2">Total Animales</h3>
-            <p className="text-7xl  text-white">{totalAnimals}</p>
+            <h3 className="text-lg text-white mb-2">Total Animales</h3>
+            <p className="text-7xl text-white">{totalAnimals}</p>
             <p className="text-sm text-cream-light mt-1">En el período seleccionado</p>
           </div>
           <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
-            <h3 className="text-lg  text-green-dark mb-2">Adoptados</h3>
-            <p className="text-7xl  text-green-dark">{adoptedAnimals}</p>
+            <h3 className="text-lg text-green-dark mb-2">Adoptados</h3>
+            <p className="text-7xl text-green-dark">{adoptedAnimals}</p>
             <p className="text-sm text-green-dark mt-1">Con familia en este período</p>
           </div>
           <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg">
-            <h3 className="text-lg  text-white mb-2">Disponibles</h3>
-            <p className="text-7xl  text-white">{availableAnimals}</p>
+            <h3 className="text-lg text-white mb-2">Disponibles</h3>
+            <p className="text-7xl text-white">{availableAnimals}</p>
             <p className="text-sm text-cream-light mt-1">Buscando hogar actualmente</p>
           </div>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Active Animals Chart */}
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Animales Activos por Mes
+              Animales Activos
               <span className="text-sm font-normal text-gray-500 ml-2">(Período seleccionado)</span>
             </h2>
             {chartData.activeAnimals.length > 0 ? (
               <Chart type="line" data={chartData.activeAnimals} colors={['#dda15e']} />
             ) : (
               <div className="flex items-center justify-center h-64 text-gray-500">
-                <div className="text-center">
-                  <p className="mb-2">No hay datos disponibles</p>
-                  <button
-                    onClick={() =>
-                      handleToast({
-                        type: 'info',
-                        title: 'Sin datos temporales',
-                        text: 'Intenta cambiar el período de análisis o verifica que hay transacciones en el sistema',
-                      })
-                    }
-                    className="text-sm text-purple-600 hover:text-purple-800 underline"
-                  >
-                    ¿Por qué no veo datos?
-                  </button>
-                </div>
+                <p>No hay datos disponibles</p>
               </div>
             )}
           </div>
 
+          {/* Transactions by User Chart */}
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Transacciones por Usuario
@@ -450,14 +337,13 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
             )}
           </div>
 
+          {/* Latest Events */}
           <div className="bg-white rounded-3xl p-6 shadow-lg row-span-2">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Ultimos eventos</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Últimos eventos</h2>
             <section className="max-h-[800px] overflow-y-auto">
-              {transactions.length > 0 ? (
-                transactions.slice(0, 5).map((tx) => {
-                  const animal = initialAnimals.find((a) => a.id === tx.id);
+              {initialAnalytics && initialAnalytics.recentTransactions.length > 0 ? (
+                initialAnalytics.recentTransactions.slice(0, 5).map((tx) => {
                   const user = initialUsers.find((u) => u.id === tx.modifiedBy);
-                  const keys = Object.keys(tx || {});
                   const date = new Date(tx.date).toLocaleDateString('es-UY', {
                     year: 'numeric',
                     month: 'long',
@@ -469,51 +355,35 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
                   });
                   return (
                     <div
-                      key={tx.id + tx.date}
+                      key={tx.transactionId}
                       className="border-b border-gray-200 py-3 last:border-0 flex flex-col sm:flex-row sm:justify-between w-full"
                     >
                       <div className="w-full flex flex-col gap-2">
                         <div className="flex gap-2 items-center justify-between w-full">
-                          <p className="font-semibold text-2xl text-gray-800">{animal?.name}</p>
-                          <p className="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl ">
-                            {getTransactionLabel(tx.transactionType)}
-                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2 items-center">
+                            <img
+                              src={tx.img?.imgUrl}
+                              alt={tx.img?.imgAlt || 'Imagen del animal'}
+                              className="w-16 h-16 rounded-full object-cover object-center"
+                            />
+                            <p className="font-semibold text-2xl text-gray-800">{tx.name}</p>
+                          </div>
+                          {tx.transactionType && (
+                            <p className="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl">
+                              {getTransactionLabel(tx.transactionType)}
+                            </p>
+                          )}
                           <span className="font-normal text-sm text-amber-sunset text-center text-balance">
-                            Modificado por {user?.name}
+                            Modificado por {user?.name ?? tx.modifiedBy.split('@')[0]}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 text-center">{date} hs</p>
-                        <section className="flex flex-wrap gap-0">
-                          <p className="text-sm text-green-dark"> Modificaciones en:</p>
-
-                          <ul className="flex px-2 gap-2 flex-wrap ">
-                            {keys.map((key) => {
-                              if (
-                                key === 'id' ||
-                                key === 'modifiedBy' ||
-                                key === 'date' ||
-                                key === 'name'
-                              )
-                                return null;
-                              return (
-                                <li key={tx.id + key} className="text-sm text-amber-sunset ">
-                                  <span className="font-medium">{key}</span>{' '}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </section>
-                        <Modal
-                          buttonText="Ver Detalles"
-                          buttonStyles="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition"
+                        <Link
+                          href={`/plam-admin/animales/${tx.id}#linea-del-tiempo`}
+                          className="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition text-center"
                         >
-                          <section className="bg-cream-light w-full min-h-full flex flex-col items-center justify-start p-4 rounded-3xl shadow-lg">
-                            <h2 className="text-2xl font-semibold p-2">
-                              Detalles de la modificación
-                            </h2>
-                            <TransactionCard transaction={tx} showImg />
-                          </section>
-                        </Modal>
+                          Ver Detalles
+                        </Link>
                       </div>
                     </div>
                   );
@@ -533,6 +403,8 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
               </Link>
             </div>
           </div>
+
+          {/* Animal Status Chart */}
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Estado de Animales</h2>
             {chartData.status.length > 0 ? (
@@ -548,6 +420,7 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
             )}
           </div>
 
+          {/* Animals In/Out Chart */}
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Nuevos Ingresos vs Adopciones
@@ -557,21 +430,7 @@ export default function DashboardContent({ initialAnimals, initialUsers }: Dashb
               <Chart type="line" data={chartData.animalsInOut} colors={['#bc6c25', '#606c38']} />
             ) : (
               <div className="flex items-center justify-center h-64 text-gray-500">
-                <div className="text-center">
-                  <p className="mb-2">No hay datos disponibles</p>
-                  <button
-                    onClick={() =>
-                      handleToast({
-                        type: 'info',
-                        title: 'Sin datos de flujo',
-                        text: 'Intenta cambiar el período de análisis o verifica que hay animales registrados en el sistema',
-                      })
-                    }
-                    className="text-sm text-purple-600 hover:text-purple-800 underline"
-                  >
-                    ¿Por qué no veo datos?
-                  </button>
-                </div>
+                <p>No hay datos disponibles</p>
               </div>
             )}
           </div>

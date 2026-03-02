@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Animal, AnimalTransactionType } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { deleteImage } from '@/lib/deleteIgame';
 import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { handlePromiseToast } from '@/lib/handleToast';
@@ -79,9 +80,8 @@ export default function AnimalPage(): React.ReactElement | null {
             currentCollection: 'animals',
             id: animal.id,
           }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransaction,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {
@@ -144,9 +144,8 @@ export default function AnimalPage(): React.ReactElement | null {
             currentCollection: 'animals',
             id: animal.id,
           }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransaction,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {
@@ -202,9 +201,8 @@ export default function AnimalPage(): React.ReactElement | null {
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransaction,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {
@@ -259,9 +257,8 @@ export default function AnimalPage(): React.ReactElement | null {
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransactionData,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {
@@ -350,9 +347,8 @@ export default function AnimalPage(): React.ReactElement | null {
       await handlePromiseToast(
         Promise.all([
           deleteFirestoreData({ collection: 'animals', docId: animalToDelete.id }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransaction,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {

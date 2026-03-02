@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnimalTransactionType, PrivateInfoType } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { Modal } from '@/components/Modal';
 import { SwapIcon } from '@/components/Icons';
@@ -71,9 +72,8 @@ export default function TransitChangeModal({
             currentCollection: 'animalPrivateInfo',
             id: privateInfo.id,
           }),
-          postFirestoreData<AnimalTransactionType>({
+          postTransactionData({
             data: newTransactionData,
-            currentCollection: 'animalTransactions',
           }),
         ]),
         {

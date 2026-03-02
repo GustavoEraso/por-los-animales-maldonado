@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { generateAnimalId } from '@/lib/generateAnimalId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
@@ -288,9 +289,8 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
           currentCollection: 'animalPrivateInfo',
           id,
         }),
-        postFirestoreData<AnimalTransactionType>({
+        postTransactionData({
           data: newTransaction,
-          currentCollection: 'animalTransactions',
         }),
       ]);
 

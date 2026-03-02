@@ -151,6 +151,47 @@ export interface WpContactType {
   countryCode: string;
 }
 
+/**
+ * Lean representation of a transaction stored in the public dashboard analytics document.
+ * Contains only non-sensitive fields (no contact info, addresses, medical details).
+ * Used for dashboard charts, stat cards, and "Últimos eventos" preview cards.
+ * Click "Ver Detalles" loads the full AnimalTransactionType from animalTransactions (with auth).
+ */
+export interface LeanTransaction {
+  transactionId: string;
+  id: string;
+  name: string;
+  date: number;
+  modifiedBy: string;
+  transactionType?: AnimalTransactionType['transactionType'];
+  status?: string;
+  img?: Img;
+  cost?: number;
+}
+
+/**
+ * Monthly aggregated data for dashboard charts.
+ * Pre-computed on each transaction write to avoid costly read-time queries.
+ */
+export interface MonthlyAggregate {
+  transactionCount: number;
+  adoptionCount: number;
+  adoptedAnimalIds: string[];
+  animalIdsWithTx: string[];
+  byUser: Record<string, number>;
+}
+
+/**
+ * Dashboard analytics summary document stored in dashboardAnalytics/summary.
+ * Public collection (allow read: if true) — contains only non-sensitive animal data.
+ * Enables server-side caching via 'use cache' directive.
+ */
+export interface DashboardAnalyticsData {
+  recentTransactions: LeanTransaction[];
+  monthly: Record<string, MonthlyAggregate>;
+  updatedAt: number;
+}
+
 export interface CollectionsType {
   currentColection:
     | 'animals'
@@ -158,7 +199,8 @@ export interface CollectionsType {
     | 'contacts'
     | 'animalTransactions'
     | 'animalPrivateInfo'
-    | 'banners';
+    | 'banners'
+    | 'dashboardAnalytics';
 }
 
 export interface BannerType {
