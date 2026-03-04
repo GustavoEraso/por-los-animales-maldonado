@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { gsap } from 'gsap/dist/gsap';
 import Chart from '@/components/Chart';
-import { Animal, DashboardAnalyticsData, LeanTransaction, UserType } from '@/types';
+import { Animal, DashboardAnalyticsData, UserType } from '@/types';
 import {
   generateActiveAnimalsChartData,
   generateTransactionsByUserData,
