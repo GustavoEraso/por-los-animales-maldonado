@@ -5,16 +5,13 @@ import IconCard from '@/components/IconCard';
 export default function Nosotros() {
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
-      <Hero
-        imgURL="/madre-con-cachorros.webp"
-        imgAlt="cachorros jugando mientras su madre mira desde atras"
-      />
+      <Hero imgURL="/nosotros.webp" imgAlt="cachorros jugando mientras su madre mira desde atras" />
       <section className="flex flex-col lg:flex-row gap-4 px-9 py-4 w-full  max-w-7xl justify-center items-center">
         <section className="w-full">
           {/* Imagen flotante */}
           <div className="float-right lg:w-1/2 w-full ml-4 mb-2 ">
             <Image
-              src="/heroImg.webp"
+              src="/nosotros.webp"
               alt="Rescate animal"
               width={300}
               height={400}
