@@ -218,8 +218,8 @@ canManageUser('superadmin', 'admin'); // true
 Gets roles that can be assigned by the user.
 
 ```tsx
-getAssignableRoles('superadmin'); // ['superadmin', 'admin', 'rescatista', 'user']
-getAssignableRoles('admin'); // ['rescatista', 'user']
+getAssignableRoles('superadmin'); // ['superadmin', 'admin', 'rescatista']
+getAssignableRoles('admin'); // ['rescatista']
 getAssignableRoles('rescatista'); // []
 ```
 

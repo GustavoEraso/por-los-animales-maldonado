@@ -126,6 +126,15 @@ await createAuditLog({
 - **Delete user** (`/plam-admin/usuarios`)
   - Records user data before deletion
 
+#### ✅ Contact Management
+
+- **Create contact** (`/plam-admin/contactos`)
+  - Records creation with new contact data (name, phone, countryCode)
+- **Edit contact** (`/plam-admin/contactos`)
+  - Records update with changed contact fields
+- **Delete contact** (`/plam-admin/contactos`)
+  - Records contact data before deletion
+
 ### Implementation Pattern
 
 ```typescript
@@ -158,13 +167,7 @@ await fetchUsers();
 - Edit banner → record changes in title, image, URL, etc.
 - Delete banner → record deleted banner data
 
-#### 📞 Contact Management
-
-- Create contact → record new contact data
-- Edit contact → record changes in name, phone, area, etc.
-- Delete contact → record deleted contact data
-
-#### 🐾 Animal Management
+#### Animal Management
 
 - Create animal → record new animal data
 - Edit animal → record changes in status, information, photos, etc.
@@ -237,6 +240,7 @@ Security rules are documented in `docs/FIRESTORE_AUDIT_LOG_RULES.md` and must be
 - `/src/app/plam-admin/usuarios/page.tsx` - User list and deletion
 - `/src/app/plam-admin/usuarios/crear/page.tsx` - User creation
 - `/src/app/plam-admin/usuarios/editar/[id]/page.tsx` - User editing
+- `/src/app/plam-admin/contactos/page.tsx` - Contact create, edit, and delete
 
 ### Documentation
 
@@ -318,5 +322,5 @@ For questions or issues with the audit system:
 
 ---
 
-**Last updated:** 2024
-**Version:** 1.0.0
+**Last updated:** 2026
+**Version:** 1.1.0
