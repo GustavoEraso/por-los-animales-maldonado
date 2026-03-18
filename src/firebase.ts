@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBvCipId0uvanpDmXkV8srnkEZleuPrpYE',
-  authDomain: 'por-los-animales-maldona-c5cf0.firebaseapp.com',
-  projectId: 'por-los-animales-maldona-c5cf0',
-  storageBucket: 'por-los-animales-maldona-c5cf0.firebasestorage.app',
-  messagingSenderId: '456825657289',
-  appId: '1:456825657289:web:fcfab4500014cf78c6ba18',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
