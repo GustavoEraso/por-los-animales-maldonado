@@ -24,7 +24,7 @@
 
 ### React & Next.js
 
-- This is a Next.js 15.5.3 project with App Router and Turbopack
+- This is a Next.js 16.1.4 project with App Router and Turbopack
 - Use `'use client'` directive only when necessary (state, effects, browser APIs)
 - Prefer functional components with hooks
 - Use arrow functions for component definitions

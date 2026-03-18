@@ -29,7 +29,7 @@ It is currently **in production** and actively used by the team to manage real c
 
 | Layer          | Technology                          |
 | -------------- | ----------------------------------- |
-| Framework      | Next.js 15 (App Router + Turbopack) |
+| Framework      | Next.js 16 (App Router + Turbopack) |
 | Language       | TypeScript (strict mode)            |
 | Database       | Firebase Firestore                  |
 | Authentication | Firebase Authentication             |
