@@ -1,9 +1,10 @@
 // app/animals/[id]/page.tsx (Server Component)
-import { getAnimalById } from '@/lib/data/animals';
+import { getAnimalById, getLitterSiblings, getParents, getOffspring } from '@/lib/data/animals';
 import Hero from '@/components/Hero';
 import PhotoCarrousel from '@/components/PhotoCarrousel';
 import { Modal } from '@/components/Modal';
 import Loader from '@/components/Loader';
+import Card from '@/components/Card';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from '@/lib/dateUtils';
 import ShareButton from '@/elements/ShareButton';
@@ -48,11 +49,18 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
     waitingSince,
     compatibility,
     isSterilized,
+    litterId,
+    motherId,
+    fatherId,
   } = animal;
   const img =
     images.length > 0
       ? images
       : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible', imgId: 'default-image' }];
+
+  const siblings = litterId ? await getLitterSiblings(litterId, id) : [];
+  const parents = await getParents(motherId, fatherId);
+  const offspring = await getOffspring(id);
 
   const YesNoUnknownMap = {
     si: 'Sí',
@@ -198,6 +206,46 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
           </p>
         </section>
       </Modal>
+
+      {parents.length > 0 && (
+        <section className="flex flex-col items-center gap-4 px-9 py-4 w-full max-w-7xl">
+          <h3 className="text-2xl font-bold text-green-dark">Padres</h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 w-full">
+            {parents.map((parent) => (
+              <div key={parent.id} className="flex flex-col items-center gap-1">
+                <span className="text-sm font-semibold text-gray-600 capitalize">
+                  {parent.parentRole}
+                </span>
+                <Card animal={parent} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {siblings.length > 0 && (
+        <section className="flex flex-col items-center gap-4 px-9 py-4 w-full max-w-7xl">
+          <h3 className="text-2xl font-bold text-green-dark">
+            🐾 Hermanos de camada ({animal.litterName})
+          </h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 w-full">
+            {siblings.map((sibling) => (
+              <Card key={sibling.id} animal={sibling} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {offspring.length > 0 && (
+        <section className="flex flex-col items-center gap-4 px-9 py-4 w-full max-w-7xl">
+          <h3 className="text-2xl font-bold text-green-dark">Hijos ({offspring.length})</h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 w-full">
+            {offspring.map((child) => (
+              <Card key={child.id} animal={child} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

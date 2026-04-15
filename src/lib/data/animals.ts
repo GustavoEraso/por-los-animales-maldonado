@@ -167,3 +167,56 @@ export async function getAnimalById(id: string): Promise<Animal | null> {
 
   return animal;
 }
+
+/**
+ * Fetches all visible animals that share the same litterId, excluding the given animal.
+ * Returns an empty array if litterId is not provided.
+ *
+ * @param litterId - The litter identifier to search for
+ * @param excludeId - The animal ID to exclude from results (the current animal)
+ * @returns Array of sibling animals
+ */
+export async function getLitterSiblings(litterId: string, excludeId: string): Promise<Animal[]> {
+  const allAnimals = await getAnimalsData();
+  return allAnimals.filter((a) => a.litterId === litterId && a.id !== excludeId);
+}
+
+/**
+ * Fetches parent animals by their IDs.
+ * Returns an array of 0-2 animals (mother and/or father if they exist and are visible).
+ *
+ * @param motherId - Optional mother animal ID
+ * @param fatherId - Optional father animal ID
+ * @returns Array of parent animals with a `role` tag
+ */
+export async function getParents(
+  motherId?: string,
+  fatherId?: string
+): Promise<(Animal & { parentRole: 'madre' | 'padre' })[]> {
+  if (!motherId && !fatherId) return [];
+
+  const parents: (Animal & { parentRole: 'madre' | 'padre' })[] = [];
+
+  if (motherId) {
+    const mother = await getAnimalById(motherId);
+    if (mother) parents.push({ ...mother, parentRole: 'madre' });
+  }
+
+  if (fatherId) {
+    const father = await getAnimalById(fatherId);
+    if (father) parents.push({ ...father, parentRole: 'padre' });
+  }
+
+  return parents;
+}
+
+/**
+ * Fetches all visible animals that have this animal as mother or father.
+ *
+ * @param animalId - The parent animal's ID
+ * @returns Array of offspring animals
+ */
+export async function getOffspring(animalId: string): Promise<Animal[]> {
+  const allAnimals = await getAnimalsData();
+  return allAnimals.filter((a) => a.motherId === animalId || a.fatherId === animalId);
+}
