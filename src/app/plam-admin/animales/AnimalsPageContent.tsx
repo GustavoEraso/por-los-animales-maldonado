@@ -393,7 +393,14 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
                       >
                         {animal.id}
                       </th>
-                      <td className="px-2 py-4 outline-1 outline-slate-200">{animal.name}</td>
+                      <td className="px-2 py-4 outline-1 outline-slate-200">
+                        {animal.name}
+                        {animal.litterId && (
+                          <span className="ml-1 bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded">
+                            🐾 {animal.litterName || 'Camada'}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell">
                         {animal.gender}
                       </td>
