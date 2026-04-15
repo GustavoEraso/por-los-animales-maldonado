@@ -283,6 +283,13 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
             </Link>
           </div>
 
+          <Link
+            href="/plam-admin/animales/crear"
+            className=" hidden  sm:flex items-center gap-2 text-2xl bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm  font-semibold"
+          >
+            + Nuevo Caso
+          </Link>
+
           {/* View Toggle Buttons */}
           <div className="flex items-center gap-1 bg-cream-light rounded-lg p-1 shadow-sm">
             <button

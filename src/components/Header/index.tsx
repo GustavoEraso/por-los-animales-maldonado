@@ -108,6 +108,12 @@ export default function Header(): React.ReactElement {
       {isUserLoggedIn ? (
         <div className="hidden md:flex justify-center items-center gap-4">
           <SmartLink
+            href="/plam-admin/animales/crear"
+            className=" hidden  sm:flex items-center gap-2 text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm  font-semibold"
+          >
+            + Nuevo Caso
+          </SmartLink>
+          <SmartLink
             className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`}
             href={'/plam-admin'}
             aria-label={'Enlace al panel de administración'}
