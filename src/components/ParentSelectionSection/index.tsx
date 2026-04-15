@@ -36,11 +36,11 @@ export default function ParentSelectionSection({
 
   // Fetch mother data when motherId changes
   useEffect(() => {
-    if (!motherId) {
-      setMotherAnimal(null);
-      return;
-    }
     const load = async (): Promise<void> => {
+      if (!motherId) {
+        setMotherAnimal(null);
+        return;
+      }
       try {
         const result = await fetchAnimals({ id: motherId });
         if (Array.isArray(result) && result.length > 0) {
@@ -55,11 +55,11 @@ export default function ParentSelectionSection({
 
   // Fetch father data when fatherId changes
   useEffect(() => {
-    if (!fatherId) {
-      setFatherAnimal(null);
-      return;
-    }
     const load = async (): Promise<void> => {
+      if (!fatherId) {
+        setFatherAnimal(null);
+        return;
+      }
       try {
         const result = await fetchAnimals({ id: fatherId });
         if (Array.isArray(result) && result.length > 0) {
