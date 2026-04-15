@@ -7,35 +7,39 @@ interface BasicInfoFieldsProps {
   handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => void;
+  isLitter?: boolean;
 }
 
 /**
  * Form fields for basic animal information: name, description, gender, species,
- * life stage, and size.
+ * life stage, and size. In litter mode, name and gender are hidden (managed per member).
  */
 export default function BasicInfoFields({
   animal,
   formErrors,
   handleChange,
+  isLitter = false,
 }: BasicInfoFieldsProps): React.ReactElement {
   return (
     <>
-      <label className="flex flex-col font-bold gap-1">
-        Nombre:
-        {formErrors.name && (
-          <div className="bg-red-500 text-white text-sm rounded px-2">
-            {FIELD_ERROR_MESSAGES.name}
-          </div>
-        )}
-        <input
-          className="outline-2 bg-white outline-gray-200 rounded p-2"
-          type="text"
-          name="name"
-          value={animal.name}
-          onChange={handleChange}
-          required
-        />
-      </label>
+      {!isLitter && (
+        <label className="flex flex-col font-bold gap-1">
+          Nombre:
+          {formErrors.name && (
+            <div className="bg-red-500 text-white text-sm rounded px-2">
+              {FIELD_ERROR_MESSAGES.name}
+            </div>
+          )}
+          <input
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
+            type="text"
+            name="name"
+            value={animal.name}
+            onChange={handleChange}
+            required
+          />
+        </label>
+      )}
 
       <label className="flex flex-col font-bold gap-1">
         Descripción:
@@ -52,18 +56,20 @@ export default function BasicInfoFields({
         />
       </label>
 
-      <label className="flex flex-col font-bold">
-        Género:
-        <select
-          className="outline-2 bg-white outline-gray-200 rounded p-2"
-          name="gender"
-          value={animal.gender}
-          onChange={handleChange}
-        >
-          <option value="macho">Macho</option>
-          <option value="hembra">Hembra</option>
-        </select>
-      </label>
+      {!isLitter && (
+        <label className="flex flex-col font-bold">
+          Género:
+          <select
+            className="outline-2 bg-white outline-gray-200 rounded p-2"
+            name="gender"
+            value={animal.gender}
+            onChange={handleChange}
+          >
+            <option value="macho">Macho</option>
+            <option value="hembra">Hembra</option>
+          </select>
+        </label>
+      )}
 
       <label className="flex flex-col font-bold">
         Especie:

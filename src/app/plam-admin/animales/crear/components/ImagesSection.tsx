@@ -7,18 +7,22 @@ interface ImagesSectionProps {
   setImages: React.Dispatch<React.SetStateAction<Img[]>>;
   formErrors: FormErrors;
   handleImageDelete: (imgId: string) => Promise<void>;
+  isLitter?: boolean;
 }
 
 /**
  * Section for displaying uploaded images, deleting them, and uploading new ones.
  * Shows validation errors and limits uploads to 5 images.
+ * Hidden in litter mode (images are managed per member).
  */
 export default function ImagesSection({
   images,
   setImages,
   formErrors,
   handleImageDelete,
+  isLitter = false,
 }: ImagesSectionProps): React.ReactElement {
+  if (isLitter) return <></>;
   return (
     <>
       <section className="flex flex-wrap gap-4 items-center justify-center">
