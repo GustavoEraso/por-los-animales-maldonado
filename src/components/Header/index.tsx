@@ -106,20 +106,27 @@ export default function Header(): React.ReactElement {
       </nav>
 
       {isUserLoggedIn ? (
-        <div className="hidden md:flex justify-center items-center gap-4">
+        <div className="hidden md:flex justify-center items-stretch gap-4">
           <SmartLink
-            className={`block text-center p-2 whitespace-nowrap ${styles.outline_bottom}`}
+            href="/plam-admin/animales/crear"
+            className=" hidden  sm:flex items-center gap-2 text-sm text-center px-4 py-2 bg-green-600 text-white  rounded-lg hover:bg-green-700 transition-colors shadow-sm  font-semibold"
+          >
+            <span className=" lg:hidden text-2xl ">+</span>
+            <span className="hidden lg:block">+ Nuevo Caso</span>
+          </SmartLink>
+          <SmartLink
+            className=" hidden  sm:flex items-center gap-2 text-lg bg-caramel-deep text-white px-4 py-2 rounded-lg hover:bg-amber-sunset transition-colors shadow-sm  font-semibold"
             href={'/plam-admin'}
             aria-label={'Enlace al panel de administración'}
           >
-            Dashboard
+            Panel
           </SmartLink>
 
           <button
             onClick={handleLogout}
             className=" block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full"
           >
-            logout
+            Salir
           </button>
         </div>
       ) : (
@@ -173,7 +180,7 @@ export default function Header(): React.ReactElement {
                 onClick={handleLogout}
                 className=" block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full"
               >
-                logout
+                Salir
               </button>
             </div>
           )}

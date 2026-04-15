@@ -1,3 +1,8 @@
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
+![Status](https://img.shields.io/badge/status-production-green)
+
 # Por los Animales Maldonado
 
 Fullstack web system built for **Por los Animales Maldonado**, an animal rescue organization in Maldonado, Uruguay. It manages the full lifecycle of rescued animals — from intake to adoption — and includes an admin panel, a multi-gateway donation system, and social media outreach tools.

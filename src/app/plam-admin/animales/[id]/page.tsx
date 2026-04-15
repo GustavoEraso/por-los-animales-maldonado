@@ -25,6 +25,7 @@ import TransitChangeModal from './components/TransitChangeModal';
 import AdoptionModal from './components/AdoptionModal';
 import ReturnModal from './components/ReturnModal';
 import AnimalTimelineSection from './components/AnimalTimelineSection';
+import AnimalFamilySection from './components/AnimalFamilySection';
 
 const MIN_LOADING_TIME = 600;
 
@@ -437,6 +438,13 @@ export default function AnimalPage(): React.ReactElement | null {
           setAllAnimalTransactions={setAllAnimalTransactions}
         />
 
+        {/* Family section: parents, siblings, offspring */}
+        <AnimalFamilySection
+          animal={animal}
+          setAnimal={setAnimal}
+          setAllAnimalTransactions={setAllAnimalTransactions}
+        />
+
         {/* Deleted state: restore / hard-delete buttons */}
         {isDeleted && (
           <section className="flex flex-col sm:flex-row gap-4 px-9 py-4 w-full max-w-7xl items-center justify-center">
@@ -569,6 +577,7 @@ export default function AnimalPage(): React.ReactElement | null {
                   <EditIcon size={24} />
                   Editar
                 </Link>
+
                 <Modal
                   buttonStyles=" bg-red-600 text-white text-3xl px-4 py-2 hover:bg-red-700 text-white rounded  transition duration-300"
                   buttonText={

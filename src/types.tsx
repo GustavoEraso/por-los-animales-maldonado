@@ -30,6 +30,10 @@ export interface Animal {
   waitingSince: number;
   isDeleted?: boolean;
   hardDeleted?: boolean;
+  litterId?: string;
+  litterName?: string;
+  motherId?: string;
+  fatherId?: string;
 }
 
 interface ContactType {

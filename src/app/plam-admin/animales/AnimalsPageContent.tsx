@@ -283,6 +283,13 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
             </Link>
           </div>
 
+          <Link
+            href="/plam-admin/animales/crear"
+            className=" hidden  sm:flex items-center gap-2 text-2xl bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm  font-semibold"
+          >
+            + Nuevo Caso
+          </Link>
+
           {/* View Toggle Buttons */}
           <div className="flex items-center gap-1 bg-cream-light rounded-lg p-1 shadow-sm">
             <button
@@ -393,7 +400,14 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
                       >
                         {animal.id}
                       </th>
-                      <td className="px-2 py-4 outline-1 outline-slate-200">{animal.name}</td>
+                      <td className="px-2 py-4 outline-1 outline-slate-200">
+                        {animal.name}
+                        {animal.litterId && (
+                          <span className="ml-1 bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded">
+                            🐾 {animal.litterName || 'Camada'}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-2 py-4 outline-1 outline-slate-200 hidden sm:table-cell">
                         {animal.gender}
                       </td>

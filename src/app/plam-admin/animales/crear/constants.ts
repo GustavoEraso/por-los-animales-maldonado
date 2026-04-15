@@ -1,5 +1,22 @@
-import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { Animal, AnimalTransactionType, Img, PrivateInfoType } from '@/types';
 import { createTimestamp } from '@/lib/dateUtils';
+
+/** Creation mode: single animal or litter */
+export type CreationMode = 'single' | 'litter';
+
+/** Represents a single member of a litter */
+export interface LitterMember {
+  name: string;
+  gender: 'macho' | 'hembra';
+  images: Img[];
+}
+
+/** Initial state for a new litter member */
+export const INITIAL_LITTER_MEMBER: LitterMember = {
+  name: '',
+  gender: 'macho',
+  images: [],
+};
 
 /** Initial state for a new animal */
 export const INITIAL_ANIMAL: Animal = {
@@ -85,6 +102,8 @@ export interface FormErrors {
   rescueReason: boolean;
   contactName: boolean;
   contacts: boolean;
+  litterName: boolean;
+  litterMembers: boolean;
 }
 
 /** Error messages shown for each form field */
@@ -95,4 +114,7 @@ export const FIELD_ERROR_MESSAGES: Record<keyof FormErrors, string> = {
   rescueReason: 'Debes seleccionar un motivo del rescate.',
   contactName: 'Falta el nombre de contacto.',
   contacts: 'Faltan medios de contacto.',
+  litterName: 'Debes ingresar un nombre para la camada.',
+  litterMembers:
+    'Cada miembro de la camada debe tener nombre y al menos una imagen. Mínimo 2 miembros.',
 };

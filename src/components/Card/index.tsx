@@ -69,14 +69,19 @@ export default function Card({
           <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
           {status != 'fallecido' && <p className="text-center">{`${gender} | ${lifeStage} `}</p>}
         </div>
-        {adminView && (
+        {(adminView || animal.litterId) && (
           <div className="flex flex-col gap-1 absolute top-2 left-2">
-            {!animal.isVisible && (
+            {animal.litterId && (
+              <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-lg">
+                🐾 {animal.litterName ?? 'Camada'}
+              </span>
+            )}
+            {adminView && !animal.isVisible && (
               <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
                 No se esta mostrando
               </span>
             )}
-            {!animal.isAvailable && (
+            {adminView && !animal.isAvailable && (
               <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
                 No esta disponible
               </span>

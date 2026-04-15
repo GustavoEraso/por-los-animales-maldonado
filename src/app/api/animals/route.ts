@@ -181,7 +181,8 @@ export async function POST(req: NextRequest): Promise<
         if (['minWaitingSince', 'nameIncludes'].includes(key)) return true;
 
         const animalVal = animal[key as keyof Animal];
-        if (value === undefined || animalVal === undefined) return true;
+        if (value === undefined) return true;
+        if (animalVal === undefined) return false;
 
         // NEW: Support for array filters (multiple values for same field)
         // This is retrocompatible - existing code with strings will continue to work

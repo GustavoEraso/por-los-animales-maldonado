@@ -13,6 +13,7 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ParentSelectionSection from '@/components/ParentSelectionSection';
 import generateId from '@/lib/generateId';
 import { revalidateCache } from '@/lib/revalidateCache';
 
@@ -77,6 +78,8 @@ export default function EditAnimalForm() {
   const [transactionInfo, setTransactionInfo] =
     useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
+  const [motherId, setMotherId] = useState('');
+  const [fatherId, setFatherId] = useState('');
 
   const [compatibility, setCompatibility] = useState<CompatibilityType>(
     initialAnimal.compatibility || {
@@ -139,6 +142,8 @@ export default function EditAnimalForm() {
         setTransactionInfo(currentTransactionInfo);
 
         setImages(fetchedAnimal.images || []);
+        setMotherId(fetchedAnimal.motherId || '');
+        setFatherId(fetchedAnimal.fatherId || '');
       } catch (error) {
         console.error('Error fetching animal data:', error);
         handleToast({
@@ -217,6 +222,8 @@ export default function EditAnimalForm() {
       const newAnimal: Animal = {
         ...animal,
         images: images,
+        ...(motherId ? { motherId } : {}),
+        ...(fatherId ? { fatherId } : {}),
       };
 
       const animalChanges = getChangedFieldsWithValues({ oldObj: oldAnimal, newObj: newAnimal });
@@ -335,8 +342,39 @@ export default function EditAnimalForm() {
         },
       });
 
+      // Propagate parent changes to all litter siblings
+      if (animal.litterId) {
+        const motherChanged = motherId !== (oldAnimal.motherId || '');
+        const fatherChanged = fatherId !== (oldAnimal.fatherId || '');
+
+        if (motherChanged || fatherChanged) {
+          const siblings = await getFirestoreData({
+            currentCollection: 'animals',
+            filter: [['litterId', '==', animal.litterId]],
+          });
+
+          const siblingUpdates = siblings
+            .filter((s: Animal) => s.id !== animal.id)
+            .map((sibling: Animal) => {
+              const updateData: Partial<Animal> & { id: string } = { id: sibling.id };
+              if (motherChanged) updateData.motherId = motherId || '';
+              if (fatherChanged) updateData.fatherId = fatherId || '';
+
+              return postFirestoreData<Partial<Animal> & { id: string }>({
+                data: updateData,
+                currentCollection: 'animals',
+                id: sibling.id,
+              });
+            });
+
+          if (siblingUpdates.length > 0) {
+            await Promise.all(siblingUpdates);
+          }
+        }
+      }
+
       // Invalidate animals cache if animal data was modified
-      if (Object.keys(animalChanges).length > 0) {
+      if (Object.keys(animalChanges).length > 0 || animal.litterId) {
         await revalidateCache('animals');
       }
 
@@ -621,6 +659,14 @@ export default function EditAnimalForm() {
               }}
             />
           )}
+
+          <ParentSelectionSection
+            motherId={motherId}
+            fatherId={fatherId}
+            onMotherSelect={setMotherId}
+            onFatherSelect={setFatherId}
+            excludeIds={[currentId]}
+          />
 
           {Object.values(formErrors).some(Boolean) && (
             <div className="bg-red-500 text-white p-3 rounded">
