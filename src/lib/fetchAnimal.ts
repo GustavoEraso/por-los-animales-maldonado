@@ -26,6 +26,7 @@ export type Filters = Partial<{
   isVisible: Animal['isVisible'];
   isDeleted: Animal['isDeleted'];
   status: Animal['status'] | Animal['status'][];
+  litterId: string;
   minWaitingSince: number;
   sortBy: keyof Pick<
     Animal,
