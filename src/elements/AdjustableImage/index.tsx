@@ -27,7 +27,43 @@ type AdjustableImageProps = HTMLAttributes<HTMLDivElement> & {
   width?: CSSLength;
   /** Height of the image container */
   height?: CSSLength;
+  /** Current image index (controlled mode) */
+  currentImageIndex?: number;
+  /** Callback for image index changes (controlled mode) */
+  onCurrentImageIndexChange?: (nextIndex: number) => void;
+  /** Current zoom scale (controlled mode) */
+  scale?: number;
+  /** Callback for zoom scale changes (controlled mode) */
+  onScaleChange?: (nextScale: number) => void;
+  /** Horizontal position percentage (-100 to 100) in controlled mode */
+  positionX?: number;
+  /** Callback for horizontal position changes */
+  onPositionXChange?: (nextPositionX: number) => void;
+  /** Vertical position percentage (-100 to 100) in controlled mode */
+  positionY?: number;
+  /** Callback for vertical position changes */
+  onPositionYChange?: (nextPositionY: number) => void;
+  /** Callback with the real movable range per axis in percentage units */
+  onPositionRangeChange?: (nextRange: { x: number; y: number }) => void;
+  /** Hides inline controls when false */
+  showControls?: boolean;
 };
+
+const clampPosition = (value: number): number => {
+  if (value > 100) return 100;
+  if (value < -100) return -100;
+  return value;
+};
+
+const clampWithinRange = (value: number, range: number): number => {
+  if (range <= 0) return 0;
+
+  if (value > range) return range;
+  if (value < -range) return -range;
+  return value;
+};
+
+const MIN_SCALE = 1;
 
 /**
  * Advanced image viewer component with zoom, pan, and navigation capabilities.
@@ -113,6 +149,16 @@ export default function AdjustableImage({
   width = '60%',
   height = '100%',
   className,
+  currentImageIndex: controlledCurrentImageIndex,
+  onCurrentImageIndexChange,
+  scale: controlledScale,
+  onScaleChange,
+  positionX: controlledPositionX,
+  onPositionXChange,
+  positionY: controlledPositionY,
+  onPositionYChange,
+  onPositionRangeChange,
+  showControls = true,
 }: AdjustableImageProps): React.ReactElement {
   const mainRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,7 +167,7 @@ export default function AdjustableImage({
   const cache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Visual state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [internalCurrentImageIndex, setInternalCurrentImageIndex] = useState(0);
   const [src, setSrc] = useState<string | null>(null);
   const [imgSize, setImgSize] = useState<{ width: number; height: number }>({
     width: 0,
@@ -129,7 +175,82 @@ export default function AdjustableImage({
   });
 
   // Zoom state
-  const [scale, setScale] = useState(1);
+  const [internalScale, setInternalScale] = useState(1);
+  const [internalPositionX, setInternalPositionX] = useState(0);
+  const [internalPositionY, setInternalPositionY] = useState(0);
+  const lastPositionRange = useRef({ x: 0, y: 0 });
+
+  const currentImageIndex =
+    typeof controlledCurrentImageIndex === 'number'
+      ? controlledCurrentImageIndex
+      : internalCurrentImageIndex;
+
+  const currentScale = typeof controlledScale === 'number' ? controlledScale : internalScale;
+  const currentPositionX =
+    typeof controlledPositionX === 'number'
+      ? clampPosition(controlledPositionX)
+      : internalPositionX;
+  const currentPositionY =
+    typeof controlledPositionY === 'number'
+      ? clampPosition(controlledPositionY)
+      : internalPositionY;
+
+  const setResolvedImageIndex = (nextIndex: number) => {
+    if (onCurrentImageIndexChange) {
+      onCurrentImageIndexChange(nextIndex);
+      return;
+    }
+
+    setInternalCurrentImageIndex(nextIndex);
+  };
+
+  const setResolvedScale = (nextScale: number) => {
+    const safeScale = Math.max(MIN_SCALE, nextScale);
+
+    if (onScaleChange) {
+      onScaleChange(safeScale);
+      return;
+    }
+
+    setInternalScale(safeScale);
+  };
+
+  const setResolvedPositionX = (nextPositionX: number) => {
+    const safePositionX = clampPosition(nextPositionX);
+
+    if (onPositionXChange) {
+      onPositionXChange(safePositionX);
+      return;
+    }
+
+    setInternalPositionX(safePositionX);
+  };
+
+  const setResolvedPositionY = (nextPositionY: number) => {
+    const safePositionY = clampPosition(nextPositionY);
+
+    if (onPositionYChange) {
+      onPositionYChange(safePositionY);
+      return;
+    }
+
+    setInternalPositionY(safePositionY);
+  };
+
+  const getPositionRange = (container: HTMLDivElement): { x: number; y: number } => {
+    const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+    const nextRangeX =
+      container.clientWidth > 0 ? Math.min(100, (maxScrollLeft / container.clientWidth) * 100) : 0;
+    const nextRangeY =
+      container.clientHeight > 0 ? Math.min(100, (maxScrollTop / container.clientHeight) * 100) : 0;
+
+    return {
+      x: nextRangeX,
+      y: nextRangeY,
+    };
+  };
 
   /**
    * Loads and caches an image for instant display.
@@ -197,7 +318,9 @@ export default function AdjustableImage({
         width: displayWidth,
         height: displayHeight,
       });
-      setScale(1);
+      if (typeof controlledScale !== 'number') {
+        setInternalScale(1);
+      }
     });
 
     // Preload neighbors so next change is immediate
@@ -213,7 +336,7 @@ export default function AdjustableImage({
     return () => {
       alive = false;
     };
-  }, [imageUrls, currentImageIndex]);
+  }, [imageUrls, currentImageIndex, controlledScale]);
 
   /**
    * Setup native touch event listeners with { passive: false } to allow preventDefault.
@@ -285,6 +408,42 @@ export default function AdjustableImage({
       resizeObserver.disconnect();
     };
   }, [src, imageUrls, currentImageIndex]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !src) return;
+
+    const nextRange = getPositionRange(container);
+
+    if (
+      onPositionRangeChange &&
+      (lastPositionRange.current.x !== nextRange.x || lastPositionRange.current.y !== nextRange.y)
+    ) {
+      lastPositionRange.current = nextRange;
+      onPositionRangeChange(nextRange);
+    }
+
+    const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+    const safePositionX = clampWithinRange(currentPositionX, nextRange.x);
+    const safePositionY = clampWithinRange(currentPositionY, nextRange.y);
+
+    const nextScrollLeft =
+      maxScrollLeft === 0 || nextRange.x <= 0
+        ? 0
+        : ((safePositionX + nextRange.x) / (nextRange.x * 2)) * maxScrollLeft;
+    const nextScrollTop =
+      maxScrollTop === 0 || nextRange.y <= 0
+        ? 0
+        : ((safePositionY + nextRange.y) / (nextRange.y * 2)) * maxScrollTop;
+
+    container.scrollTo({
+      left: nextScrollLeft,
+      top: nextScrollTop,
+      behavior: 'auto',
+    });
+  }, [currentPositionX, currentPositionY, imgSize, currentScale, src, onPositionRangeChange]);
 
   /**
    * Drag (pan) functionality using native scroll.
@@ -378,7 +537,7 @@ export default function AdjustableImage({
 
       pinchData.current = {
         initialDistance: distance,
-        initialScale: scale,
+        initialScale: currentScale,
         centerX: center.x,
         centerY: center.y,
       };
@@ -412,6 +571,42 @@ export default function AdjustableImage({
     handleMovement(e.clientX, e.clientY);
   };
 
+  const handleContainerScroll = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const nextRange = getPositionRange(container);
+
+    if (
+      onPositionRangeChange &&
+      (lastPositionRange.current.x !== nextRange.x || lastPositionRange.current.y !== nextRange.y)
+    ) {
+      lastPositionRange.current = nextRange;
+      onPositionRangeChange(nextRange);
+    }
+
+    const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+
+    const nextPositionX =
+      maxScrollLeft === 0 || nextRange.x <= 0
+        ? 0
+        : clampWithinRange(
+            (container.scrollLeft / maxScrollLeft) * (nextRange.x * 2) - nextRange.x,
+            nextRange.x
+          );
+    const nextPositionY =
+      maxScrollTop === 0 || nextRange.y <= 0
+        ? 0
+        : clampWithinRange(
+            (container.scrollTop / maxScrollTop) * (nextRange.y * 2) - nextRange.y,
+            nextRange.y
+          );
+
+    setResolvedPositionX(nextPositionX);
+    setResolvedPositionY(nextPositionY);
+  };
+
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length === 1 && dragging.current) {
       // Single finger panning
@@ -442,10 +637,10 @@ export default function AdjustableImage({
       }
 
       // Prevent zooming out too much
-      if (newScale < 0.1) return;
+      if (newScale < MIN_SCALE) return;
 
       // Apply the new scale
-      setScale(newScale);
+      setResolvedScale(newScale);
     }
   };
 
@@ -459,6 +654,14 @@ export default function AdjustableImage({
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
+    handleEnd();
+  };
+
+  const handlePointerLeave = () => {
+    handleEnd();
+  };
+
+  const handlePointerCancel = () => {
     handleEnd();
   };
 
@@ -491,7 +694,7 @@ export default function AdjustableImage({
 
     if (!containerSize || !mainContainer) return;
 
-    const newScale = scale + porcentaje / 100;
+    const newScale = currentScale + porcentaje / 100;
 
     if (
       porcentaje < 0 &&
@@ -500,8 +703,8 @@ export default function AdjustableImage({
     )
       return;
 
-    if (newScale < 0.1) return;
-    setScale(newScale);
+    if (newScale < MIN_SCALE) return;
+    setResolvedScale(newScale);
   };
 
   return (
@@ -516,52 +719,61 @@ export default function AdjustableImage({
         onPointerDown={handlePointerDown}
         onPointerMove={handleMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerCancel}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        onScroll={handleContainerScroll}
       >
         {src && (
           <div
             className={styles.imgWrapper}
             style={{
-              width: imgSize.width * scale + 'px',
-              height: imgSize.height * scale + 'px',
+              width: imgSize.width * currentScale + 'px',
+              height: imgSize.height * currentScale + 'px',
             }}
           >
             <img src={src} alt="" className={styles.imgElement} />
           </div>
         )}
       </div>
-      <div className={styles.mainControlerContainer}>
-        <section data-html2canvas-ignore className={styles.controlerContainer}>
-          <button onClick={() => handleZoom(-5)}>&#x2796;&#xFE0E;</button>
-          <span>zoom {Math.round(scale * 100)}%</span>
-          <button onClick={() => handleZoom(5)}>&#x2795;&#xFE0E;</button>
-        </section>
-
-        <section data-html2canvas-ignore className={styles.dragContainer}>
-          <span>arrastra para ajustar la imagen</span>
-        </section>
-
-        {imageUrls.length > 1 && (
+      {showControls && (
+        <div className={styles.mainControlerContainer}>
           <section data-html2canvas-ignore className={styles.controlerContainer}>
-            <button
-              onClick={() =>
-                setCurrentImageIndex((i) => (i - 1 + imageUrls.length) % imageUrls.length)
-              }
-            >
-              &#x2770;
+            <button disabled={currentScale <= MIN_SCALE} onClick={() => handleZoom(-5)}>
+              &#x2796;&#xFE0E;
             </button>
-            <span>imagen</span>
-            <button onClick={() => setCurrentImageIndex((i) => (i + 1) % imageUrls.length)}>
-              &#x2771;
-            </button>
+            <span>zoom {Math.round(currentScale * 100)}%</span>
+            <button onClick={() => handleZoom(5)}>&#x2795;&#xFE0E;</button>
           </section>
-        )}
-      </div>
+
+          <section data-html2canvas-ignore className={styles.dragContainer}>
+            <span>arrastra para ajustar la imagen</span>
+          </section>
+
+          {imageUrls.length > 1 && (
+            <section data-html2canvas-ignore className={styles.controlerContainer}>
+              <button
+                onClick={() =>
+                  setResolvedImageIndex(
+                    (currentImageIndex - 1 + imageUrls.length) % imageUrls.length
+                  )
+                }
+              >
+                &#x2770;
+              </button>
+              <span>imagen</span>
+              <button
+                onClick={() => setResolvedImageIndex((currentImageIndex + 1) % imageUrls.length)}
+              >
+                &#x2771;
+              </button>
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }
