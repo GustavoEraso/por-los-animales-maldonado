@@ -80,6 +80,8 @@ export default function LitterGridSection({
   secondaryTextColor,
 }: LitterGridSectionProps) {
   const MIN_SCALE = 1;
+  const TEXT_OUTLINE_SHADOW =
+    '0 1px 1.5px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.3)';
 
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
   const [isAdjustPopupOpen, setIsAdjustPopupOpen] = useState(false);
@@ -473,11 +475,17 @@ export default function LitterGridSection({
                     showControls={false}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/55 text-white px-1.5 py-1">
-                    <p className={`${nameTextClass} font-extrabold uppercase truncate`}>
+                  <div className="absolute inset-x-0 bottom-0 text-white px-1.5 py-1">
+                    <p
+                      style={{ textShadow: TEXT_OUTLINE_SHADOW }}
+                      className={`${nameTextClass} font-extrabold uppercase truncate`}
+                    >
                       {litterAnimal.name || 'Sin nombre'}
                     </p>
-                    <p className="text-[10px] uppercase tracking-wide">
+                    <p
+                      style={{ textShadow: TEXT_OUTLINE_SHADOW }}
+                      className="text-[10px] uppercase tracking-wide"
+                    >
                       {gender ? gender : 'Sin información'}
                     </p>
                   </div>
