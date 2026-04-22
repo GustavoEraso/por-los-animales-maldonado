@@ -2,17 +2,19 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import NextImage from 'next/image';
-import QRCode from 'react-qr-code';
 
 import { fetchAnimals } from '@/lib/fetchAnimal';
 import { fetchContacts } from '@/lib/fetchContacts';
-import { yearsOrMonthsElapsed } from '@/lib/dateUtils';
-import { formatPhone } from '@/lib/formatPhone';
+import { handleToast } from '@/lib/handleToast';
 
 import { Animal, WpContactType } from '@/types';
-import AdjustableImage from '@/elements/AdjustableImage';
 import Loader from '@/components/Loader';
+import LitterModeControls from './components/LitterModeControls';
+import AnimalDataControls from './components/AnimalDataControls';
+import ColorSchemeControls from './components/ColorSchemeControls';
+import FormatControls from './components/FormatControls';
+import TitleControls from './components/TitleControls';
+import SharePreview from './components/SharePreview';
 // import { CheckIcon } from '@/components/Icons';
 
 interface ColorScheme {
@@ -76,6 +78,56 @@ interface FormatPreset {
   height: number; // px
 }
 
+type ShareMode = 'individual' | 'litter';
+type LitterRowsMode = 'auto' | '1' | '2' | '3' | '4' | '5' | '6';
+
+function getAutoLitterRows(animalCount: number): number {
+  if (animalCount <= 0) {
+    return 1;
+  }
+
+  if (animalCount === 2) {
+    return 1;
+  }
+
+  if (animalCount === 3) {
+    return 1;
+  }
+
+  if (animalCount === 4) {
+    return 2;
+  }
+
+  if (animalCount === 5 || animalCount === 6) {
+    return 2;
+  }
+
+  if (animalCount === 7) {
+    return 3;
+  }
+
+  if (animalCount === 8) {
+    return 2;
+  }
+
+  return 3;
+}
+
+async function preloadImages(urls: string[]): Promise<void> {
+  await Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const image = new Image();
+          image.crossOrigin = 'anonymous';
+          image.onload = () => resolve();
+          image.onerror = () => resolve();
+          image.src = url;
+        })
+    )
+  );
+}
+
 const formatPresets: FormatPreset[] = [
   // { key: 'square', label: 'Cuadrado (1:1)', width: 324, height: 324, },
   { key: 'post', label: 'Post vertical (3:4)', width: 324, height: 432 },
@@ -83,6 +135,8 @@ const formatPresets: FormatPreset[] = [
 ];
 
 const titles = ['EN ADOPCIóN RESPONSABLE', 'NECESITA TRANSITORIO', 'NECESITA TU AYUDA'];
+const MIN_LOADING_TIME = 600;
+
 export default function CompartirPage() {
   return (
     <Suspense fallback={<Loader />}>
@@ -95,8 +149,14 @@ function CompartirContain() {
   const { id } = useParams<{ id: string }>();
   const [contacts, setContacts] = useState<WpContactType[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
+  const [litterAnimals, setLitterAnimals] = useState<Animal[]>([]);
+  const [shareMode, setShareMode] = useState<ShareMode>('individual');
+  const [includeUnavailableInLitter, setIncludeUnavailableInLitter] = useState(false);
+  const [litterRowsMode, setLitterRowsMode] = useState<LitterRowsMode>('auto');
+  const [selectedLitterAnimalIds, setSelectedLitterAnimalIds] = useState<string[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-  const [animal, setAnimal] = useState<Animal>({} as Animal);
+  const [animal, setAnimal] = useState<Animal | null>(null);
 
   const [nameSize, setNameSize] = useState(30);
   const [titleSize, setTitleSize] = useState(30);
@@ -129,8 +189,12 @@ function CompartirContain() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
+      const startTime = Date.now();
       setLoading(true);
+
       try {
         // Ejecutar ambas peticiones en paralelo
         const [fetchedAnimal, fetchedContacts] = await Promise.all([
@@ -138,8 +202,30 @@ function CompartirContain() {
           fetchContacts(),
         ]);
 
+        if (!isMounted) return;
+
+        if (!fetchedAnimal) {
+          setAnimal(null);
+          setLitterAnimals([]);
+          return;
+        }
+
         setAnimal(fetchedAnimal);
         setContacts(fetchedContacts);
+
+        if (fetchedAnimal?.litterId) {
+          const fetchedLitterResponse = await fetchAnimals({
+            litterId: fetchedAnimal.litterId,
+            sortBy: 'name',
+            sortOrder: 'asc',
+          });
+          const fetchedLitter = Array.isArray(fetchedLitterResponse)
+            ? fetchedLitterResponse
+            : fetchedLitterResponse.data;
+          setLitterAnimals(fetchedLitter);
+        } else {
+          setLitterAnimals([]);
+        }
 
         // Establecer contactos seleccionados por defecto
         if (fetchedContacts.length > 0) {
@@ -148,13 +234,116 @@ function CompartirContain() {
         }
       } catch (error) {
         console.error(error);
+        if (isMounted) {
+          handleToast({
+            type: 'error',
+            title: 'No pudimos cargar los datos',
+            text: 'Intenta recargar la página para volver a intentarlo.',
+          });
+        }
       } finally {
-        setLoading(false);
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+        setTimeout(() => {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }, remaining);
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
+
+  const canUseLitterMode = useMemo(() => {
+    return litterAnimals.length > 1;
+  }, [litterAnimals]);
+
+  useEffect(() => {
+    if (!canUseLitterMode && shareMode === 'litter') {
+      setShareMode('individual');
+    }
+  }, [canUseLitterMode, shareMode]);
+
+  const visibleLitterAnimals = useMemo(() => {
+    const filteredAnimals = includeUnavailableInLitter
+      ? litterAnimals
+      : litterAnimals.filter((litterAnimal) => litterAnimal.isAvailable !== false);
+
+    const selectedIdsSet = new Set(selectedLitterAnimalIds);
+
+    const manuallySelectedAnimals = filteredAnimals.filter((animalItem) =>
+      selectedIdsSet.has(animalItem.id)
+    );
+
+    const sortedAnimals = [...manuallySelectedAnimals].sort((a, b) => {
+      const availabilityA = a.isAvailable === false ? 1 : 0;
+      const availabilityB = b.isAvailable === false ? 1 : 0;
+
+      if (availabilityA !== availabilityB) return availabilityA - availabilityB;
+
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+    });
+
+    return sortedAnimals;
+  }, [includeUnavailableInLitter, litterAnimals, selectedLitterAnimalIds]);
+
+  const selectableLitterAnimals = useMemo(() => {
+    return includeUnavailableInLitter
+      ? litterAnimals
+      : litterAnimals.filter((litterAnimal) => litterAnimal.isAvailable !== false);
+  }, [includeUnavailableInLitter, litterAnimals]);
+
+  useEffect(() => {
+    const selectableIds = selectableLitterAnimals.map((animalItem) => animalItem.id);
+
+    setSelectedLitterAnimalIds((prev) => {
+      if (selectableIds.length === 0) return [];
+
+      if (prev.length === 0) {
+        return selectableIds;
+      }
+
+      const prevSet = new Set(prev);
+      const preserved = prev.filter((id) => selectableIds.includes(id));
+      const newOnes = selectableIds.filter((id) => !prevSet.has(id));
+
+      return [...preserved, ...newOnes];
+    });
+  }, [selectableLitterAnimals]);
+
+  const handleToggleLitterAnimal = (animalId: string) => {
+    setSelectedLitterAnimalIds((prev) => {
+      if (prev.includes(animalId)) {
+        return prev.filter((id) => id !== animalId);
+      }
+
+      return [...prev, animalId];
+    });
+  };
+
+  const litterRowCount = useMemo(() => {
+    if (litterRowsMode === 'auto') {
+      return getAutoLitterRows(visibleLitterAnimals.length);
+    }
+
+    return Number.parseInt(litterRowsMode, 10);
+  }, [litterRowsMode, visibleLitterAnimals.length]);
+
+  const visibleLitterAnimalsInGrid = visibleLitterAnimals;
+
+  const litterNameTextClass = useMemo(() => {
+    if (visibleLitterAnimalsInGrid.length >= 7) return 'text-[10px]';
+    if (visibleLitterAnimalsInGrid.length >= 5) return 'text-xs';
+    return 'text-sm';
+  }, [visibleLitterAnimalsInGrid.length]);
+
+  const isLitterShareActive = shareMode === 'litter' && canUseLitterMode;
 
   // const handleContactToggle = (contactIndex: number) => {
   //   setSelectedContacts((prev) => {
@@ -171,26 +360,59 @@ function CompartirContain() {
   // ---- Imágenes del animal ----------------------------
 
   const currentImages = useMemo<string[]>(() => {
-    return animal.images?.map((img) => img.imgUrl) || [];
-  }, [animal?.images]);
+    return animal?.images?.map((img) => img.imgUrl) || [];
+  }, [animal]);
 
   const areaRef = useRef<HTMLDivElement>(null);
 
   // ---- Captura con html2canvas ----------------------------
   const capturar = async () => {
-    if (!areaRef.current) return;
-    const html2canvas = (await import('html2canvas-pro')).default;
+    if (!areaRef.current || !animal?.id || isCapturing) return;
 
-    const canvas = await html2canvas(areaRef.current, {
-      backgroundColor: null,
-      scale: 3,
-      useCORS: true,
-    });
+    if (isLitterShareActive && visibleLitterAnimalsInGrid.length === 0) {
+      handleToast({
+        type: 'warning',
+        title: 'No hay integrantes para exportar',
+        text: 'Ajusta los filtros de camada antes de descargar la placa.',
+      });
+      return;
+    }
 
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/jpeg');
-    link.download = `${animal.id}.jpeg`;
-    link.click();
+    setIsCapturing(true);
+
+    try {
+      if (isLitterShareActive) {
+        const litterImageUrls = visibleLitterAnimalsInGrid.map(
+          (litterAnimal) => litterAnimal.images?.[0]?.imgUrl || '/logo300.webp'
+        );
+
+        await preloadImages(litterImageUrls);
+      }
+
+      const html2canvas = (await import('html2canvas-pro')).default;
+
+      const canvas = await html2canvas(areaRef.current, {
+        backgroundColor: null,
+        scale: 3,
+        useCORS: true,
+      });
+
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/jpeg');
+      link.download = isLitterShareActive
+        ? `${animal.litterName || animal.id}-camada.jpeg`
+        : `${animal.id}.jpeg`;
+      link.click();
+    } catch (error) {
+      console.error(error);
+      handleToast({
+        type: 'error',
+        title: 'No se pudo descargar la placa',
+        text: 'Ocurrió un error al generar la imagen. Intenta nuevamente.',
+      });
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const someCompatibility = useMemo(() => {
@@ -242,260 +464,63 @@ function CompartirContain() {
     <div className="min-h-screen bg-gradient-to-br from-cream-light to-amber-sunset">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-1 sm:p-8">
         <aside className="flex flex-col gap-6 lg:col-span-1 w-full">
-          <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
-            <div className="space-y-3">
-              <h3 className="leading-none font-semibold text-2xl">Selector de colores</h3>
-              {colorSchemes.map((scheme, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                    selectedColorScheme.name === scheme.name
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                  onClick={() => setSelectedColorScheme(scheme)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{scheme.name}</span>
-                    <div className="flex gap-1">
-                      <div
-                        className="w-4 h-4 rounded-full border"
-                        style={{ backgroundColor: scheme.primary }}
-                      />
-                      <div
-                        className="w-4 h-4 rounded-full border"
-                        style={{ backgroundColor: scheme.secondary }}
-                      />
-                      <div
-                        className="w-4 h-4 rounded-full border"
-                        style={{ backgroundColor: scheme.accent }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
-            <div className="space-y-3">
-              <h3 className="leading-none font-semibold text-2xl">Formato</h3>
-              {formatPresets.map((format, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                    selectedFormat.key === format.key
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                  onClick={() => setSelectedFormat(format)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{format.label}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
-            <div className="space-y-3">
-              <h3 className="leading-none font-semibold text-2xl">Selector de título</h3>
-              {titles.map((title, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                    selectedTitle === title
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                  onClick={() => setSelectedTitle(title)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{title}</span>
-                  </div>
-                </div>
-              ))}
-              <div
-                className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                  !titles.some((title) => title === selectedTitle)
-                    ? 'border-red-600 bg-red-50'
-                    : 'border-gray-200 hover:border-red-300'
-                }`}
-              >
-                <label className="flex items-center justify-between">
-                  <input
-                    type="text"
-                    placeholder="Título personalizado"
-                    onChange={(e) => setSelectedTitle(e.target.value)}
-                    onClick={(e) => setSelectedTitle(e.currentTarget.value)}
-                    className="font-medium text-gray-900 outline-0"
-                  ></input>
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300 ">
-                <label htmlFor="titleSize">Tamaño del título: </label>
-                <span className="text-center">{titleSize}px</span>
-                <input
-                  type="range"
-                  id="titleSize"
-                  min="10"
-                  max="60"
-                  value={titleSize}
-                  onChange={(e) => setTitleSize(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </section>
-          <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
-            <div className="space-y-3">
-              <h3 className="leading-none font-semibold text-2xl">Datos del animal</h3>
+          <LitterModeControls
+            shareMode={shareMode}
+            canUseLitterMode={canUseLitterMode}
+            includeUnavailableInLitter={includeUnavailableInLitter}
+            litterRowsMode={litterRowsMode}
+            visibleLitterCount={visibleLitterAnimalsInGrid.length}
+            totalLitterCount={litterAnimals.length}
+            selectableLitterAnimals={selectableLitterAnimals}
+            selectedLitterAnimalIds={selectedLitterAnimalIds}
+            onShareModeChange={setShareMode}
+            onIncludeUnavailableChange={setIncludeUnavailableInLitter}
+            onLitterRowsModeChange={setLitterRowsMode}
+            onToggleLitterAnimal={handleToggleLitterAnimal}
+          />
 
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300 ">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center ">
-                  <span>Nombre:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.name}
-                    name="name"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label htmlFor="nameSize">Tamaño del nombre: </label>
-                <span className="text-center">{nameSize}px</span>
-                <input
-                  type="range"
-                  id="nameSize"
-                  min="10"
-                  max="50"
-                  value={nameSize}
-                  onChange={(e) => setNameSize(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Genero:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.gender}
-                    name="gender"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Edad aprox:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.aproxBirthDate}
-                    name="aproxBirthDate"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Etapa de vida:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.lifeStage}
-                    name="lifeStage"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Tamaño:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.size}
-                    name="size"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Esterilizado:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.isSterilized}
-                    name="isSterilized"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                  <span>Disponinilidad para adoptar:</span>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked={animalDataToShow.isAvailable}
-                    name="isAvailable"
-                    onChange={(e) => handleAnimalDataToShow(e)}
-                  />
-                  <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                </label>
-              </div>
-              {someCompatibility && (
-                <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                  <label className="flex gap-2 cursor-pointer w-fit  font-bold text-balance items-center">
-                    <span>Compatibilidad:</span>
-                    <input
-                      type="checkbox"
-                      disabled={!someCompatibility}
-                      className="sr-only peer"
-                      defaultChecked={!someCompatibility ? false : animalDataToShow.compatibility}
-                      name="compatibility"
-                      onChange={(e) => handleAnimalDataToShow(e)}
-                    />
-                    <div className="relative min-w-11 w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-dark   peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-amber-sunset peer-checked:after:bg-caramel-deep after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all  peer-checked:bg-amber-sunset" />
-                  </label>
-                </div>
-              )}
-              <div
-                className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md `}
-              >
-                <label className="flex items-center justify-between">
-                  <textarea
-                    placeholder="descripción corta"
-                    onChange={(e) => setInfoText(e.target.value)}
-                    className="font-medium text-gray-900 outline-0 w-full field-sizing-content"
-                  ></textarea>
-                </label>
-              </div>
-              <div className="p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md border-gray-200 hover:border-red-300">
-                <label htmlFor="itemsSize">Tamaño de items: </label>
-                <span className="text-center">{itemsSize}px</span>
-                <input
-                  type="range"
-                  id="itemsSize"
-                  min="10"
-                  max="50"
-                  value={itemsSize}
-                  onChange={(e) => setItemsSize(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </section>
+          <ColorSchemeControls
+            colorSchemes={colorSchemes}
+            selectedColorSchemeName={selectedColorScheme.name}
+            onSelectColorScheme={(schemeName) => {
+              const scheme = colorSchemes.find((item) => item.name === schemeName);
+              if (scheme) {
+                setSelectedColorScheme(scheme);
+              }
+            }}
+          />
+
+          <FormatControls
+            formatPresets={formatPresets}
+            selectedFormatKey={selectedFormat.key}
+            onSelectFormat={(formatKey) => {
+              const format = formatPresets.find((item) => item.key === formatKey);
+              if (format) {
+                setSelectedFormat(format);
+              }
+            }}
+          />
+
+          <TitleControls
+            titles={titles}
+            selectedTitle={selectedTitle}
+            titleSize={titleSize}
+            onSelectTitle={setSelectedTitle}
+            onTitleSizeChange={setTitleSize}
+          />
+
+          <AnimalDataControls
+            isLitterShareActive={isLitterShareActive}
+            someCompatibility={someCompatibility}
+            animalDataToShow={animalDataToShow}
+            nameSize={nameSize}
+            itemsSize={itemsSize}
+            infoText={infoText}
+            onAnimalDataToShowChange={handleAnimalDataToShow}
+            onNameSizeChange={setNameSize}
+            onItemsSizeChange={setItemsSize}
+            onInfoTextChange={setInfoText}
+          />
           {/* <section className="flex flex-col gap-6 p-6 rounded-xl border border-amber-sunset py-6 shadow-sm bg-amber-50">
             <div className="space-y-3">
               <h3 className="leading-none font-semibold text-2xl">Contactos a mostrar</h3>
@@ -554,162 +579,35 @@ function CompartirContain() {
         <main className="lg:col-span-2 flex flex-col gap-8 items-center w-full rounded-xl border border-amber-sunset  shadow-sm bg-amber-50 p-16">
           <section className="flex flex-col gap-3 items-center sticky top-2 ">
             {/* Área que se captura */}
-            <div
-              ref={areaRef}
-              style={{ height: selectedFormat.height, width: selectedFormat.width }}
-              className="flex flex-col items-center  overflow-hidden select-none shadow-[0px_0px_15px_#000000] "
-            >
-              <section
-                style={{
-                  backgroundColor: selectedColorScheme.primary,
-                  color: selectedColorScheme.primaryText,
-                }}
-                className="flex felx-col items-center justify-center w-full "
-              >
-                <h3
-                  style={{ fontSize: `${titleSize}px` }}
-                  className={` w-full  text-center text-balance font-extrabold leading-none uppercase ${selectedFormat.key === 'story' ? ' py-4' : 'py-1'} `}
-                >
-                  {selectedTitle}
-                </h3>
-              </section>
-              <section
-                style={{
-                  backgroundColor: selectedColorScheme.secondary,
-                  color: selectedColorScheme.secondaryText,
-                }}
-                className=" relative grid grid-cols-7 bg-green-forest text-cream-light w-full overflow-hidden flex-1 min-h-0"
-              >
-                {/* Seccion izquierda */}
-                <div
-                  className={`col-span-3  flex flex-col items-stretch justify-around p-1 relative overflow-hidden ${selectedFormat.key === 'story' ? 'py-8' : ''}`}
-                >
-                  {animalDataToShow.name && (
-                    <h3
-                      className={`break-words font-bold uppercase  text-center leading-none `}
-                      style={{ fontSize: `${nameSize}px` }}
-                    >
-                      {animal.name || 'Nombre no disponible.'}
-                    </h3>
-                  )}
-
-                  <ul
-                    style={{ fontSize: `${itemsSize}px` }}
-                    className="flex flex-col h-full justify-around  "
-                  >
-                    {animalDataToShow.gender && <li className="  capitalize"> {animal.gender}</li>}
-                    {animalDataToShow.aproxBirthDate && (
-                      <li className="  capitalize">
-                        {' '}
-                        {yearsOrMonthsElapsed(animal.aproxBirthDate)}
-                      </li>
-                    )}
-                    {animalDataToShow.size && <li className="  capitalize"> {animal.size}</li>}
-                    {animalDataToShow.lifeStage && (
-                      <li className="  capitalize"> {animal.lifeStage}</li>
-                    )}
-                    {animalDataToShow.isAvailable && (
-                      <li className="  text-balance  leading-none">
-                        {' '}
-                        {animal.isAvailable ? 'Pronto para encontrar hogar' : 'En recuperación'}
-                      </li>
-                    )}
-                    {animalDataToShow.isSterilized && (
-                      <li className="  text-balance  leading-none">
-                        {animal.isSterilized === 'si' && 'Esterilizado'}
-                        {animal.isSterilized === 'no' && 'Sin esterelizar'}
-                        {animal.isSterilized === 'no_se' && 'No sabemos si esta esterilizado'}
-                      </li>
-                    )}
-                  </ul>
-                  <div className="py-2">
-                    {((animalDataToShow.compatibility && someCompatibility) || infoText !== '') && (
-                      <p className="border-b-2 mb-1 ">+info</p>
-                    )}
-                    <p className="leading-none max-w-full break-words ">{infoText}</p>
-
-                    {animalDataToShow.compatibility && someCompatibility && (
-                      <div className=" flex flex-col">
-                        <p className="font-semibold text-sm">se lleva bien con:</p>
-                        <div className="flex gap-1 text-2xl justify-center">
-                          {animal.compatibility.dogs === 'si' && <span>🐶 </span>}
-                          {animal.compatibility.cats === 'si' && <span>🐱 </span>}
-                          {animal.compatibility.kids === 'si' && <span>👶 </span>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="col-span-4 overflow-hidden min-h-0">
-                  <AdjustableImage
-                    imageUrls={currentImages}
-                    width="100%"
-                    height="100%"
-                    className="text-green-dark"
-                  />
-                </div>
-              </section>
-
-              <footer
-                style={{ backgroundColor: selectedColorScheme.accent }}
-                className=" relative flex flex-col w-full pb-1 "
-              >
-                <div
-                  style={{
-                    backgroundColor: selectedColorScheme.primary,
-                    color: selectedColorScheme.primaryText,
-                  }}
-                  className="relative w-full flex items-center justify-around p-1 "
-                >
-                  <NextImage
-                    src="/logo300.webp"
-                    alt="Logo de Adopta"
-                    width={85}
-                    height={85}
-                    className=" object-contain"
-                  />
-                  {selectedContacts.length > 0 && (
-                    <div className="flex flex-col gap-0.5 items-center justify-around">
-                      <p className=" text-sm text-center font-bold ">
-                        Contacto{`${selectedContacts.length > 1 ? 's:' : ':'}`}
-                      </p>
-
-                      {selectedContacts.map((contactIndex) => {
-                        const contact = contacts[contactIndex];
-                        if (!contact) return null;
-
-                        return (
-                          <div key={contact.phone} className="flex flex-col gap-0.5 items-center">
-                            <p className="text-green-dark text-sm text-center font-bold bg-cream-light px-1 rounded">
-                              {formatPhone({
-                                countryCode: contact.countryCode,
-                                phone: contact.phone,
-                              })}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <QRCode
-                    value={`www.porlosanimalesmaldonado.org/adopta/${animal.id}`}
-                    size={60}
-                    level="H"
-                  />
-                </div>
-                <p className="text-xs text-cream-light text-center">
-                  {`porlosanimalesmaldonado.org/adopta/${animal.id}`}
-                </p>
-              </footer>
-            </div>
+            <SharePreview
+              areaRef={areaRef}
+              selectedFormat={selectedFormat}
+              selectedColorScheme={selectedColorScheme}
+              selectedTitle={selectedTitle}
+              titleSize={titleSize}
+              isLitterShareActive={isLitterShareActive}
+              visibleLitterAnimals={visibleLitterAnimalsInGrid}
+              litterAnimalsCount={litterAnimals.length}
+              litterGridRows={litterRowCount}
+              litterNameTextClass={litterNameTextClass}
+              animal={animal}
+              animalDataToShow={animalDataToShow}
+              nameSize={nameSize}
+              itemsSize={itemsSize}
+              infoText={infoText}
+              someCompatibility={someCompatibility}
+              currentImages={currentImages}
+              selectedContacts={selectedContacts}
+              contacts={contacts}
+            />
 
             {/* Botón descarga */}
             <button
               onClick={capturar}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+              disabled={isCapturing}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Descargar
+              {isCapturing ? 'Generando...' : 'Descargar'}
             </button>
           </section>
         </main>
