@@ -2,6 +2,8 @@
 import React from 'react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import ShareButton from '@/elements/ShareButton';
+import { ShareIcon } from '@/components/Icons';
 
 /**
  * Props for the Hero component.
@@ -13,6 +15,10 @@ interface Props {
   imgAlt?: string;
   /** Title to display on the hero section */
   title?: string;
+  /** Enables share action next to title */
+  enableShare?: boolean;
+  /** Custom URL to share when share action is enabled */
+  shareUrl?: string;
 }
 
 /**
@@ -26,6 +32,8 @@ interface Props {
  * @param {string} [props.imgURL] - URL of the hero image (defaults to "/heroImg.webp")
  * @param {string} [props.imgAlt] - Alt text for the hero image (defaults to "Hero image")
  * @param {string} [props.title] - Title to display (defaults to current pathname)
+ * @param {boolean} [props.enableShare=false] - Enables the share button next to the title
+ * @param {string} [props.shareUrl] - Custom URL to share (defaults to current page URL when omitted)
  * @returns {React.ReactElement} The rendered hero section component
  *
  * @example
@@ -39,13 +47,30 @@ interface Props {
  *   imgAlt="Custom hero image"
  *   title="Welcome"
  * />
+ *
+ * @example
+ * // With share button and a custom URL
+ * <Hero
+ *   imgURL="/animals/luna.webp"
+ *   imgAlt="Luna in foster care"
+ *   title="Luna"
+ *   enableShare
+ *   shareUrl="https://porlosanimalesmaldonado.org/adopta/luna"
+ * />
  */
-export default function Hero({ imgURL, imgAlt, title }: Props): React.ReactElement {
+export default function Hero({
+  imgURL,
+  imgAlt,
+  title,
+  enableShare = false,
+  shareUrl,
+}: Props): React.ReactElement {
   const pathName = usePathname().split('/').filter(Boolean).pop();
 
   const imageSrc = imgURL ?? '/heroImg.webp';
   const imageAlt = imgAlt ?? 'Hero image';
   const displayTitle = title ?? pathName;
+  const shareTargetName = displayTitle ?? 'este perfil';
 
   return (
     <section className="flex justify-center  w-full h-[60svh]  overflow-hidden relative  ">
@@ -62,9 +87,28 @@ export default function Hero({ imgURL, imgAlt, title }: Props): React.ReactEleme
         }
       >
         <section className="flex flex-col gap-4 w-full h-2/3 justify-end max-w-4xl xl:pr-60 ">
-          <h3 className="text-5xl lg:text-8xl font-extrabold text-green-dark self-start uppercase ">
-            {displayTitle}
-          </h3>
+          <div className="flex items-end gap-2 lg:gap-4 self-start">
+            <h3 className="text-5xl lg:text-8xl font-extrabold text-green-dark uppercase ">
+              {displayTitle}
+            </h3>
+            {enableShare && (
+              <ShareButton
+                animate={false}
+                className="mb-2 lg:mb-3 w-fit rounded-full p-2 lg:p-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset"
+                shareTitle={`Conoce a ${shareTargetName}`}
+                shareText={`Ayudanos a que ${shareTargetName} encuentre una familia.`}
+                urlToShare={shareUrl}
+                aria-label={`Compartir perfil de ${shareTargetName}`}
+              >
+                <span className="block lg:hidden p-0" aria-hidden="true">
+                  <ShareIcon size="sm" title={`Compartir perfil de ${shareTargetName}`} />
+                </span>
+                <span className="hidden lg:block  p-0" aria-hidden="true">
+                  <ShareIcon size="xl" title={`Compartir perfil de ${shareTargetName}`} />
+                </span>
+              </ShareButton>
+            )}
+          </div>
         </section>
       </section>
     </section>
