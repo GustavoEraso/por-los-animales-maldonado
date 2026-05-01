@@ -5,9 +5,11 @@ import PhotoCarrousel from '@/components/PhotoCarrousel';
 import { Modal } from '@/components/Modal';
 import Loader from '@/components/Loader';
 import Card from '@/components/Card';
+import { ImageIcon, ShareIcon } from '@/components/Icons';
+import ShareButton from '@/elements/ShareButton';
+import Link from 'next/link';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from '@/lib/dateUtils';
-import ShareButton from '@/elements/ShareButton';
 import { Suspense, ViewTransition } from 'react';
 
 import { buildFormUrl } from '@/lib/buildFormUrl';
@@ -71,7 +73,7 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
       <ViewTransition name={`animal-${id}`}>
-        <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
+        <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} enableShare />
       </ViewTransition>
 
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">
@@ -176,37 +178,30 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
       </section>
-      <Modal
-        buttonText="Ver formas de Compartir"
-        buttonStyles="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer"
-      >
-        <section className="flex flex-col items-center justify-around bg-cream-light w-full h-full p-4 gap-2 text-center ">
-          <h4 className="font-extrabold text-2xl text-green-dark">
-            ¡Comparte y ayuda a {name} a encontrar familia!
-          </h4>
-          <p className="text-green-dark text-md font-bold">
-            Difunde el perfil de {name} para que más personas puedan conocerlo y darle una
-            oportunidad de tener un hogar lleno de amor.
-          </p>
-          <ShareButton animate={false} />
-          <p className="text-green-dark text-md font-bold">
-            Si usas redes sociales, puedes crear una imagen especial para compartir en tus
-            historias:
-          </p>
-          <a
-            href={`https://porlosanimalesmaldonado.org/adopta/${id}/compartir`}
-            className="w-fit text-xl rounded-full px-2 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Generar imagen para historias
-          </a>
-          <p className="text-green-dark text-md font-bold">
-            ¡Gracias por apoyar la adopción y ayudar a cambiar vidas!
-          </p>
-        </section>
-      </Modal>
-
+      <section className=" flex flex-col md:flex-row items-center justify-center gap-3 px-9 py-2 w-full max-w-7xl">
+        <Link
+          href={`/adopta/${id}/compartir`}
+          className="inline-flex items-center justify-center w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+          aria-label={`Generar imagen para compartir perfil de ${name}`}
+        >
+          <ImageIcon size="lg" title={`Generar imagen para compartir perfil de ${name}`} />
+          <div className="flex flex-col md:flex-row md:gap-1 ml-1 ">
+            <span>Generar imagen </span>
+            <span>para compartir</span>
+          </div>
+        </Link>
+        <ShareButton
+          animate={false}
+          className="inline-flex items-center justify-center w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+          shareTitle={`Conoce a ${name}`}
+          shareText={`Ayudanos a que ${name} encuentre una familia.`}
+          urlToShare={`https://porlosanimalesmaldonado.org/adopta/${id}`}
+          aria-label={`Compartir perfil de ${name} con enlace`}
+        >
+          <ShareIcon size="lg" title={`Compartir perfil de ${name} con enlace`} />
+          <span>Compartir enlace</span>
+        </ShareButton>
+      </section>
       {parents.length > 0 && (
         <section className="flex flex-col items-center gap-4 px-9 py-4 w-full max-w-7xl">
           <h3 className="text-2xl font-bold text-green-dark">Padres</h3>
