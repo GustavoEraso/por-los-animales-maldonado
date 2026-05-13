@@ -110,7 +110,7 @@ function Modal({
     <div>
       <button
         onClick={openModal}
-        className={`${buttonStyles ? buttonStyles : 'w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance cursor-pointer'}`}
+        className={`${buttonStyles ? buttonStyles : 'w-fit inline-flex items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0'}`}
       >
         {buttonText}
       </button>

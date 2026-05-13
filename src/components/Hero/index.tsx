@@ -94,7 +94,7 @@ export default function Hero({
             {enableShare && (
               <ShareButton
                 animate={false}
-                className="mb-2 lg:mb-3 w-fit rounded-full p-2 lg:p-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset"
+                className="mb-2 lg:mb-3 w-fit rounded-full p-2 lg:p-3 ease-in-out  inline-flex items-center justify-center border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 shareTitle={`Conoce a ${shareTargetName}`}
                 shareText={`Ayudanos a que ${shareTargetName} encuentre una familia.`}
                 urlToShare={shareUrl}

@@ -780,7 +780,7 @@ export default function SearchBox({ targetPath, dashboardMode = false }: SearchB
               <button
                 onClick={handleSearch}
                 disabled={isPending}
-                className="flex-1 bg-amber-sunset text-white px-6 py-2 rounded font-semibold hover:bg-amber-sunset/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+                className=" flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-4 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
               >
                 <SearchIcon size="md" />
                 {isPending ? 'Buscando...' : 'Buscar'}
@@ -788,7 +788,7 @@ export default function SearchBox({ targetPath, dashboardMode = false }: SearchB
               <button
                 onClick={handleClear}
                 disabled={isPending}
-                className="px-6 py-2 rounded border-2 border-gray-300 font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 active:scale-95"
+                className="w-fit inline-flex items-center justify-center rounded-full border-2 border-amber-sunset bg-cream-light px-8 py-4 text-lg font-semibold text-caramel-deep shadow-sm transition-all duration-300 hover:bg-white hover:scale-[1.02]"
               >
                 Limpiar
               </button>

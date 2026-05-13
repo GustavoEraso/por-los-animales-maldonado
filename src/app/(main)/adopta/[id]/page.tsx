@@ -7,12 +7,12 @@ import Loader from '@/components/Loader';
 import Card from '@/components/Card';
 import { ImageIcon, ShareIcon } from '@/components/Icons';
 import ShareButton from '@/elements/ShareButton';
-import Link from 'next/link';
 
 import { formatDateMMYYYY, yearsOrMonthsElapsed } from '@/lib/dateUtils';
 import { Suspense, ViewTransition } from 'react';
 
 import { buildFormUrl } from '@/lib/buildFormUrl';
+import SmartLink from '@/lib/SmartLink';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -153,14 +153,15 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
                     Gracias por querer cambiar una vida. 🐾❤️
                   </p>
                   {/* <a href="https://docs.google.com/forms/d/1csJabjokYazcnd5CB4inEXJF27_m_9UjK854l1p_G3o/edit?ts=62f54023#" target="_blank" */}
-                  <a
+                  <SmartLink
                     href={buildFormUrl({ dogName: name, dogId: id })}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+                    variant="primary"
+                    aria-label={`Llenar formulario de adopción para ${name}`}
                   >
                     Llenar formulario
-                  </a>
+                  </SmartLink>
                 </section>
               </Modal>
             )}
@@ -179,9 +180,9 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
         </div>
       </section>
       <section className=" flex flex-col md:flex-row items-center justify-center gap-3 px-9 py-2 w-full max-w-7xl">
-        <Link
+        <SmartLink
+          variant="primary"
           href={`/adopta/${id}/compartir`}
-          className="inline-flex items-center justify-center w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
           aria-label={`Generar imagen para compartir perfil de ${name}`}
         >
           <ImageIcon size="lg" title={`Generar imagen para compartir perfil de ${name}`} />
@@ -189,10 +190,10 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
             <span>Generar imagen </span>
             <span>para compartir</span>
           </div>
-        </Link>
+        </SmartLink>
         <ShareButton
           animate={false}
-          className="inline-flex items-center justify-center w-fit text-lg rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+          variant="primary"
           shareTitle={`Conoce a ${name}`}
           shareText={`Ayudanos a que ${name} encuentre una familia.`}
           urlToShare={`https://porlosanimalesmaldonado.org/adopta/${id}`}

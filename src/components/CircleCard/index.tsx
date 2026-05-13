@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
 import { useLayoutEffect, useRef } from 'react';
-import Link from 'next/link';
 import { gsap } from 'gsap/dist/gsap';
 import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+import SmartLink from '@/lib/SmartLink';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -150,17 +150,11 @@ export default function CircleCard({
           className="circle-img h-full w-full rounded-full object-cover shadow-md"
         />
       </div>
-
-      <Link
-        href={linkUrl}
-        className={`circle-link absolute bottom-0 rounded-full px-4 py-2 text-2xl uppercase transition-colors duration-1000 ease-in-out ${
-          !invert
-            ? 'bg-caramel-deep text-white hover:text-black hover:bg-amber-sunset'
-            : 'bg-green-dark text-white hover:bg-caramel-deep'
-        }`}
-      >
-        {linkText}
-      </Link>
+      <div className="circle-link absolute bottom-0 ">
+        <SmartLink href={linkUrl} variant={invert ? 'secondary' : 'primary'}>
+          {linkText}
+        </SmartLink>
+      </div>
     </div>
   );
 }

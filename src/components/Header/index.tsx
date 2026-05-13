@@ -107,15 +107,12 @@ export default function Header(): React.ReactElement {
 
       {isUserLoggedIn ? (
         <div className="hidden md:flex justify-center items-stretch gap-4">
-          <SmartLink
-            href="/plam-admin/animales/crear"
-            className=" hidden  sm:flex items-center gap-2 text-sm text-center px-4 py-2 bg-green-600 text-white  rounded-lg hover:bg-green-700 transition-colors shadow-sm  font-semibold"
-          >
+          <SmartLink href="/plam-admin/animales/crear" variant="secondary">
             <span className=" lg:hidden text-2xl ">+</span>
             <span className="hidden lg:block">+ Nuevo Caso</span>
           </SmartLink>
           <SmartLink
-            className=" hidden  sm:flex items-center gap-2 text-lg bg-caramel-deep text-white px-4 py-2 rounded-lg hover:bg-amber-sunset transition-colors shadow-sm  font-semibold"
+            variant="primary"
             href={'/plam-admin'}
             aria-label={'Enlace al panel de administración'}
           >
@@ -124,23 +121,21 @@ export default function Header(): React.ReactElement {
 
           <button
             onClick={handleLogout}
-            className=" block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full"
+            className="w-fit inline-flex items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
           >
             Salir
           </button>
         </div>
       ) : (
         <div>
-          <SmartLink href="/donaciones">
-            <span className=" block text-lg  text-white leading-tight p-2 bg-caramel-deep hover:bg-amber-sunset uppercase text-wrap text-center w-32 md:w-fit px-6 py-3 rounded-full">
-              Doná ahora
-            </span>
+          <SmartLink href="/donaciones" variant="primary">
+            Doná ahora
           </SmartLink>
         </div>
       )}
 
       {/* Menu button */}
-      <div className="bg-gray-200 p-2 rounded-md block md:hidden w-10 h-10">
+      <div className="bg-gray-200 p-2 rounded-md  md:hidden w-10 h-10 inline-flex items-center justify-center  border border-gray-100 bg-gradient-to-b from-gray-200 to-gray-300  text-lg font-semibold  shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0'">
         <button
           aria-label="boton menu"
           onClick={(e) => {
@@ -173,7 +168,7 @@ export default function Header(): React.ReactElement {
                 aria-label={'Enlace al panel de administración'}
                 onClick={() => setVisible(false)}
               >
-                Dashboard
+                Panel
               </SmartLink>
 
               <button

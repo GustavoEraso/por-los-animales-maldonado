@@ -310,10 +310,7 @@ export default function HeroCarrousel({
                   )}
 
                   {item.showButton && (
-                    <SmartLink
-                      href={item?.buttonUrl || '#'}
-                      className="self-start z-10 text-sm lg:text-2xl text-shadow-none font-bold bg-caramel-deep text-white px-4 py-1 lg:px-8 lg:py-2 rounded-full hover:bg-caramel-deep/80 transition-colors duration-300"
-                    >
+                    <SmartLink href={item?.buttonUrl || '#'} variant="primary">
                       {item.buttonText || 'más información'}
                     </SmartLink>
                   )}
