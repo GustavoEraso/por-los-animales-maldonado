@@ -112,12 +112,12 @@ export default function ImpactoBanner(): React.ReactElement {
               className="logo w-24 sm:w-44 lg:w-64 h-auto object-contain translate-x-[300%]"
             />
 
-            <span className="logo sm:hidden bg-caramel-deep text-white text-sm sm:text-lg md:text-3xl lg:text-6xl w-fit px-6 py-1 mt-1 rounded-xl opacity-0 -translate-x-full ">
+            <span className="logo sm:hidden bg-caramel-deep text-white text-sm sm:text-lg md:text-3xl lg:text-6xl w-fit  mt-1 rounded-xl opacity-0 -translate-x-full border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 font-semibold shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ">
               más info!
             </span>
           </div>
 
-          <span className="btn_info hidden sm:block bg-caramel-deep text-white text-sm sm:text-lg md:text-3xl lg:text-6xl w-fit px-6 py-1 mt-1 rounded-xl opacity-0 -translate-x-full ">
+          <span className="btn_info hidden sm:block  text-white text-sm sm:text-lg md:text-3xl lg:text-6xl w-fit  mt-1 rounded-full opacity-0 -translate-x-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 font-semibold shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg  ">
             más info!
           </span>
 

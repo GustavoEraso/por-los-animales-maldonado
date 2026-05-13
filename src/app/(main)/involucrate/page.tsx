@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Hero from '@/components/Hero';
 import { Modal } from '@/components/Modal';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
+import SmartLink from '@/lib/SmartLink';
 
 export default function INVOLUCRATE() {
   return (
@@ -361,20 +362,22 @@ export default function INVOLUCRATE() {
               a castrar su animal.
             </p>
             <div className="flex flex-wrap gap-4 items-center justify-center">
-              <a
+              <SmartLink
                 href="/Decreto_Ley_castraciones.pdf"
                 download
-                className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+                variant="primary"
+                aria-label="Descargar decreto de Ley castraciones"
               >
                 Descargar decreto de Ley castraciones
-              </a>
-              <a
+              </SmartLink>
+              <SmartLink
                 href="/formulario_INBA.jpg"
                 download
-                className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+                variant="primary"
+                aria-label="Descargar formulario INBA"
               >
                 Descargar formulario INBA
-              </a>
+              </SmartLink>
             </div>
           </section>
         </section>
@@ -440,14 +443,14 @@ export default function INVOLUCRATE() {
                   por al menos 7 días, y me uno al grupo sabiendo que podré ayudar cuando se me
                   necesite.
                 </p>
-                <a
+                <SmartLink
                   href="https://chat.whatsapp.com/I1ooVnuS1xaEOkHNDt66bX"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+                  variant="primary"
                 >
                   Unirme al grupo de transitorios
-                </a>
+                </SmartLink>
               </section>
             </Modal>
           </section>
@@ -502,14 +505,14 @@ export default function INVOLUCRATE() {
               solidarios de animales, y me comprometo a ayudar cuando se me necesite, siempre que
               esté dentro de mis posibilidades.
             </p>
-            <a
+            <SmartLink
               href="https://chat.whatsapp.com/CaCS6HsIGVP4aKz06rCeVi"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-fit text-2xl rounded-full px-4 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase text-center text-balance"
+              variant="primary"
             >
               Unirme al grupo de traslados
-            </a>
+            </SmartLink>
           </section>
         </Modal>
       </section>

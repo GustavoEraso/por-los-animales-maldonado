@@ -2,28 +2,40 @@
 import React from 'react';
 import { handleToast } from '@/lib/handleToast';
 
-interface ShareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /**
-   * Whether to apply bounce animation to the button
-   * @default true
-   */
-  animate?: boolean;
-  /**
-   * Custom URL to share. If not provided, shares the current page URL
-   * @default window.location.href
-   */
-  urlToShare?: string;
-  /**
-   * Custom title for the shared content
-   * @default 'Por Los Animales Maldonado'
-   */
-  shareTitle?: string;
-  /**
-   * Custom text/description for the shared content
-   * @default 'ayudanos a ayudar 🐾'
-   */
-  shareText?: string;
-}
+const variantStyles = {
+  primary:
+    'w-fit inline-flex items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0',
+  secondary:
+    'w-fit inline-flex items-center justify-center rounded-full border-2 border-amber-sunset bg-cream-light px-8 py-2 text-lg font-semibold text-caramel-deep shadow-sm transition-all duration-300 hover:bg-white hover:scale-[1.02]',
+} as const;
+
+type ShareButtonStyleProps =
+  | { variant: keyof typeof variantStyles; className?: never }
+  | { variant?: never; className?: string };
+
+type ShareButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'className'> &
+  ShareButtonStyleProps & {
+    /**
+     * Whether to apply bounce animation to the button
+     * @default true
+     */
+    animate?: boolean;
+    /**
+     * Custom URL to share. If not provided, shares the current page URL
+     * @default window.location.href
+     */
+    urlToShare?: string;
+    /**
+     * Custom title for the shared content
+     * @default 'Por Los Animales Maldonado'
+     */
+    shareTitle?: string;
+    /**
+     * Custom text/description for the shared content
+     * @default 'ayudanos a ayudar 🐾'
+     */
+    shareText?: string;
+  };
 
 /**
  * Share button component that uses the Web Share API to share the current page.
@@ -84,6 +96,7 @@ interface ShareButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 export default function ShareButton({
   animate = true,
   className,
+  variant,
   onClick,
   children,
   urlToShare,
@@ -92,6 +105,7 @@ export default function ShareButton({
   ...props
 }: ShareButtonProps): React.ReactElement {
   const defaultClassName = `${animate ? 'animate-bounce' : ''} w-fit text-2xl text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase`;
+  const resolvedClassName = variant ? variantStyles[variant] : className || defaultClassName;
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (navigator.share) {
@@ -124,7 +138,7 @@ export default function ShareButton({
   };
 
   return (
-    <button className={className || defaultClassName} onClick={handleClick} {...props}>
+    <button className={resolvedClassName} onClick={handleClick} {...props}>
       {children || 'Compartir Con Enlace'}
     </button>
   );

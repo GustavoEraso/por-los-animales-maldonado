@@ -14,10 +14,16 @@ import {
   generateActiveAnimalsFromAggregates,
 } from '@/lib/animalFilters';
 import { getTransactionLabel } from '@/lib/constants/animalLabels';
-import Link from 'next/link';
 import { createTimestamp } from '@/lib/dateUtils';
+import SmartLink from '@/lib/SmartLink';
 
 // ─── Preset configuration ────────────────────────────────
+const variantStyles = {
+  primary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-4 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0',
+  secondary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border-2 border-amber-sunset bg-cream-light px-4 py-2 text-lg font-semibold text-caramel-deep shadow-sm transition-all duration-300 hover:bg-white hover:scale-[1.02]',
+} as const;
 
 /** Available time period preset keys */
 type PresetKey = '7d' | '30d' | '3m' | '6m' | '1a';
@@ -269,11 +275,9 @@ export default function DashboardContent({
                 <button
                   key={preset.key}
                   onClick={() => setActivePreset(preset.key)}
-                  className={`px-4 py-2 rounded-3xl font-semibold transition ${
-                    activePreset === preset.key
-                      ? 'bg-amber-sunset text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={
+                    activePreset === preset.key ? variantStyles.primary : variantStyles.secondary
+                  }
                 >
                   {preset.label}
                 </button>
@@ -358,7 +362,7 @@ export default function DashboardContent({
                       key={tx.transactionId}
                       className="border-b border-gray-200 py-3 last:border-0 flex flex-col sm:flex-row sm:justify-between w-full"
                     >
-                      <div className="w-full flex flex-col gap-2">
+                      <div className="w-full flex flex-col gap-2 items-center">
                         <div className="flex gap-2 items-center justify-between w-full">
                           <div className="flex flex-col sm:flex-row gap-2 items-center">
                             <img
@@ -378,12 +382,12 @@ export default function DashboardContent({
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 text-center">{date} hs</p>
-                        <Link
+                        <SmartLink
                           href={`/plam-admin/animales/${tx.id}#linea-del-tiempo`}
-                          className="text-sm px-3 py-1 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition text-center"
+                          variant="primary"
                         >
                           Ver Detalles
-                        </Link>
+                        </SmartLink>
                       </div>
                     </div>
                   );
@@ -395,12 +399,9 @@ export default function DashboardContent({
               )}
             </section>
             <div className="flex items-center justify-center w-full mt-4">
-              <Link
-                href="/plam-admin/animales/linea-tiempo"
-                className="text-md px-3 py-2 bg-amber-sunset text-white rounded-3xl hover:bg-green-forest transition"
-              >
+              <SmartLink href="/plam-admin/animales/linea-tiempo" variant="primary">
                 Ver todos los eventos
-              </Link>
+              </SmartLink>
             </div>
           </div>
 

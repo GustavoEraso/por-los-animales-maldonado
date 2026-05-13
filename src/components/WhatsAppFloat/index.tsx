@@ -86,12 +86,12 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
         onClick={() => {
           openWhatsApp(contacts[0]);
         }}
-        className={`bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
+        className={`bg-gradient-to-b from-green-300 to-green-600 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
         aria-label="Abrir WhatsApp"
       >
         <WhatsAppIcon size={24} color="currentColor" title="WhatsApp" />
         {contacts?.length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+          <span className="absolute -top-2 -right-2 bg-gradient-to-b from-red-300 to-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
             {contacts.length}
           </span>
         )}
@@ -105,12 +105,12 @@ function WhatsAppFloat({ contacts = [], className = '' }: WhatsAppFloatProps): R
     <div className="fixed bottom-6 right-6 z-50">
       <button
         onClick={() => setCurrentView('chatList')}
-        className={`relative bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
+        className={`relative bg-gradient-to-b from-green-300 to-green-600 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 animate-pulse ${className}`}
         aria-label="Abrir WhatsApp"
       >
         <WhatsAppIcon size={24} color="currentColor" title="WhatsApp" />
         {contacts?.length > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+          <span className="absolute -top-2 -right-2 bg-gradient-to-b from-red-300 to-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
             {contacts.length}
           </span>
         )}

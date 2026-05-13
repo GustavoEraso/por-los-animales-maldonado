@@ -246,43 +246,43 @@ export default function Donaciones() {
               <section className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full place-items-center">
                 <SmartLink
                   href="https://mpago.la/1wGBy73"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $50
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/2rEweLb"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $100
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/2CwawDF"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $200
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/1NDdWeX"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $500
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/16nU73n"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $1000
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/2L5g2xM"
-                  className="w-full text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $1500
                 </SmartLink>
                 <SmartLink
                   href="https://mpago.la/31eZYyd"
-                  className="w-full  md:col-span-2 text-lg text-center rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-bold"
+                  className="w-full  md:col-span-2 flex items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-2 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   $2000
                 </SmartLink>
@@ -299,7 +299,7 @@ export default function Donaciones() {
               </p>
               <SmartLink
                 href="https://www.mercadopago.com.uy/subscriptions/checkout?preapproval_plan_id=2c9380848dc7c6e8018dd0ac13f8052e"
-                className="inline-block w-fit text-base text-center rounded-full px-5 py-3 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset font-semibold"
+                className="flex w-full items-center justify-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-8 py-4 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
               >
                 Suscripción mensual
               </SmartLink>
@@ -610,12 +610,9 @@ export default function Donaciones() {
 
             {/* Footer */}
             <footer className="w-full flex justify-center">
-              <Link
-                href="/involucrate#transitorio"
-                className="text-lg font-semibold text-center rounded-full px-6 py-3 transition duration-300 text-white bg-caramel-deep hover:bg-amber-sunset"
-              >
+              <SmartLink href="/involucrate#transitorio" variant="primary">
                 Más Información →
-              </Link>
+              </SmartLink>
             </footer>
           </article>
 
@@ -651,12 +648,9 @@ export default function Donaciones() {
 
             {/* Footer */}
             <footer className="w-full flex justify-center">
-              <Link
-                href="/involucrate#transitorio"
-                className="text-lg font-semibold text-center rounded-full px-6 py-3 transition duration-300 text-white bg-caramel-deep hover:bg-amber-sunset"
-              >
+              <SmartLink href="/involucrate#transitorio" variant="primary">
                 Más Información →
-              </Link>
+              </SmartLink>
             </footer>
           </article>
         </section>
@@ -708,7 +702,7 @@ export default function Donaciones() {
             con tus amigos, en redes sociales o con quien quieras.
           </p>
           <p>¡Entre todos hacemos posible el cambio!</p>
-          <ShareButton />
+          <ShareButton variant="primary" />
         </section>
       </section>
     </div>

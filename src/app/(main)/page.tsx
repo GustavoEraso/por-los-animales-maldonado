@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import HeroCarrousel from '@/components/HeroCarrousel';
 import CircleCard from '@/components/CircleCard';
 import RevealSection from '@/components/RevealSection';
@@ -53,12 +52,9 @@ export default function Home() {
                 reconociéndolos como nuestros semejantes debido a su capacidad para experimentar
                 placer, alegría, dolor y sufrimiento.
               </p>
-              <Link
-                href="/nosotros"
-                className="w-fit text-2xl rounded-full px-8 py-4 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset"
-              >
+              <SmartLink variant="primary" href="/nosotros">
                 Ver más
-              </Link>
+              </SmartLink>
             </div>
           </div>
         </section>
@@ -84,18 +80,12 @@ export default function Home() {
                 comprometer.
               </p>
               <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-                <Link
-                  href="/adopta#antes-de-adoptar"
-                  className="w-fit text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
-                >
+                <SmartLink variant="primary" href="/adopta#antes-de-adoptar">
                   Antes de adoptar
-                </Link>
-                <Link
-                  href="/adopta#requisitos"
-                  className="w-fit text-2xl rounded-full px-4 py-2 transition duration-300 ease-in-out text-white bg-caramel-deep hover:bg-amber-sunset uppercase"
-                >
+                </SmartLink>
+                <SmartLink variant="primary" href="/adopta#requisitos">
                   Requisitos
-                </Link>
+                </SmartLink>
               </div>
             </div>
           </div>
