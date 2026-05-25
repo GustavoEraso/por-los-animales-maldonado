@@ -119,6 +119,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </RoleGuard>
 
                 <RoleGuard requiredRole="admin">
+                  <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                    <Link
+                      className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      href={'/plam-admin/sponsors'}
+                    >
+                      <span className="hidden md:block">Sponsors</span>
+                      <ImageIcon size={32} className="w-8 h-8 mb-2" title="Sponsors" />
+                    </Link>
+                  </li>
+                </RoleGuard>
+
+                <RoleGuard requiredRole="admin">
                   <li className="rounded-2xl flex hover:bg-red-500 hover:text-white">
                     <button
                       className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1"

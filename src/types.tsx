@@ -121,7 +121,7 @@ export interface UserType {
 /**
  * Types of entities that can be audited in the system
  */
-export type AuditLogType = 'user' | 'banner' | 'contact' | 'animal' | 'config';
+export type AuditLogType = 'user' | 'banner' | 'contact' | 'animal' | 'config' | 'sponsor';
 
 /**
  * Actions that can be performed on entities
@@ -204,6 +204,7 @@ export interface CollectionsType {
     | 'animalTransactions'
     | 'animalPrivateInfo'
     | 'banners'
+    | 'sponsors'
     | 'dashboardAnalytics';
 }
 
@@ -217,4 +218,15 @@ export interface BannerType {
   buttonText?: string;
   buttonUrl?: string;
   image: Img;
+}
+
+/**
+ * Sponsor entity representing a partner organization displayed in the homepage carousel.
+ */
+export interface SponsorType {
+  id: string;
+  name: string;
+  href?: string;
+  image: Img;
+  order?: number;
 }

@@ -5,35 +5,16 @@ import LogoCarousel from '@/components/LogoCarousel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
+import { getSponsorsData } from '@/lib/data/sponsors';
 
-export default function Home() {
-  const logos = [
-    {
-      src: '/raciones-la-coronilla.webp',
-      alt: 'raciones la coronilla logo',
-      href: 'https://www.instagram.com/racioneslacoronilla/?hl=es',
-    },
-    {
-      src: '/lopezquintana-logo.webp',
-      alt: 'lopez quintana logo',
-      href: 'https://www.instagram.com/alopezquintana/?hl=es',
-    },
-    {
-      src: '/arenadora_maldonado.webp',
-      alt: 'arenadora maldonado logo',
-      href: 'https://www.instagram.com/arenadora_maldonado/?hl=es',
-    },
-    {
-      src: '/consentidos_logo.webp',
-      alt: 'consentidos logo',
-      href: 'https://www.instagram.com/consentidos_tiendademascotas/?hl=es',
-    },
-    {
-      src: '/logo_costa_mascotas.webp',
-      alt: 'costa mascotas logo',
-      href: 'https://www.costamascotas.uy/',
-    },
-  ];
+export default async function Home() {
+  const sponsors = await getSponsorsData();
+
+  const logos = sponsors.map((s) => ({
+    src: s.image.imgUrl,
+    alt: s.image.imgAlt,
+    href: s.href,
+  }));
 
   return (
     <div className="flex flex-col items-center min-h-screen overflow-x-hidden">

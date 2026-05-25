@@ -14,6 +14,7 @@ import {
   UserType,
   PrivateInfoType,
   BannerType,
+  SponsorType,
 } from '@/types';
 
 interface CollectionsMap {
@@ -23,6 +24,7 @@ interface CollectionsMap {
   animalTransactions: AnimalTransactionType;
   animalPrivateInfo: PrivateInfoType;
   banners: BannerType;
+  sponsors: SponsorType;
 }
 
 type FirestoreSimpleValue = string | number | boolean | null;
