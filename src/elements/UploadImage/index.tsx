@@ -15,7 +15,7 @@ interface UploadImagesProps {
   /** Maximum number of files that can be uploaded (default: 5) */
   maxFiles?: number;
   /** Current folder in Cloudinary to upload images to */
-  currentFolder?: 'animals' | 'banners' | 'others';
+  currentFolder?: 'animals' | 'banners' | 'others' | 'sponsor';
 }
 
 /**
@@ -96,6 +96,7 @@ export default function UploadImages({
     animals: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_ANIMALS || '',
     banners: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_BANNERS || '',
     others: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_OTHERS || '',
+    sponsor: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_SPONSOR || '',
   };
 
   const uploadPreset = presetMap[currentFolder] || presetMap['others'];
@@ -130,10 +131,10 @@ export default function UploadImages({
 
   return (
     <section className="flex flex-col gap-6 justify-center items-center w-full">
-      <span className="text-xl font-bold">maximo 5 imagenes</span>
+      {maxFiles !== 1 && <span className="text-xl font-bold">máximo {maxFiles || 5} imágenes</span>}
       <CldUploadWidget
         uploadPreset={uploadPreset}
-        options={{ multiple: true, maxFiles: maxFiles || 5 }}
+        options={{ multiple: maxFiles !== 1, maxFiles: maxFiles || 5 }}
         onSuccess={handleUpload}
       >
         {({ open }) => (
@@ -142,8 +143,12 @@ export default function UploadImages({
             onClick={() => open?.()}
             className="bg-caramel-deep text-white px-4 py-2 rounded hover:bg-amber-sunset flex items-center gap-2"
           >
-            <UploadIcon size={20} title="Subir imágenes" color="white" />
-            Subir imágenes
+            <UploadIcon
+              size={20}
+              title={maxFiles === 1 ? 'Subir imagen' : 'Subir imágenes'}
+              color="white"
+            />
+            {maxFiles === 1 ? 'Subir imagen' : 'Subir imágenes'}
           </button>
         )}
       </CldUploadWidget>

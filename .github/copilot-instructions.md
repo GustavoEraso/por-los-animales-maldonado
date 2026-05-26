@@ -3,7 +3,7 @@
 ## Language Preferences
 
 - Always respond to me in Spanish
-- Write all code documentation (JSDoc, comments, README) in English
+- Write ALL code documentation, JSDoc, inline comments, JSX comments, and README files **exclusively in English** — never in Spanish, under any circumstance
 - Write commit messages in English following Conventional Commits format
 
 ## Code Style & Conventions

@@ -1,3 +1,12 @@
+overrides:
+  '@types/react': '19.2.7'
+  '@types/react-dom': '19.2.3'
+allowBuilds:
+  '@firebase/util': false
+  '@tailwindcss/oxide': false
+  protobufjs: false
+  sharp: false
+  unrs-resolver: false
 ignoredBuiltDependencies:
   - '@firebase/util'
   - '@tailwindcss/oxide'

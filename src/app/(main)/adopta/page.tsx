@@ -4,8 +4,10 @@ import { fetchAnimals } from '@/lib/fetchAnimal';
 import SearchBox from '@/components/SearchBox';
 import Pagination from '@/components/Pagination';
 import { buildFiltersFromSearchParams } from '@/lib/searchParamsUtils';
-import { Animal } from '@/types';
+import { Animal, SponsorType } from '@/types';
 import { Metadata } from 'next';
+import LogoCarousel from '@/components/LogoCarousel';
+import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { Suspense } from 'react';
 import AdoptaSkeleton from './Skeleton';
 
@@ -54,13 +56,18 @@ export default function AdoptaPage({ searchParams }: AdoptaProps) {
 async function AdoptaContent({ searchParams }: AdoptaProps) {
   const params = await searchParams;
   const filters = buildFiltersFromSearchParams(params);
-  const result = await fetchAnimals(filters);
+  const [result, sponsors, carousels] = await Promise.all([
+    fetchAnimals(filters),
+    getSponsorsData(),
+    getCarouselsForPlace('adopta'),
+  ]);
 
   // Handle both paginated and non-paginated responses
   const animals: Animal[] = Array.isArray(result) ? result : result.data;
   const pagination = Array.isArray(result) ? null : result.pagination;
 
   // Use first animal for cover image (deterministic, no Math.random during render)
+  const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
   const currentRandomAnimal = animals[0];
   const cover = currentRandomAnimal?.images.length
     ? currentRandomAnimal.images[0].imgUrl
@@ -89,6 +96,25 @@ async function AdoptaContent({ searchParams }: AdoptaProps) {
           )}
         </div>
       </section>
+      {/* Sponsors carousel */}
+      {carousels.length > 0 && (
+        <section className="flex flex-col items-center justify-center w-full py-12">
+          {carousels.map((carousel) => {
+            const logos = carousel.sponsorIds
+              .map((id) => sponsorMap.get(id))
+              .filter((s): s is SponsorType => s !== undefined)
+              .map((s) => ({ src: s.image.imgUrl, alt: s.image.imgAlt, href: s.href }));
+            return logos.length > 0 ? (
+              <LogoCarousel
+                key={carousel.id}
+                speed={carousel.speed}
+                reverse={carousel.direction === 'reverse'}
+                logos={logos}
+              />
+            ) : null;
+          })}
+        </section>
+      )}
     </div>
   );
 }

@@ -3,8 +3,17 @@ import Hero from '@/components/Hero';
 import { Modal } from '@/components/Modal';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 import SmartLink from '@/lib/SmartLink';
+import LogoCarousel from '@/components/LogoCarousel';
+import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
+import { SponsorType } from '@/types';
 
-export default function INVOLUCRATE() {
+export default async function INVOLUCRATE() {
+  const [sponsors, carousels] = await Promise.all([
+    getSponsorsData(),
+    getCarouselsForPlace('involucrate'),
+  ]);
+  const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
+
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white overflow-hidden">
       <Hero imgURL="/perrito-negro-respaldo.webp" />
@@ -583,6 +592,25 @@ export default function INVOLUCRATE() {
           </a>
         </section>
       </section>
+      {/* Sponsors carousel */}
+      {carousels.length > 0 && (
+        <section className="flex flex-col items-center justify-center w-full py-12">
+          {carousels.map((carousel) => {
+            const logos = carousel.sponsorIds
+              .map((id) => sponsorMap.get(id))
+              .filter((s): s is SponsorType => s !== undefined)
+              .map((s) => ({ src: s.image.imgUrl, alt: s.image.imgAlt, href: s.href }));
+            return logos.length > 0 ? (
+              <LogoCarousel
+                key={carousel.id}
+                speed={carousel.speed}
+                reverse={carousel.direction === 'reverse'}
+                logos={logos}
+              />
+            ) : null;
+          })}
+        </section>
+      )}
     </div>
   );
 }
