@@ -41,51 +41,41 @@ interface LogoCarouselProps {
 }
 
 /**
- * Infinite horizontal logo carousel component with CSS animations.
+ * Dual-mode logo display component: infinite scrolling carousel or static centered grid.
  *
- * Displays an array of logos in a continuously scrolling carousel using pure CSS
- * animations. Features include hover pause/resume functionality, optional
- * grayscale effects for visual consistency, and reversible scroll direction.
- * The component duplicates logo content to create a seamless infinite loop effect.
+ * When `speed` is greater than 0, renders a continuously scrolling horizontal carousel
+ * using pure CSS animations. Logos are repeated internally to guarantee the strip always
+ * fills the full viewport width, regardless of how few logos are provided.
+ * Two animated groups run in parallel so the loop is seamless with no visible gaps.
  *
- * The carousel uses two identical groups of logos animated in parallel to ensure
- * there are no gaps during the infinite scroll. Each group contains the logos
- * duplicated twice for smooth looping.
+ * When `speed` is 0, renders a static flex-wrap grid where all logos are centered
+ * on screen and wrap naturally to additional rows as needed.
  *
- * By default, logos scroll from left to right (→), which follows the natural
- * reading direction. Use the reverse prop to scroll right to left (←) for
- * visual contrast or parallax effects when using multiple carousels.
- *
- * Logos can be static images or clickable links that open in new tabs. All images
- * use lazy loading for optimal performance.
+ * Both modes support optional grayscale-on-idle hover effects and clickable logo links.
+ * The scrolling mode also pauses on hover and supports reversed scroll direction.
  *
  * @param {LogoCarouselProps} props - Component configuration
- * @param {LogoItem[]} props.logos - Array of logo items to display in the carousel
- * @param {number} [props.speed=10] - Animation speed multiplier (higher = faster scrolling)
+ * @param {LogoItem[]} props.logos - Array of logo items to display
+ * @param {number} [props.speed=10] - Animation speed multiplier (higher = faster). Use 0 for static grid mode.
  * @param {boolean} [props.grayscale=true] - Apply grayscale filter until hover
- * @param {boolean} [props.reverse=false] - Reverse scroll direction (right to left instead of left to right)
- * @returns {React.ReactElement} The rendered infinite logo carousel
+ * @param {boolean} [props.reverse=false] - Reverse scroll direction (right to left). Ignored in static mode.
+ * @returns {React.ReactElement} The rendered logo display
  *
  * @example
- * // Basic usage with sponsor logos (left to right)
- * const sponsors = [
- *   { src: '/logo1.png', alt: 'Sponsor 1' },
- *   { src: '/logo2.png', alt: 'Sponsor 2', href: 'https://sponsor2.com' },
- *   { src: '/logo3.png', alt: 'Sponsor 3', href: 'https://sponsor3.com' }
- * ];
- * <LogoCarousel logos={sponsors} />
+ * // Scrolling carousel (left to right)
+ * <LogoCarousel logos={sponsors} speed={15} />
  *
  * @example
- * // Fast scrolling without grayscale
+ * // Reversed direction for visual contrast
+ * <LogoCarousel logos={sponsors} speed={10} reverse={true} />
+ *
+ * @example
+ * // Static centered grid (speed=0)
+ * <LogoCarousel logos={sponsors} speed={0} />
+ *
+ * @example
+ * // Without grayscale effect
  * <LogoCarousel logos={sponsors} speed={20} grayscale={false} />
- *
- * @example
- * // Reversed direction (right to left) for visual contrast
- * <LogoCarousel logos={sponsors} reverse={true} />
- *
- * @example
- * // Slow, elegant scrolling with grayscale effect
- * <LogoCarousel logos={sponsors} speed={5} grayscale={true} />
  */
 export default function LogoCarousel({
   logos,
@@ -98,76 +88,64 @@ export default function LogoCarousel({
   const imgClass = grayscale
     ? 'h-20 md:h-24 w-auto grayscale opacity-60 transition duration-300 hover:grayscale-0 hover:opacity-100'
     : 'h-12 md:h-24 w-auto';
+
+  // Static grid mode: speed 0 renders a centered flex-wrap grid instead of scrolling
+  if (speed === 0) {
+    return (
+      <section className="w-full py-6 bg-white/5 backdrop-blur-sm">
+        <ul className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 px-6">
+          {logos.map((logo, index) => (
+            <li key={`${logo.src}-${index}`} className="shrink-0">
+              {logo.href ? (
+                <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
+                  <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
+                </SmartLink>
+              ) : (
+                <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  // Repeat logos until there are at least MIN_VISIBLE items per group so the strip
+  // always fills the full viewport width even when very few logos are provided.
+  const MIN_VISIBLE = 10;
+  const repeatCount = Math.max(1, Math.ceil(MIN_VISIBLE / logos.length));
+  const repeatedLogos = Array.from({ length: repeatCount }, () => logos).flat();
+  const duration = `${(repeatedLogos.length * 200) / speed}s`;
+
+  const renderGroup = (groupKey: string) => (
+    <ul
+      key={groupKey}
+      className={`flex items-center ${reverse ? styles.carousel_animate_loop_reverse : styles.carousel_animate_loop} shrink-0`}
+      style={{ animationPlayState: hovered ? 'paused' : 'running', animationDuration: duration }}
+    >
+      {repeatedLogos.map((logo, index) => (
+        <li key={`${groupKey}-${logo.src}-${index}`} className="ml-6 shrink-0">
+          {logo.href ? (
+            <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
+              <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
+            </SmartLink>
+          ) : (
+            <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    //carrousel
     <section
       className="relative w-full overflow-hidden py-6 bg-white/5 backdrop-blur-sm"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div className="flex">
-        {/* //group 1 */}
-        <ul
-          className={`flex items-center ${reverse ? styles.carousel_animate_loop_reverse : styles.carousel_animate_loop} shrink-0`}
-          style={{
-            animationPlayState: hovered ? 'paused' : 'running',
-            animationDuration: `${(logos.length * 200) / speed}s`,
-          }}
-        >
-          {logos.map((logo, index) => (
-            <li key={`${logo.src}-${index}-a`} className="ml-6 shrink-0">
-              {logo.href ? (
-                <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
-                  <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-                </SmartLink>
-              ) : (
-                <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-              )}
-            </li>
-          ))}
-          {logos.map((logo, index) => (
-            <li key={`${logo.src}-${index}-b`} className="ml-6 shrink-0">
-              {logo.href ? (
-                <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
-                  <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-                </SmartLink>
-              ) : (
-                <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-              )}
-            </li>
-          ))}
-        </ul>
-        {/* //group 2 */}
-        <ul
-          className={`flex items-center ${reverse ? styles.carousel_animate_loop_reverse : styles.carousel_animate_loop} shrink-0`}
-          style={{
-            animationPlayState: hovered ? 'paused' : 'running',
-            animationDuration: `${(logos.length * 200) / speed}s`,
-          }}
-        >
-          {logos.map((logo, index) => (
-            <li key={`${logo.src}-${index}-a`} className="ml-6 shrink-0">
-              {logo.href ? (
-                <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
-                  <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-                </SmartLink>
-              ) : (
-                <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-              )}
-            </li>
-          ))}
-          {logos.map((logo, index) => (
-            <li key={`${logo.src}-${index}-b`} className="ml-6 shrink-0">
-              {logo.href ? (
-                <SmartLink href={logo.href} aria-label={logo.alt ?? `Logo ${index}`}>
-                  <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-                </SmartLink>
-              ) : (
-                <img src={logo.src} alt={logo.alt ?? ''} className={imgClass} loading="lazy" />
-              )}
-            </li>
-          ))}
-        </ul>
+        {renderGroup('g1')}
+        {renderGroup('g2')}
       </div>
     </section>
   );
