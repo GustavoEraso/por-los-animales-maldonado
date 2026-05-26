@@ -5,16 +5,16 @@ import LogoCarousel from '@/components/LogoCarousel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
-import { getSponsorsData } from '@/lib/data/sponsors';
+import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
+import { SponsorType } from '@/types';
 
 export default async function Home() {
-  const sponsors = await getSponsorsData();
+  const [sponsors, carousels] = await Promise.all([
+    getSponsorsData(),
+    getCarouselsForPlace('home'),
+  ]);
 
-  const logos = sponsors.map((s) => ({
-    src: s.image.imgUrl,
-    alt: s.image.imgAlt,
-    href: s.href,
-  }));
+  const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
 
   return (
     <div className="flex flex-col items-center min-h-screen overflow-x-hidden">
@@ -100,11 +100,26 @@ export default async function Home() {
           linkText="Ver más"
         />
         <section className="flex flex-col items-center justify-center w-full  py-12">
-          <h3 className="font-bold text-2xl text-center text-balance md:text-4xl uppercase">
+          {/* <h3 className="font-bold text-2xl text-center text-balance md:text-4xl uppercase">
             Infintas gracias a ellos:
-          </h3>
+          </h3> */}
 
-          <LogoCarousel speed={15} logos={logos} />
+          {carousels.length > 0 &&
+            carousels.map((carousel) => {
+              const logos = carousel.sponsorIds
+                .map((id) => sponsorMap.get(id))
+                .filter((s): s is SponsorType => s !== undefined)
+                .map((s) => ({ src: s.image.imgUrl, alt: s.image.imgAlt, href: s.href }));
+
+              return logos.length > 0 ? (
+                <LogoCarousel
+                  key={carousel.id}
+                  speed={carousel.speed}
+                  reverse={carousel.direction === 'reverse'}
+                  logos={logos}
+                />
+              ) : null;
+            })}
         </section>
 
         <section className="flex flex-col items-center justify-center w-full bg-white px-6 py-12">

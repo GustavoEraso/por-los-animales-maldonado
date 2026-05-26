@@ -121,7 +121,14 @@ export interface UserType {
 /**
  * Types of entities that can be audited in the system
  */
-export type AuditLogType = 'user' | 'banner' | 'contact' | 'animal' | 'config' | 'sponsor';
+export type AuditLogType =
+  | 'user'
+  | 'banner'
+  | 'contact'
+  | 'animal'
+  | 'config'
+  | 'sponsor'
+  | 'carousel';
 
 /**
  * Actions that can be performed on entities
@@ -205,7 +212,9 @@ export interface CollectionsType {
     | 'animalPrivateInfo'
     | 'banners'
     | 'sponsors'
-    | 'dashboardAnalytics';
+    | 'carousels'
+    | 'dashboardAnalytics'
+    | 'config';
 }
 
 export interface BannerType {
@@ -228,5 +237,22 @@ export interface SponsorType {
   name: string;
   href?: string;
   image: Img;
-  order?: number;
 }
+
+/** A sponsor logo carousel with its own sponsor list, direction and speed. */
+export interface CarouselType {
+  id: string;
+  name: string;
+  direction: 'normal' | 'reverse';
+  speed: number;
+  sponsorIds: string[];
+  active: boolean;
+}
+
+/**
+ * Singleton config stored at config/carouselsConfig.
+ * Each key is a place identifier, value is the ordered array of carousel IDs for that place.
+ * Add new keys in Firestore to extend to new pages — no code changes needed.
+ * e.g. { main: ['id1', 'id2'], adoptions: ['id3'] }
+ */
+export type CarouselsConfigType = Record<string, string[]>;

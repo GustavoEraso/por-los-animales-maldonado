@@ -1,8 +1,17 @@
 import Image from 'next/image';
 import Hero from '@/components/Hero';
 import IconCard from '@/components/IconCard';
+import LogoCarousel from '@/components/LogoCarousel';
+import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
+import { SponsorType } from '@/types';
 
-export default function Nosotros() {
+export default async function Nosotros() {
+  const [sponsors, carousels] = await Promise.all([
+    getSponsorsData(),
+    getCarouselsForPlace('nosotros'),
+  ]);
+  const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
+
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
       <Hero imgURL="/nosotros.webp" imgAlt="cachorros jugando mientras su madre mira desde atras" />
@@ -81,6 +90,25 @@ export default function Nosotros() {
           />
         </section>
       </section>
+      {/* Sponsors carousel */}
+      {carousels.length > 0 && (
+        <section className="flex flex-col items-center justify-center w-full py-12">
+          {carousels.map((carousel) => {
+            const logos = carousel.sponsorIds
+              .map((id) => sponsorMap.get(id))
+              .filter((s): s is SponsorType => s !== undefined)
+              .map((s) => ({ src: s.image.imgUrl, alt: s.image.imgAlt, href: s.href }));
+            return logos.length > 0 ? (
+              <LogoCarousel
+                key={carousel.id}
+                speed={carousel.speed}
+                reverse={carousel.direction === 'reverse'}
+                logos={logos}
+              />
+            ) : null;
+          })}
+        </section>
+      )}
     </div>
   );
 }
