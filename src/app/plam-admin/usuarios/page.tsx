@@ -130,7 +130,7 @@ export default function PlamAdminUsers() {
       return;
     }
 
-    router.push(`/plam-admin/usuarios/editar/${user.id}`);
+    router.push(`/plam-admin/usuarios/editar/${encodeURIComponent(user.id)}`);
   };
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
