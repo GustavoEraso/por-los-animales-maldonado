@@ -36,10 +36,17 @@ export default function EditUserPage() {
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
+      let decodedId: string;
+      try {
+        decodedId = decodeURIComponent(userId);
+      } catch {
+        decodedId = userId;
+      }
+
       try {
         const userData = await getFirestoreDocById({
           currentCollection: 'authorizedEmails',
-          id: decodeURIComponent(userId),
+          id: decodedId,
         });
 
         if (!userData) {
@@ -53,7 +60,7 @@ export default function EditUserPage() {
         }
 
         const user: UserType = {
-          id: (userData as UserType).id || decodeURIComponent(userId),
+          id: (userData as UserType).id || decodedId,
           name: (userData as UserType).name || '',
           role: (userData as UserType).role || 'user',
         };
