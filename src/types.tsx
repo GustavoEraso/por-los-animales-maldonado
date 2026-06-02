@@ -214,7 +214,8 @@ export interface CollectionsType {
     | 'sponsors'
     | 'carousels'
     | 'dashboardAnalytics'
-    | 'config';
+    | 'config'
+    | 'googleForms';
 }
 
 export interface BannerType {
