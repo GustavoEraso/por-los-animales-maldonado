@@ -9,6 +9,7 @@ export async function GET() {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
+    console.warn('Unauthorized access attempt to Google Forms API');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...data,
       createdAt: new Date().toISOString(),
     });
+
+    console.log('Form data saved with ID:', docRef.id);
+    console.log('Received form data:', data);
 
     return NextResponse.json({ id: docRef.id });
   } catch (err) {
