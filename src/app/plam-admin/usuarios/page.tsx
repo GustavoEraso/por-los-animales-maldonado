@@ -6,6 +6,7 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import FloatButton from '@/elements/FloatButton';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
@@ -116,22 +117,6 @@ export default function PlamAdminUsers() {
     }
   };
 
-  /**
-   * Handle edit navigation
-   */
-  const handleEdit = (user: UserType) => {
-    // Check permissions
-    if (!checkCanManageUser(user.role)) {
-      handleToast({
-        type: 'error',
-        title: 'Sin permisos',
-        text: `No tienes permisos para editar usuarios con rol ${user.role}`,
-      });
-      return;
-    }
-
-    router.push(`/plam-admin/usuarios/editar/${encodeURIComponent(user.id)}`);
-  };
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
       <main className="flex flex-col   min-h-screen p-4 ">
@@ -190,18 +175,23 @@ export default function PlamAdminUsers() {
                     </td>
                     <td className="px-2 py-4 outline-1 outline-slate-200">
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          disabled={loading || !canManage}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title={
-                            !canManage
-                              ? 'No tienes permisos para editar este usuario'
-                              : 'Editar usuario'
-                          }
-                        >
-                          <EditIcon size={20} />
-                        </button>
+                        {canManage && !loading ? (
+                          <Link
+                            href={`/plam-admin/usuarios/editar/${user.id}`}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex"
+                            title="Editar usuario"
+                          >
+                            <EditIcon size={20} />
+                          </Link>
+                        ) : (
+                          <button
+                            disabled
+                            className="p-2 text-blue-600 rounded-lg opacity-50 cursor-not-allowed"
+                            title="No tienes permisos para editar este usuario"
+                          >
+                            <EditIcon size={20} />
+                          </button>
+                        )}
                         <RoleGuard requiredRole="superadmin">
                           <button
                             onClick={() => handleDelete(user)}
