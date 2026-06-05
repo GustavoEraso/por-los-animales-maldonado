@@ -15,7 +15,7 @@ Criterios a considerar:
 
 * Tipo y estabilidad de vivienda.
 * Presencia y seguridad de patio o espacios exteriores.
-* Tiempo que la mascota permanecería sola.
+* Tiempo que la mascota permanecería sola, hasta 8 o 10 horas es aceptable.
 * Experiencia previa con animales.
 * Conocimiento sobre cuidados básicos, alimentación y salud.
 * Actitud hacia la castración.
