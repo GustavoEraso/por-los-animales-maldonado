@@ -173,6 +173,8 @@ const FIELD_MAP: Record<string, string> = {
   '¿Que marcas de comida suele darles a sus animales o cuales cree que son las apropiadas para ellos?':
     'foodBrands',
   '¿Qué piensa de la castración? ¿Castraría usted a su mascota? ¿Por qué?': 'neuteringOpinion',
+  '¿En caso de no estar disponible la mascota (perro/gato) que le gusto para adoptar, le interesaria adoptar otra mascota(perro/gato)?':
+    'alternativePetInterest',
   '¿Que piensa de un perro atado? Y si lo estuviera, ¿cuanto tiempo estaria atado el animal?':
     'chainingOpinion',
   '¿Tiene previsto dejarle suelto cuando lo saque de casa? Si es así, ¿cuándo y dónde será?':
@@ -189,7 +191,6 @@ const FIELD_MAP: Record<string, string> = {
   '¿Cuántos años cree que puede vivir un perro (o gato si es lo que quiere adoptar)?':
     'lifespanKnowledge',
   '¿Esta en condiciones a vacunar a su mascota todos los años?': 'annualVaccination',
-  '¿Esta en condiciones a a su mascota todos los años ?': 'annualCare',
   'En caso de tener patio, ¿está convenientemente vallado para evitar que los perros puedan “irse de paseo”?, ¿qué altura tiene la valla de su patio?:':
     'yardSecurity',
   '¿Qué otras personas habitan en su casa? Tienes hijo/s? en caso de tener, que edad tiene/n ?':
@@ -220,10 +221,12 @@ function normalizeFormData(data: Record<string, string | string[]>) {
 
   for (const [key, value] of Object.entries(data)) {
     const cleanQuestion = normalizeQuestion(key);
-
     const normalizedKey = FIELD_MAP[cleanQuestion];
 
-    if (!normalizedKey) continue;
+    if (!normalizedKey) {
+      console.log('UNMAPPED:', JSON.stringify(cleanQuestion));
+      continue;
+    }
 
     result[normalizedKey] = Array.isArray(value) ? value[0] : value;
   }
