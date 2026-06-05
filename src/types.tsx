@@ -128,7 +128,8 @@ export type AuditLogType =
   | 'animal'
   | 'config'
   | 'sponsor'
-  | 'carousel';
+  | 'carousel'
+  | 'form';
 
 /**
  * Actions that can be performed on entities
@@ -215,7 +216,97 @@ export interface CollectionsType {
     | 'carousels'
     | 'dashboardAnalytics'
     | 'config'
-    | 'googleForms';
+    | 'googleForms'
+    | 'googleFormComments';
+}
+
+// ---------------------------------------------------------------------------
+// Google Forms adoption CRM
+// ---------------------------------------------------------------------------
+
+export type GoogleFormStatus = 'pending' | 'reviewing' | 'approved' | 'rejected';
+
+export interface GoogleFormPreferences {
+  species: 'perro' | 'gato' | 'cualquiera';
+  size: 'pequeño' | 'mediano' | 'grande' | 'cualquiera';
+  hasKids: boolean;
+  hasOtherDogs: boolean;
+  hasOtherCats: boolean;
+  hasYard: boolean;
+}
+
+export interface GoogleFormEvaluation {
+  score: number;
+  strengths: string[];
+  concerns: string[];
+  missingInformation: string[];
+  summary: string;
+  recommendation: 'high' | 'medium' | 'low';
+  preferences: GoogleFormPreferences;
+}
+
+export interface GoogleFormEntry {
+  id: string;
+  // Personal info
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  age?: string;
+  // Housing
+  housingType?: string;
+  housingOwnership?: string;
+  yardSecurity?: string;
+  // Household
+  householdMembers?: string;
+  familyAgreement?: string;
+  neighborIssues?: string;
+  // Animal care
+  otherPets?: string;
+  hoursAlone?: string;
+  sleepLocation?: string;
+  petNeeds?: string;
+  petDiet?: string;
+  foodBrands?: string;
+  neuteringOpinion?: string;
+  chainingOpinion?: string;
+  offLeashPlan?: string;
+  annualVaccination?: string;
+  identificationCommitment?: string;
+  behaviorResponse?: string;
+  // Preferences & motivation
+  sizePreference?: string;
+  selectionCriteria?: string;
+  adoptionReason?: string;
+  alternativePetInterest?: string;
+  selectedPet?: string;
+  contactSource?: string;
+  // Experience
+  petExperience?: string;
+  growthTolerance?: string;
+  lifespanKnowledge?: string;
+  // Work & lifestyle
+  workSchedule?: string;
+  employmentStatus?: string;
+  vacationPlan?: string;
+  // Metadata
+  submittedAt?: string;
+  createdAt: string;
+  rawData?: Record<string, string>;
+  evaluation: GoogleFormEvaluation | null;
+  status?: GoogleFormStatus;
+}
+
+/**
+ * A single comment in the adoption form internal discussion thread.
+ * Visible only to rescatistas, admins, and superadmins.
+ */
+export interface FormComment {
+  id: string;
+  formId: string;
+  text: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
 }
 
 export interface BannerType {

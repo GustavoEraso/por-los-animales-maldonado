@@ -8,6 +8,7 @@ import {
   ChevronRightIcon,
   HomeIcon,
   ImageIcon,
+  MailIcon,
   PetsIcon,
   UserIcon,
   WhatsAppIcon,
@@ -102,6 +103,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <span className="hidden md:block">Contactos</span>
                       <WhatsAppIcon size={28} className="w-8 h-8 mb-2" title="Contactos" />
+                    </Link>
+                  </li>
+                </RoleGuard>
+
+                <RoleGuard requiredRole="rescatista">
+                  <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                    <Link
+                      className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      href={'/plam-admin/formularios'}
+                    >
+                      <span className="hidden md:block">Formularios</span>
+                      <MailIcon size={28} className="w-8 h-8 mb-2" title="Formularios" />
                     </Link>
                   </li>
                 </RoleGuard>

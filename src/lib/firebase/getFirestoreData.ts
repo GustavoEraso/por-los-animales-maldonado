@@ -16,6 +16,7 @@ import {
   BannerType,
   SponsorType,
   CarouselType,
+  GoogleFormEntry,
 } from '@/types';
 
 interface CollectionsMap {
@@ -27,6 +28,7 @@ interface CollectionsMap {
   banners: BannerType;
   sponsors: SponsorType;
   carousels: CarouselType;
+  googleForms: GoogleFormEntry;
 }
 
 type FirestoreSimpleValue = string | number | boolean | null;
