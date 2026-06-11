@@ -3,6 +3,7 @@ overrides:
   '@types/react-dom': '19.2.3'
 allowBuilds:
   '@firebase/util': false
+  '@google/genai': false
   '@tailwindcss/oxide': false
   protobufjs: false
   sharp: false
