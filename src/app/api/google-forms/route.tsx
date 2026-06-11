@@ -620,7 +620,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     console.log('Form data saved with ID:', docRef.id);
     console.log('Mapped form data:', mappedData);
-    console.log('Groq evaluation:', evaluation);
+    console.log('IA evaluation:', evaluation);
 
     return NextResponse.json({ id: docRef.id, evaluation });
   } catch (err) {
