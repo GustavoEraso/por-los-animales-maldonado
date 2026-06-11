@@ -454,11 +454,17 @@ function DetailPanel({ form, onStatusChange, updatingStatus }: DetailPanelProps)
       {/* Evaluation */}
       {!evaluation ? (
         <p className="text-sm text-gray-400 italic">
-          Evaluación IA no disponible para este formulario.
+          Evaluación de{' '}
+          <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span> no
+          disponible para este formulario.
         </p>
       ) : (
         <>
           {/* Score + recommendation */}
+          <h2 className="font-semibold text-gray-800">
+            Evaluación de{' '}
+            <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span>
+          </h2>
           <div className="flex items-center gap-3 flex-wrap">
             <div
               className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(evaluation.score)}`}
