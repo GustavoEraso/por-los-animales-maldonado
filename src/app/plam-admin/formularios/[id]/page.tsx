@@ -49,6 +49,62 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
   low: 'text-red-700 bg-red-50 border border-red-200',
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  submittedAt: 'Marca temporal',
+  fullName: 'Nombre y apellido',
+  contactSource:
+    '¿Por donde se contactaron con nosotros (ej: facebook, instagram, etc)? ¿Cómo es su usuario en la red social?',
+  selectedPet:
+    'Nombre o descripción de la mascota elegida (pueden agregar el link de la foto donde lo vieron):',
+  age: '¿Qué edad tiene usted?',
+  address: 'Domicilio detallado y Localidad:',
+  employmentStatus: '¿Cual es su profesión? ¿Trabaja actualmente?',
+  workSchedule: '¿Horario de trabajo? ¿A qué dedica su tiempo libre?',
+  vacationPlan:
+    '¿Se toma vacaciones ? en caso de tomarse vacaciones ¿Ha pensado qué hará con su perro por vacaciones?',
+  phone: 'Teléfonos de contacto:',
+  housingType: 'Tipo de vivienda (apto, casa,...)',
+  householdMembers:
+    '¿Qué otras personas habitan en su casa? Tienes hijo/s? en caso de tener, que edad tiene/n ?',
+  housingOwnership: '¿Vivienda propia o de alquiler?',
+  neighborIssues:
+    '¿Tiene algún vecino que esté especialmente en contra de que habiten perros en las viviendas cercanas?',
+  lifespanKnowledge:
+    '¿Cuántos años cree que puede vivir un perro (o gato si es lo que quiere adoptar)?',
+  selectionCriteria:
+    '¿Qué mira usted a la hora de elegir a un perro? (su físico, su carácter, su edad,...)',
+  petNeeds: '¿Qué necesidades cree que tiene una mascota?',
+  petDiet:
+    '¿Qué alimentación cree que es la adecuada para un perro (o gato si es lo que quiere adoptar)?',
+  neuteringOpinion: '¿Qué piensa de la castración? ¿Castraría usted a su mascota? ¿Por qué?',
+  foodBrands:
+    '¿Que marcas de comida suele darles a sus animales o cuales cree que son las apropiadas para ellos?',
+  adoptionReason:
+    '¿Por qué se decide a adoptar a un animal? ¿Con qué finalidad lo adopta? (Para compañía, para cría, para caza, como guardián, como terapia,...)',
+  familyAgreement: '¿Comparten esta decisión si el resto de miembros del hogar?:',
+  sleepLocation: '¿Dónde dormiría la mascota?',
+  petExperience:
+    '¿Ha tenido animales antes? En caso de que así sea, cuéntenos un poco sobre ellos y qué ocurrió con ellos:',
+  otherPets: '¿Tiene actualmente otros animales en casa?',
+  growthTolerance:
+    '¿Qué ocurriría si el cachorro crece más de lo esperado? ¿Sería un gran problema para usted?:',
+  hoursAlone: '¿Cuánto tiempo pasaría el animal solo en casa?:',
+  offLeashPlan:
+    '¿Tiene previsto dejarle suelto cuando lo saque de casa? Si es así, ¿cuándo y dónde será?',
+  chainingOpinion:
+    '¿Que piensa de un perro atado? Y si lo estuviera, ¿cuanto tiempo estaria atado el animal?',
+  behaviorResponse:
+    'Ante una inadaptación o problema de comportamiento en el animal que adopte, ¿qué haría usted para que no lo vuelva a hacer ?',
+  identificationCommitment:
+    'Se compromete a ponerle identificación con teléfono de contacto (collar anotado, chapita, llavero con escritura)?',
+  annualVaccination: '¿Esta en condiciones a vacunar a su mascota todos los años?',
+  yardSecurity:
+    'En caso de tener patio, ¿está convenientemente vallado para evitar que los perros puedan “irse de paseo”?, ¿qué altura tiene la valla de su patio?:',
+  alternativePetInterest:
+    '¿En caso de no estar disponible la mascota (perro/gato) que le gusto para adoptar, le interesaria adoptar otra mascota(perro/gato)?',
+  sizePreference: '¿Tiene alguna preferencia de tamaño de la mascota? si la tiene ¿Cual seria?',
+} as const;
+
 const resolvedStatus = (entry: GoogleFormEntry): GoogleFormStatus => entry.status ?? 'pending';
 
 // ---------------------------------------------------------------------------
@@ -167,6 +223,8 @@ export default function FormularioDetailPage() {
   const status = resolvedStatus(form);
   const rawAnswers = form.rawData ? Object.entries(form.rawData).filter(([, v]) => v?.trim()) : [];
 
+  const labelKeys = Object.keys(FIELD_LABELS) as Array<keyof GoogleFormEntry>;
+
   return (
     <ProtectedRoute requiredRole="rescatista">
       <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-6">
@@ -207,7 +265,7 @@ export default function FormularioDetailPage() {
             </p>
           </div>
         ) : (
-          <div className="border border-gray-100 rounded-xl  bg-gray-50  p-5 flex flex-col gap-4 ">
+          <div className="border border-gray-200 shadow rounded-xl  bg-gray-50  p-5 flex flex-col gap-4 ">
             <h2 className="font-semibold text-gray-800">
               Evaluación de{' '}
               <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span>
@@ -297,7 +355,7 @@ export default function FormularioDetailPage() {
         )}
 
         {/* Status selector */}
-        <div className="border border-gray-100 rounded-xl p-4 bg-gray-50  flex flex-col gap-3">
+        <div className="border border-gray-200 shadow rounded-xl p-4 bg-gray-50  flex flex-col gap-3">
           <p className="text-sm font-semibold text-gray-700">Estado del formulario</p>
           <div className="flex gap-2 flex-wrap">
             {(Object.keys(STATUS_LABELS) as GoogleFormStatus[]).map((s) => (
@@ -324,6 +382,35 @@ export default function FormularioDetailPage() {
             <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
           ) : (
             <div className="flex flex-col gap-3">
+              {labelKeys.map((key) => {
+                if (typeof form[key] !== 'string') return null;
+
+                const value = form[key];
+                return (
+                  <div
+                    key={key}
+                    className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow"
+                  >
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {FIELD_LABELS[key] ?? key}
+                    </p>
+                    <p className="text-sm text-gray-800 leading-relaxed">
+                      {value.trim() || 'Sin respuesta'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Raw answers
+        <div className="flex flex-col gap-3">
+          <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
+          {rawAnswers.length === 0 ? (
+            <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
               {rawAnswers.map(([question, answer]) => (
                 <div key={question} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
@@ -334,7 +421,7 @@ export default function FormularioDetailPage() {
               ))}
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Internal discussion */}
         <FormChat formId={form.id} />
