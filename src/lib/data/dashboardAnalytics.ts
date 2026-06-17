@@ -19,8 +19,6 @@ async function fetchDashboardAnalytics(): Promise<DashboardAnalyticsData | null>
     expire: 2600000,
   });
 
-  console.log('[dashboard-analytics] 🔥 Cache MISS — fetching from Firestore');
-
   return getFirestoreDocById<DashboardAnalyticsData>({
     currentCollection: 'dashboardAnalytics',
     id: 'summary',
@@ -46,17 +44,6 @@ async function fetchDashboardAnalytics(): Promise<DashboardAnalyticsData | null>
  * const analytics = await getDashboardAnalyticsData();
  */
 export async function getDashboardAnalyticsData(): Promise<DashboardAnalyticsData | null> {
-  const start = performance.now();
   const data = await fetchDashboardAnalytics();
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  if (data) {
-    console.log(
-      `[dashboard-analytics] ✅ Returned ${data.recentTransactions.length} recent tx, ${Object.keys(data.monthly).length} months in ${elapsed}ms`
-    );
-  } else {
-    console.log(`[dashboard-analytics] ⚠️ No data available (${elapsed}ms)`);
-  }
-
   return data;
 }

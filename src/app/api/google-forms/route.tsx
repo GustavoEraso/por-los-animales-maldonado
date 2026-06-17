@@ -449,15 +449,11 @@ async function evaluateWithGoogleAI(
         .replace(/^```(?:json)?\s*/i, '')
         .replace(/\s*```$/i, '')
         .trim();
-      console.log('Google AI tokens:', response.usageMetadata);
-      console.log(`Google AI evaluation content from model "${model}":`, content);
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      console.error(`Google AI evaluation with model "${model}" failed:`, err);
+      console.error('Google AI:', model, err);
     }
   }
-
-  console.warn('All Google AI models failed.');
   return null;
 }
 
@@ -483,12 +479,10 @@ async function evaluateWithGroq(
         .replace(/\s*```$/i, '')
         .trim();
 
-      console.log('Groq evaluation content:', content);
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      console.error(`Groq evaluation attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+      console.error('Groq:', err);
       if (attempt === MAX_RETRIES) {
-        console.warn('All Groq retries exhausted, saving without evaluation.');
         return null;
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -568,7 +562,6 @@ function normalizeFormData(data: Record<string, string | string[]>) {
     const normalizedKey = FIELD_MAP[cleanQuestion];
 
     if (!normalizedKey) {
-      console.log('UNMAPPED:', JSON.stringify(cleanQuestion));
       continue;
     }
 
@@ -596,7 +589,6 @@ const EVALUATION_TIMEOUT_MS = 9500;
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
-    console.warn('Unauthorized access attempt to Google Forms API');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -613,9 +605,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       evaluation: null,
       createdAt: new Date().toISOString(),
     });
-    console.log('Form data saved with ID:', docRef.id);
   } catch (err) {
-    console.error('Error saving form data:', err);
+    console.error('Firestore save:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
@@ -640,7 +631,6 @@ async function runFullEvaluation(
   let evaluation = await evaluateWithGoogleAI(evaluationData);
 
   if (!evaluation) {
-    console.warn('Falling back to Groq evaluation...');
     evaluation = await evaluateWithGroq(evaluationData);
   }
 
@@ -651,12 +641,9 @@ async function runFullEvaluation(
         { evaluation },
         { merge: true }
       );
-      console.log('Evaluation saved for form:', docId);
     } catch (err) {
-      console.error('Error saving evaluation for form', docId, err);
+      console.error('Firestore merge:', err);
     }
-  } else {
-    console.warn('No evaluation available for form:', docId);
   }
 
   return evaluation;

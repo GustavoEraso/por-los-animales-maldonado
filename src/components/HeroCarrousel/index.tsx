@@ -152,19 +152,13 @@ export default function HeroCarrousel({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   useEffect(() => {
-    console.log('Banners state updated:', banners);
-  }, [banners]);
-
-  useEffect(() => {
     async function fetchBanners() {
-      console.log('Fetching banners from API...');
       try {
         const response = await fetch('/api/banners');
         if (response.ok) {
           const data: BannerType[] = await response.json();
           if (data && data.length > 0) {
             setBanners(data);
-            console.log('Banners fetched successfully:', data);
           }
         } else {
           console.error('Failed to fetch banners:', response.statusText);

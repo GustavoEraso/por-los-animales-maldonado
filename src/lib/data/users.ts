@@ -16,8 +16,6 @@ async function fetchUsersFromFirestore(): Promise<UserType[]> {
     expire: 2600000,
   });
 
-  console.log('[users] 🔥 Cache MISS — fetching from Firestore');
-
   return getFirestoreData({ currentCollection: 'authorizedEmails' });
 }
 
@@ -30,11 +28,7 @@ async function fetchUsersFromFirestore(): Promise<UserType[]> {
  * @returns All users from the 'authorizedEmails' Firestore collection
  */
 export async function getUsersData(): Promise<UserType[]> {
-  const start = performance.now();
   const data = await fetchUsersFromFirestore();
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  console.log(`[users] ✅ Returned ${data.length} users in ${elapsed}ms`);
 
   return data;
 }
