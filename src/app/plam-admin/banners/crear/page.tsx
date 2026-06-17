@@ -11,6 +11,7 @@ import { PlusIcon } from '@/components/Icons';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 const initialBanner: BannerType = {
   id: '',
@@ -93,7 +94,7 @@ export default function CreateAnimalForm() {
 
       router.replace('/plam-admin/banners');
     } catch (error) {
-      console.error('Error al guardar el banner:', error);
+      logger({ level: 'error', code: 'SAVE_BANNER_ERROR', message: 'Error al guardar el banner:', data: error });
       setLoading(false);
     } finally {
       const elapsed = Date.now() - start;

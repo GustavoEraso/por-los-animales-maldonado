@@ -10,6 +10,7 @@ import Image from 'next/image';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 /**
  * Admin page for creating a new sponsor carousel.
@@ -106,7 +107,7 @@ export default function CreateCarouselPage() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      console.error('Error creating carousel:', error);
+      logger({ level: 'error', code: 'CREATE_CAROUSEL_ERROR', message: 'Error creating carousel:', data: error });
     } finally {
       setLoading(false);
     }

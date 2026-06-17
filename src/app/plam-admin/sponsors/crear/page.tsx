@@ -11,6 +11,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 const initialSponsor: SponsorType = {
   id: '',
@@ -86,7 +87,7 @@ export default function CreateSponsorForm() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      console.error('Error al guardar el sponsor:', error);
+      logger({ level: 'error', code: 'SAVE_SPONSOR_ERROR', message: 'Error al guardar el sponsor:', data: error });
       setLoading(false);
     } finally {
       const elapsed = Date.now() - start;

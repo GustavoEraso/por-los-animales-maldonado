@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { db } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { CollectionsType } from '@/types';
@@ -43,11 +44,11 @@ export const getFirestoreDocById = async <T>({
     if (docSnap.exists()) {
       return docSnap.data() as T;
     } else {
-      console.log('No such document!');
+      logger({ level: 'info', code: 'DOC_NOT_FOUND', message: 'No such document!' });
       return null;
     }
   } catch (error) {
-    console.error('Error getting document:', error);
+    logger({ level: 'error', code: 'GET_DOCUMENT', message: 'Error getting document:', data: error });
     throw error;
   }
 };

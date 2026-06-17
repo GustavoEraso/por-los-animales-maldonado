@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { AuditAction, AuditLogType, SystemAuditLog } from '@/types';
@@ -82,7 +83,7 @@ export async function createAuditLog({
 
     return docRef.id;
   } catch (error) {
-    console.error('Error creating audit log:', error);
+    logger({ level: 'error', code: 'CREATE_AUDIT_LOG', message: 'Error creating audit log:', data: error });
     // Don't throw - audit log failures shouldn't break the main operation
     return '';
   }

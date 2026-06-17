@@ -3,6 +3,7 @@ import React from 'react';
 import { loginWithGoogle } from '@/lib/firebase/loginWithGoogle';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 /**
  * Login form component with Google authentication.
@@ -30,7 +31,7 @@ export default function LoginForm(): React.ReactElement {
       await loginWithGoogle();
       router.replace('/plam-admin');
     } catch (error) {
-      console.error(error);
+      logger({ level: 'error', code: 'GOOGLE_LOGIN_ERROR', message: error instanceof Error ? error.message : 'Google login error', data: error });
       router.replace('/login?error=unauthorized'); // Redirect to error page if user is not authorized
     }
   };

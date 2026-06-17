@@ -16,6 +16,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { EditIcon, TrashIcon, EyeIcon, CheckIcon } from '@/components/Icons';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 
 import { useAnimalDetail } from './hooks/useAnimalDetail';
 import AnimalInfoSection from './components/AnimalInfoSection';
@@ -98,7 +99,7 @@ export default function AnimalPage(): React.ReactElement | null {
       );
       await revalidateCache('animals');
     } catch (error) {
-      console.error('Error updating visibility:', error);
+      logger({ level: 'error', code: 'UPDATE_VISIBILITY', message: 'Error updating visibility:', data: error });
       setAnimal(animal);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
     } finally {
@@ -162,7 +163,7 @@ export default function AnimalPage(): React.ReactElement | null {
       );
       await revalidateCache('animals');
     } catch (error) {
-      console.error('Error updating availability:', error);
+      logger({ level: 'error', code: 'UPDATE_AVAILABILITY', message: 'Error updating availability:', data: error });
       setAnimal(animal);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
     } finally {
@@ -226,7 +227,7 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      console.error("Error changing the animal's status:", error);
+      logger({ level: 'error', code: 'DELETE_ANIMAL', message: "Error changing the animal's status:", data: error });
     }
   };
 
@@ -282,7 +283,7 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      console.error("Error changing the animal's status:", error);
+      logger({ level: 'error', code: 'RESTORE_ANIMAL', message: "Error changing the animal's status:", data: error });
     } finally {
       const elapsed = createTimestamp() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -372,7 +373,7 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      console.error('Error to delete animal:', error);
+      logger({ level: 'error', code: 'HARD_DELETE_ANIMAL', message: 'Error to delete animal:', data: error });
     } finally {
       const elapsed = createTimestamp() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

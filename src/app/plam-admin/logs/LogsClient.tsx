@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import RoleGuard from '@/components/RoleGuard';
 import Loader from '@/components/Loader';
 import { EyeIcon, SearchIcon } from '@/components/Icons';
+import { logger } from '@/lib/logger';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -214,7 +215,7 @@ export default function LogsClient() {
       setPage(0);
       setFetched(true);
     } catch (err) {
-      console.error('Error fetching logs:', err);
+      logger({ level: 'error', code: 'FETCH_LOGS_ERROR', message: 'Error fetching logs:', data: err });
       setError(err instanceof Error ? err.message : 'Error al cargar logs');
     } finally {
       if (loadingTimer.current) {

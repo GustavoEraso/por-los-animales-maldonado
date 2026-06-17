@@ -12,6 +12,7 @@ import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import type { GoogleFormEntry, GoogleFormStatus } from '@/types';
 import FormChat from './FormChat';
+import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers (duplicated intentionally — isolated from the list page)
@@ -140,7 +141,7 @@ export default function FormularioDetailPage() {
         });
         setForm(data ? { ...data, id } : null);
       } catch (error) {
-        console.error('Error fetching form:', error);
+        logger({ level: 'error', code: 'FETCH_FORM_ERROR', message: 'Error fetching form:', data: error });
       } finally {
         setLoading(false);
       }

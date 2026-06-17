@@ -15,6 +15,7 @@ import FloatButton from '@/elements/FloatButton';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 export default function PlamAdminBanners() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function PlamAdminBanners() {
   const handleDelete = async (bannerId: string) => {
     const currentBanner = banners.find((b) => b.id === bannerId);
     if (!currentBanner) {
-      console.error('Banner not found:', bannerId);
+      logger({ level: 'error', code: 'BANNER_NOT_FOUND', message: 'Banner not found:', data: bannerId });
       return;
     }
     const imgId = currentBanner.image.imgId;
@@ -69,7 +70,7 @@ export default function PlamAdminBanners() {
 
       await fetchBanners();
     } catch (error) {
-      console.error('Error deleting banner:', error);
+      logger({ level: 'error', code: 'DELETE_BANNER_ERROR', message: 'Error deleting banner:', data: error });
     }
   };
 

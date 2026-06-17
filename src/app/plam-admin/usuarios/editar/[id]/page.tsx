@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
+import { logger } from '@/lib/logger';
 
 /**
  * Page to edit an existing authorized user.
@@ -79,7 +80,7 @@ export default function EditUserPage() {
         setOriginalUser(user);
         setFormData(user);
       } catch (error) {
-        console.error('Error fetching user:', error);
+        logger({ level: 'error', code: 'FETCH_USER_ERROR', message: 'Error fetching user:', data: error });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -225,7 +226,7 @@ export default function EditUserPage() {
 
       router.push('/plam-admin/usuarios');
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger({ level: 'error', code: 'UPDATE_USER_ERROR', message: 'Error updating user:', data: error });
     } finally {
       setSaving(false);
     }

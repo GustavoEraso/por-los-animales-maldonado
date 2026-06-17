@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDocs, collection } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { logger } from '@/lib/logger';
 
 /**
  * Normalizes a litter name to create a URL-safe and database-friendly ID.
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<GenerateLitte
 
     return NextResponse.json({ id: newId });
   } catch (err) {
-    console.error('Error generating unique litter ID:', err);
+    logger({ level: 'error', code: 'GENERATE_LITTER_ID', message: 'Error generating unique litter ID:', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

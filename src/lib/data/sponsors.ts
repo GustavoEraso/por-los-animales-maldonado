@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { cacheLife, cacheTag } from 'next/cache';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
@@ -23,7 +24,7 @@ export async function getSponsorsData(): Promise<SponsorType[]> {
     const sponsors = await getFirestoreData({ currentCollection: 'sponsors' });
     return sponsors.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
-    console.error('[sponsors] Error fetching sponsors:', error);
+    logger({ level: 'error', code: 'FETCH_SPONSORS', message: '[sponsors] Error fetching sponsors:', data: error });
     return [];
   }
 }
@@ -67,7 +68,7 @@ export async function getCarouselsForPlace(place: string): Promise<CarouselType[
       .map((id) => carouselMap.get(id))
       .filter((c): c is CarouselType => c !== undefined && c.active);
   } catch (error) {
-    console.error(`[carousels] Error fetching carousels for place '${place}':`, error);
+    logger({ level: 'error', code: 'FETCH_CAROUSELS', message: `[carousels] Error fetching carousels for place '${place}':`, data: error });
     return [];
   }
 }

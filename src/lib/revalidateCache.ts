@@ -19,6 +19,8 @@
  * // Revalidate a specific animal
  * await revalidateCache(`animal-${animalId}`);
  */
+import { logger } from '@/lib/logger';
+
 export async function revalidateCache(tags: string | string[]): Promise<void> {
   const baseUrl =
     typeof window !== 'undefined'
@@ -49,6 +51,6 @@ export async function revalidateCache(tags: string | string[]): Promise<void> {
   // Log any failures but don't throw (cache revalidation is not critical)
   const failures = results.filter((r) => r.status === 'rejected');
   if (failures.length > 0) {
-    console.error('Some cache revalidations failed:', failures);
+    logger({ level: 'error', code: 'REVALIDATE_CACHE', message: 'Some cache revalidations failed:', data: failures });
   }
 }

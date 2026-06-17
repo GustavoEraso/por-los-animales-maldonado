@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { postFirestoreData } from './postFirestoreData';
@@ -140,7 +141,7 @@ async function updateDashboardAnalytics(
     await revalidateCache('dashboard-transactions');
   } catch (error) {
     // Analytics update failure should not block the main transaction
-    console.error('[dashboardAnalytics] Error updating summary:', error);
+    logger({ level: 'error', code: 'UPDATE_DASHBOARD_ANALYTICS', message: '[dashboardAnalytics] Error updating summary:', data: error });
   }
 }
 
@@ -211,7 +212,7 @@ export async function getFullTransaction(
 
     return null;
   } catch (error) {
-    console.error('[dashboardAnalytics] Error fetching full transaction:', error);
+    logger({ level: 'error', code: 'FETCH_FULL_TRANSACTION', message: '[dashboardAnalytics] Error fetching full transaction:', data: error });
     return null;
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Animal } from '@/types';
 import { getAnimalsData } from '@/lib/data/animals';
+import { logger } from '@/lib/logger';
 
 // Fields that should not be normalized for text comparison
 const EXCLUDE_NORMALIZATION: (keyof Animal)[] = ['id', 'waitingSince'];
@@ -306,7 +307,7 @@ export async function POST(req: NextRequest): Promise<
     // Return all results if no pagination params (backward compatibility)
     return NextResponse.json(finalResults);
   } catch (err) {
-    console.error('Error filtering animals:', err);
+    logger({ level: 'error', code: 'FILTER_ANIMALS', message: 'Error filtering animals:', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

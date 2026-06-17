@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserType } from '@/types';
 import { getUsersData } from '@/lib/data/users';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/authorized-emails - Retrieve authorized user emails from Firestore
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<UserType[] | {
     const users = await getUsersData();
     return NextResponse.json(users);
   } catch (err) {
-    console.error('Error fetching authorized emails:', err);
+    logger({ level: 'error', code: 'FETCH_AUTHORIZED_EMAILS', message: 'Error fetching authorized emails:', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

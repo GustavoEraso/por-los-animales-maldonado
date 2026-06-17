@@ -13,6 +13,7 @@ import Card from '@/components/Card';
 import ParentSelectorModal from '@/components/ParentSelectorModal';
 import generateId from '@/lib/generateId';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { logger } from '@/lib/logger';
 
 interface AnimalFamilySectionProps {
   animal: Animal;
@@ -46,7 +47,7 @@ export default function AnimalFamilySection({
           const result = await fetchAnimals({ id: animal.motherId });
           if (Array.isArray(result) && result.length > 0) setMother(result[0]);
         } catch (err) {
-          console.error('Error fetching mother:', err);
+          logger({ level: 'error', code: 'FETCH_MOTHER', message: 'Error fetching mother:', data: err });
         }
       } else {
         setMother(null);
@@ -56,7 +57,7 @@ export default function AnimalFamilySection({
           const result = await fetchAnimals({ id: animal.fatherId });
           if (Array.isArray(result) && result.length > 0) setFather(result[0]);
         } catch (err) {
-          console.error('Error fetching father:', err);
+          logger({ level: 'error', code: 'FETCH_FATHER', message: 'Error fetching father:', data: err });
         }
       } else {
         setFather(null);
@@ -78,7 +79,7 @@ export default function AnimalFamilySection({
           setSiblings(result.filter((s) => s.id !== animal.id));
         }
       } catch (err) {
-        console.error('Error fetching siblings:', err);
+        logger({ level: 'error', code: 'FETCH_SIBLINGS', message: 'Error fetching siblings:', data: err });
       }
     };
     loadSiblings();
@@ -106,7 +107,7 @@ export default function AnimalFamilySection({
         }
         setOffspring(Array.from(map.values()));
       } catch (err) {
-        console.error('Error fetching offspring:', err);
+        logger({ level: 'error', code: 'FETCH_OFFSPRING', message: 'Error fetching offspring:', data: err });
       }
     };
     loadOffspring();
@@ -209,7 +210,7 @@ export default function AnimalFamilySection({
             });
           }
         } catch (err) {
-          console.error('Error propagating parent to siblings:', err);
+          logger({ level: 'error', code: 'PROPAGATE_PARENT', message: 'Error propagating parent to siblings:', data: err });
         }
       }
 

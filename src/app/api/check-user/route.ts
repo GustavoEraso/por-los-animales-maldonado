@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserRole } from '@/types';
+import { logger } from '@/lib/logger';
 
 /**
  * User data structure from authorized emails collection.
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CheckUser
       name: authorizedUser.name || '',
     });
   } catch (error) {
-    console.error('Error verifying user:', error);
+    logger({ level: 'error', code: 'VERIFY_USER', message: 'Error verifying user:', data: error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

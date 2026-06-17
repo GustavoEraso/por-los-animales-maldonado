@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { WpContactType } from '@/types';
 import { getContactsData } from '@/lib/data/contacts';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/contacts - Retrieve WhatsApp contacts with Next.js native caching
@@ -48,7 +49,7 @@ export async function GET(): Promise<NextResponse<WpContactType[] | { error: str
 
     return NextResponse.json(contacts);
   } catch (err) {
-    console.error('Error fetching contacts:', err);
+    logger({ level: 'error', code: 'FETCH_CONTACTS', message: 'Error fetching contacts:', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -14,6 +14,7 @@ import { EditIcon, TrashIcon } from '@/components/Icons';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import RoleGuard from '@/components/RoleGuard';
+import { logger } from '@/lib/logger';
 
 export default function PlamAdminUsers() {
   const router = useRouter();
@@ -111,7 +112,7 @@ export default function PlamAdminUsers() {
       // Refresh list
       await fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger({ level: 'error', code: 'DELETE_USER_ERROR', message: 'Error deleting user:', data: error });
     } finally {
       setLoading(false);
     }

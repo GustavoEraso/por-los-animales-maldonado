@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/firebase';
+import { logger } from '@/lib/logger';
 
 /**
  * Main navigation header component with responsive menu and authentication features.
@@ -35,7 +36,7 @@ export default function Header(): React.ReactElement {
         router.replace('/');
       })
       .catch((error) => {
-        console.error('Error al cerrar sesión:', error);
+        logger({ level: 'error', code: 'LOGOUT_ERROR', message: 'Error al cerrar sesión:', data: error });
       });
   };
 

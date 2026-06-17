@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { WpContactType } from '@/types';
 
 /**
@@ -40,7 +41,7 @@ export async function fetchContacts(): Promise<WpContactType[]> {
   });
 
   if (!res.ok) {
-    console.error('Error al obtener contactos:', res.statusText);
+    logger({ level: 'error', code: 'FETCH_CONTACTS', message: 'Error al obtener contactos:', data: res.statusText });
     return [];
   }
 

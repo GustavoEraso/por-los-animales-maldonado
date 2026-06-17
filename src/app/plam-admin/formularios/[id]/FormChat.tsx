@@ -12,6 +12,7 @@ import {
 import { db } from '@/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { FormComment } from '@/types';
+import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,7 +100,7 @@ export default function FormChat({ formId }: FormChatProps) {
         setComments(all.filter((c) => c.formId === formId));
       },
       (error) => {
-        console.error('FormChat subscription error:', error);
+        logger({ level: 'error', code: 'FORM_CHAT_SUBSCRIPTION_ERROR', message: 'FormChat subscription error:', data: error });
       }
     );
 
@@ -139,7 +140,7 @@ export default function FormChat({ formId }: FormChatProps) {
         textareaRef.current.style.height = 'auto';
       }
     } catch (error) {
-      console.error('Error sending comment:', error);
+      logger({ level: 'error', code: 'SEND_COMMENT_ERROR', message: 'Error sending comment:', data: error });
     } finally {
       setSending(false);
     }

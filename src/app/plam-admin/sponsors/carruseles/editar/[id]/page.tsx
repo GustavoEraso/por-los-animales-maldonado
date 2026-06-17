@@ -11,6 +11,7 @@ import Image from 'next/image';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 /**
  * Admin page for editing an existing sponsor carousel.
@@ -53,7 +54,7 @@ export default function EditCarouselPage() {
         setActive(carousel.active);
         setSelectedIds(carousel.sponsorIds ?? []);
       } catch (error) {
-        console.error('Error loading carousel:', error);
+        logger({ level: 'error', code: 'LOAD_CAROUSEL_ERROR', message: 'Error loading carousel:', data: error });
         handleToast({ type: 'error', title: 'Error', text: 'No se pudieron cargar los datos.' });
       } finally {
         setIsLoading(false);
@@ -139,7 +140,7 @@ export default function EditCarouselPage() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      console.error('Error updating carousel:', error);
+      logger({ level: 'error', code: 'UPDATE_CAROUSEL_ERROR', message: 'Error updating carousel:', data: error });
     } finally {
       setSaving(false);
     }

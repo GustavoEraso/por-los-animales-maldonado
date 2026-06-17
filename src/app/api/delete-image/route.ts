@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import cloudinary from '@/cloudinary';
+import { logger } from '@/lib/logger';
 
 /**
  * Response types for delete-image endpoint
@@ -82,7 +83,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse<DeleteImage
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
-    console.error('Cloudinary deletion error:', error);
+    logger({ level: 'error', code: 'DELETE_IMAGE', message: 'Cloudinary deletion error:', data: error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

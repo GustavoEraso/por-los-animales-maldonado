@@ -9,6 +9,7 @@ import { handleToast } from '@/lib/handleToast';
 
 import { Animal, WpContactType } from '@/types';
 import Loader from '@/components/Loader';
+import { logger } from '@/lib/logger';
 import LitterModeControls from './components/LitterModeControls';
 import AnimalDataControls from './components/AnimalDataControls';
 import ColorSchemeControls from './components/ColorSchemeControls';
@@ -233,7 +234,7 @@ function CompartirContain() {
           setSelectedContacts(defaultSelection);
         }
       } catch (error) {
-        console.error(error);
+        logger({ level: 'error', code: 'FETCH_SHARE_DATA_ERROR', message: error instanceof Error ? error.message : 'Error fetching share data', data: error });
         if (isMounted) {
           handleToast({
             type: 'error',
@@ -404,7 +405,7 @@ function CompartirContain() {
         : `${animal.id}.jpeg`;
       link.click();
     } catch (error) {
-      console.error(error);
+      logger({ level: 'error', code: 'CAPTURE_IMAGE_ERROR', message: error instanceof Error ? error.message : 'Error capturing image', data: error });
       handleToast({
         type: 'error',
         title: 'No se pudo descargar la placa',

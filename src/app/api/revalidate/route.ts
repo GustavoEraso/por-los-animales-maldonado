@@ -1,5 +1,6 @@
 import { revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/revalidate?tag=animals
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toLocaleString(),
     });
   } catch (error) {
-    console.error('Error revalidating tag:', error);
+    logger({ level: 'error', code: 'REVALIDATE_TAG', message: 'Error revalidating tag:', data: error });
     return NextResponse.json({ error: 'Failed to revalidate tag' }, { status: 500 });
   }
 }
