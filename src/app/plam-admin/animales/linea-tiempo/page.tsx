@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { logger } from '@/lib/logger';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -62,7 +63,7 @@ export default function LineaTiempoPage() {
         });
         setransactions(data);
       } catch (error) {
-        console.error('Error loading transactions:', error);
+        logger({ level: 'error', code: 'LOAD_TRANSACTIONS', message: 'Error loading transactions:', data: error });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;

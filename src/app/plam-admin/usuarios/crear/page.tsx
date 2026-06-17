@@ -9,6 +9,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { logger } from '@/lib/logger';
 
 /**
  * User data structure for creating new authorized users
@@ -65,7 +66,7 @@ export default function CreateUserPage() {
       });
       return existingUser !== null;
     } catch (error) {
-      console.error('Error checking email existence:', error);
+      logger({ level: 'error', code: 'CHECK_EMAIL_EXISTENCE_ERROR', message: 'Error checking email existence:', data: error });
       // If document doesn't exist, getFirestoreDocById throws error
       return false;
     }
@@ -170,7 +171,7 @@ export default function CreateUserPage() {
 
       router.push('/plam-admin/usuarios');
     } catch (error) {
-      console.error('Error creating user:', error);
+      logger({ level: 'error', code: 'CREATE_USER_ERROR', message: 'Error creating user:', data: error });
     } finally {
       setLoading(false);
     }

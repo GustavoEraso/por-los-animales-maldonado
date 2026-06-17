@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { CollectionsType } from '@/types';
 import { collection, addDoc, setDoc, doc, DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -71,7 +72,7 @@ export async function postFirestoreData<T extends object>({
       await setDoc(docRef, sanitized as DocumentData, { merge: true });
     }
   } catch (error) {
-    console.error('Error creating/updating document:', error);
+    logger({ level: 'error', code: 'SAVE_DOCUMENT', message: 'Error creating/updating document:', data: error });
     throw error;
   }
 }

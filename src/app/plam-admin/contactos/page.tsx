@@ -14,6 +14,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 export default function ContactsPage() {
   const { currentUser, checkIsAdmin } = useAuth();
@@ -49,7 +50,7 @@ export default function ContactsPage() {
         });
         setContacts(data as WpContactType[]);
       } catch (error) {
-        console.error('Error fetching contacts:', error);
+        logger({ level: 'error', code: 'FETCH_CONTACTS_ERROR', message: 'Error fetching contacts:', data: error });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;
@@ -127,7 +128,7 @@ export default function ContactsPage() {
       setRefresh(!refresh);
       setShowCacheInfoDialog(true);
     } catch (error) {
-      console.error('Error deleting contact:', error);
+      logger({ level: 'error', code: 'DELETE_CONTACT_ERROR', message: 'Error deleting contact:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -234,7 +235,7 @@ export default function ContactsPage() {
       setRefresh(!refresh);
       setShowCacheInfoDialog(true);
     } catch (error) {
-      console.error('Error saving contact:', error);
+      logger({ level: 'error', code: 'SAVE_CONTACT_ERROR', message: 'Error saving contact:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

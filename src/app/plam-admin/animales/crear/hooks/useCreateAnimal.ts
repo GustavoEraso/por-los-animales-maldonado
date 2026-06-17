@@ -13,6 +13,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 import {
   INITIAL_ANIMAL,
   INITIAL_PRIVATE_INFO,
@@ -325,7 +326,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
         await handleSingleSubmit(start);
       }
     } catch (error) {
-      console.error('Error al guardar:', error);
+      logger({ level: 'error', code: 'SAVE_ANIMAL', message: 'Error al guardar:', data: error });
       setLoading(false);
     } finally {
       const elapsed = createTimestamp() - start;

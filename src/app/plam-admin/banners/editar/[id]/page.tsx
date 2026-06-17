@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { PlusIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 const initialBanner: BannerType = {
   id: '',
@@ -48,7 +49,7 @@ export default function EditBannerForm() {
           id: currentId,
         });
         if (!fetchedBanner) {
-          console.error('Banner not found');
+          logger({ level: 'error', code: 'BANNER_NOT_FOUND', message: 'Banner not found' });
           throw new Error('Banner not found');
         }
 
@@ -56,7 +57,7 @@ export default function EditBannerForm() {
 
         setBanner(fetchedBanner);
       } catch (error) {
-        console.error('Error fetching banner data:', error);
+        logger({ level: 'error', code: 'FETCH_BANNER_ERROR', message: 'Error fetching banner data:', data: error });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -147,7 +148,7 @@ export default function EditBannerForm() {
 
       router.replace('/plam-admin/banners');
     } catch (error) {
-      console.error('Error al guardar el banner:', error);
+      logger({ level: 'error', code: 'SAVE_BANNER_ERROR', message: 'Error al guardar el banner:', data: error });
     }
   };
 

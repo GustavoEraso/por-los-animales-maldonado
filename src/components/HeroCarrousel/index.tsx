@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '../Icons';
 import { BannerType } from '@/types';
 import SmartLink from '@/lib/SmartLink';
+import { logger } from '@/lib/logger';
 
 const INITIAL_ITEMS: BannerType[] = [
   {
@@ -152,25 +153,19 @@ export default function HeroCarrousel({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   useEffect(() => {
-    console.log('Banners state updated:', banners);
-  }, [banners]);
-
-  useEffect(() => {
     async function fetchBanners() {
-      console.log('Fetching banners from API...');
       try {
         const response = await fetch('/api/banners');
         if (response.ok) {
           const data: BannerType[] = await response.json();
           if (data && data.length > 0) {
             setBanners(data);
-            console.log('Banners fetched successfully:', data);
           }
         } else {
-          console.error('Failed to fetch banners:', response.statusText);
+          logger({ level: 'error', code: 'FETCH_BANNERS_FAILED', message: 'Failed to fetch banners:', data: response.statusText });
         }
       } catch (error) {
-        console.error('Error fetching banners:', error);
+        logger({ level: 'error', code: 'FETCH_BANNERS_ERROR', message: 'Error fetching banners:', data: error });
       }
     }
 

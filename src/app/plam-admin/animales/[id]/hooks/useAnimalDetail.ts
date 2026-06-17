@@ -6,6 +6,7 @@ import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { handleToast } from '@/lib/handleToast';
+import { logger } from '@/lib/logger';
 
 interface UseAnimalDetailReturn {
   animal: Animal | null;
@@ -43,7 +44,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
           id: currentId,
         });
         if (!animalData) {
-          console.error('Animal not found');
+          logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Animal not found' });
           throw new Error('Animal not found');
         }
 
@@ -52,7 +53,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
           id: currentId,
         });
         if (!currentPrivateInfo) {
-          console.error('Private info not found');
+          logger({ level: 'error', code: 'FETCH_PRIVATE_INFO', message: 'Private info not found' });
           throw new Error('Private info not found');
         }
 
@@ -61,7 +62,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
           filter: [['id', '==', currentId]],
         });
         if (!currentTransactions) {
-          console.error('Transaction info not found for this animal');
+          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transaction info not found for this animal' });
           throw new Error('Transaction info not found for this animal');
         }
 
@@ -73,7 +74,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
         setAnimal(animalData);
         setPrivateInfo(currentPrivateInfo);
       } catch (error) {
-        console.error('Error fetching animal data:', error);
+        logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Error fetching animal data:', data: error });
         handleToast({
           type: 'error',
           title: 'Error',

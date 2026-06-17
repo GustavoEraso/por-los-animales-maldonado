@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { logger } from '@/lib/logger';
 import Groq from 'groq-sdk';
 import { GoogleGenAI } from '@google/genai';
 
@@ -449,15 +450,11 @@ async function evaluateWithGoogleAI(
         .replace(/^```(?:json)?\s*/i, '')
         .replace(/\s*```$/i, '')
         .trim();
-      console.log('Google AI tokens:', response.usageMetadata);
-      console.log(`Google AI evaluation content from model "${model}":`, content);
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      console.error(`Google AI evaluation with model "${model}" failed:`, err);
+      logger({ level: 'error', code: 'GOOGLE_AI_FAILED', errorType: 'GoogleAI', message: model, data: err });
     }
   }
-
-  console.warn('All Google AI models failed.');
   return null;
 }
 
@@ -483,12 +480,10 @@ async function evaluateWithGroq(
         .replace(/\s*```$/i, '')
         .trim();
 
-      console.log('Groq evaluation content:', content);
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      console.error(`Groq evaluation attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+      logger({ level: 'error', code: 'GROQ_FAILED', errorType: 'Groq', message: `attempt ${attempt}/${MAX_RETRIES}`, data: err });
       if (attempt === MAX_RETRIES) {
-        console.warn('All Groq retries exhausted, saving without evaluation.');
         return null;
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -568,7 +563,6 @@ function normalizeFormData(data: Record<string, string | string[]>) {
     const normalizedKey = FIELD_MAP[cleanQuestion];
 
     if (!normalizedKey) {
-      console.log('UNMAPPED:', JSON.stringify(cleanQuestion));
       continue;
     }
 
@@ -591,40 +585,68 @@ export async function GET() {
   return NextResponse.json({ message: 'Hello from Google Forms API route!' });
 }
 
+const EVALUATION_TIMEOUT_MS = 9500;
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
-    console.warn('Unauthorized access attempt to Google Forms API');
+    logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid token' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const data = await req.json();
   const mappedData = normalizeFormData(data as Record<string, string[]>);
   const cleanedData = cleanRawData(data as Record<string, string[]>);
-
   const evaluationData = prepareEvaluationData(mappedData);
+
+  let docRef;
+  try {
+    docRef = await addDoc(collection(db, 'googleForms'), {
+      ...mappedData,
+      rawData: cleanedData,
+      evaluation: null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger({ level: 'error', code: 'FIRESTORE_SAVE_FAILED', errorType: 'Firestore', statusCode: 500, message: 'Failed to save form', data: err });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+
+  const evaluationPromise = runFullEvaluation(docRef.id, evaluationData);
+
+  const evaluation = await Promise.race([
+    evaluationPromise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), EVALUATION_TIMEOUT_MS)),
+  ]);
+
+  if (evaluation) {
+    return NextResponse.json({ id: docRef.id, evaluation }, { status: 201 });
+  }
+
+  return NextResponse.json({ id: docRef.id, status: 'pending' }, { status: 201 });
+}
+
+async function runFullEvaluation(
+  docId: string,
+  evaluationData: Record<string, unknown>
+): Promise<GroqEvaluation | null> {
   let evaluation = await evaluateWithGoogleAI(evaluationData);
 
   if (!evaluation) {
-    console.warn('Falling back to Groq evaluation...');
     evaluation = await evaluateWithGroq(evaluationData);
   }
 
-  try {
-    const docRef = await addDoc(collection(db, 'googleForms'), {
-      ...mappedData,
-      rawData: cleanedData,
-      evaluation: evaluation ?? null,
-      createdAt: new Date().toISOString(),
-    });
-
-    console.log('Form data saved with ID:', docRef.id);
-    console.log('Mapped form data:', mappedData);
-    console.log('IA evaluation:', evaluation);
-
-    return NextResponse.json({ id: docRef.id, evaluation });
-  } catch (err) {
-    console.error('Error saving form data:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (evaluation) {
+    try {
+      await setDoc(
+        doc(db, 'googleForms', docId),
+        { evaluation },
+        { merge: true }
+      );
+    } catch (err) {
+      logger({ level: 'error', code: 'FIRESTORE_MERGE_FAILED', errorType: 'Firestore', message: docId, data: err });
+    }
   }
+
+  return evaluation;
 }

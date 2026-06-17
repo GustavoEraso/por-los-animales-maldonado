@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 function generateId() {
   // Use Web Crypto's randomUUID when available (typed safely)
   try {
@@ -7,7 +9,7 @@ function generateId() {
         : undefined;
     if (maybeCrypto?.randomUUID) return maybeCrypto.randomUUID();
   } catch (e) {
-    console.error('Error generating UUID with crypto.randomUUID:', e);
+    logger({ level: 'error', code: 'GENERATE_ID', message: 'Error generating UUID with crypto.randomUUID:', data: e });
   }
 
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`; // fallback

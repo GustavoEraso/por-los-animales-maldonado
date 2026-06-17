@@ -9,6 +9,7 @@ import { Modal } from '@/components/Modal';
 import { HeartIcon } from '@/components/Icons';
 import { AnimalActionModalProps, AdoptionFormData, DEFAULT_ADOPTION_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 
 /**
  * Modal component for registering an animal adoption.
@@ -116,7 +117,7 @@ export default function AdoptionModal({
 
       setAdoptionData({ ...DEFAULT_ADOPTION_DATA, newStatus: undefined });
     } catch (error) {
-      console.error('Error handling adoption:', error);
+      logger({ level: 'error', code: 'ADOPTION_ERROR', message: 'Error handling adoption:', data: error });
       setAnimal(animal);
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));

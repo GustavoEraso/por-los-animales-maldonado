@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Animal } from '@/types';
 import { fetchAnimals } from '@/lib/fetchAnimal';
 import ParentSelectorModal from '@/components/ParentSelectorModal';
+import { logger } from '@/lib/logger';
 
 interface ParentSelectionSectionProps {
   /** Currently selected mother ID */
@@ -47,7 +48,7 @@ export default function ParentSelectionSection({
           setMotherAnimal(result[0]);
         }
       } catch (error) {
-        console.error('Error fetching mother animal:', error);
+        logger({ level: 'error', code: 'FETCH_MOTHER_ANIMAL_ERROR', message: 'Error fetching mother animal:', data: error });
       }
     };
     load();
@@ -66,7 +67,7 @@ export default function ParentSelectionSection({
           setFatherAnimal(result[0]);
         }
       } catch (error) {
-        console.error('Error fetching father animal:', error);
+        logger({ level: 'error', code: 'FETCH_FATHER_ANIMAL_ERROR', message: 'Error fetching father animal:', data: error });
       }
     };
     load();

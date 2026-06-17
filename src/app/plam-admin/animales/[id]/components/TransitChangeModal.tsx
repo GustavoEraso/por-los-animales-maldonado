@@ -8,6 +8,7 @@ import { Modal } from '@/components/Modal';
 import { SwapIcon } from '@/components/Icons';
 import { AnimalActionModalProps, TransitChangeFormData, DEFAULT_TRANSIT_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 
 /**
  * Modal component for changing the transit caretaker of an animal.
@@ -90,7 +91,7 @@ export default function TransitChangeModal({
 
       setTransitChangeData(DEFAULT_TRANSIT_DATA);
     } catch (error) {
-      console.error('Error handling transit change:', error);
+      logger({ level: 'error', code: 'TRANSIT_CHANGE', message: 'Error handling transit change:', data: error });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
     }

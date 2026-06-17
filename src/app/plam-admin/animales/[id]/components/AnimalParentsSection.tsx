@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Animal } from '@/types';
 import { fetchAnimals } from '@/lib/fetchAnimal';
+import { logger } from '@/lib/logger';
 
 interface AnimalParentsSectionProps {
   /** The current animal (to read motherId/fatherId) */
@@ -28,7 +29,7 @@ export default function AnimalParentsSection({
           const result = await fetchAnimals({ id: animal.motherId });
           if (Array.isArray(result) && result.length > 0) setMother(result[0]);
         } catch (err) {
-          console.error('Error fetching mother:', err);
+          logger({ level: 'error', code: 'FETCH_MOTHER', message: 'Error fetching mother:', data: err });
         }
       }
       if (animal.fatherId) {
@@ -36,7 +37,7 @@ export default function AnimalParentsSection({
           const result = await fetchAnimals({ id: animal.fatherId });
           if (Array.isArray(result) && result.length > 0) setFather(result[0]);
         } catch (err) {
-          console.error('Error fetching father:', err);
+          logger({ level: 'error', code: 'FETCH_FATHER', message: 'Error fetching father:', data: err });
         }
       }
     };

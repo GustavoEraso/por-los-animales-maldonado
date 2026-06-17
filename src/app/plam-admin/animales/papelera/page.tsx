@@ -18,6 +18,7 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import { TrashIcon, EyeIcon, ArrowLeftIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 export default function AnimalsPage() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function AnimalsPage() {
           setAnimalsToShow(data as Animal[]);
         })
         .catch((error) => {
-          console.error('Error fetching Animals:', error);
+          logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error fetching Animals:', data: error });
         });
     };
     fetchData().finally(() => {
@@ -168,7 +169,7 @@ export default function AnimalsPage() {
         setLoading(false);
       }
 
-      console.error('Error restoring animal:', error);
+      logger({ level: 'error', code: 'RESTORE_ANIMAL', message: 'Error restoring animal:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -238,7 +239,7 @@ export default function AnimalsPage() {
       // Invalidate animals cache
       await revalidateCache('animals');
     } catch (error) {
-      console.error('Error to delete animal:', error);
+      logger({ level: 'error', code: 'DELETE_ANIMAL', message: 'Error to delete animal:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -261,7 +262,7 @@ export default function AnimalsPage() {
         handleHardDeleteSingleAnimal({ animal });
       }
     } catch (error) {
-      console.error('Error to delete animals:', error);
+      logger({ level: 'error', code: 'DELETE_ANIMALS', message: 'Error to delete animals:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

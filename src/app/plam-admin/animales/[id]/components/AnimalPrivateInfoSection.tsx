@@ -10,6 +10,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { EditIcon, TrashIcon, PlusIcon } from '@/components/Icons';
 import { contactLabelMap, getRescueReasonLabel } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 
 interface AnimalPrivateInfoSectionProps {
   animal: Animal;
@@ -95,7 +96,7 @@ export default function AnimalPrivateInfoSection({
 
         delete originalNoteValues.current[index];
       } catch (error) {
-        console.error('Error updating note:', error);
+        logger({ level: 'error', code: 'UPDATE_NOTE', message: 'Error updating note:', data: error });
         setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
       }
     }
@@ -166,7 +167,7 @@ export default function AnimalPrivateInfoSection({
         }
       );
     } catch (error) {
-      console.error('Error deleting note:', error);
+      logger({ level: 'error', code: 'DELETE_NOTE', message: 'Error deleting note:', data: error });
       setPrivateInfo((prev) =>
         prev ? { ...prev, notes: [...(prev.notes || []), deletedNote || ''] } : prev
       );
@@ -216,7 +217,7 @@ export default function AnimalPrivateInfoSection({
         }
       );
     } catch (error) {
-      console.error('Error adding note:', error);
+      logger({ level: 'error', code: 'ADD_NOTE', message: 'Error adding note:', data: error });
       setPrivateInfo((prev) =>
         prev ? { ...prev, notes: (prev.notes || []).filter((n) => n !== noteToAdd) } : prev
       );

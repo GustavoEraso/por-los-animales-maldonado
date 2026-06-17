@@ -16,6 +16,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ParentSelectionSection from '@/components/ParentSelectionSection';
 import generateId from '@/lib/generateId';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 const initialAnimal: Animal = {
   id: '',
@@ -108,7 +109,7 @@ export default function EditAnimalForm() {
           id: currentId,
         });
         if (!fetchedAnimal) {
-          console.error('Animal not found');
+          logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Animal not found' });
           throw new Error('Animal not found');
         }
         const fetchedPrivateInfo = await getFirestoreDocById<PrivateInfoType>({
@@ -116,7 +117,7 @@ export default function EditAnimalForm() {
           id: currentId,
         });
         if (!fetchedPrivateInfo) {
-          console.error('Private info not found');
+          logger({ level: 'error', code: 'FETCH_PRIVATE_INFO', message: 'Private info not found' });
           throw new Error('Private info not found');
         }
         const transactionsList = await getFirestoreData({
@@ -124,11 +125,11 @@ export default function EditAnimalForm() {
           filter: [['id', '==', currentId]],
         });
         if (!transactionsList) {
-          console.error('Transactions list not found');
+          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transactions list not found' });
           throw new Error('Transactions list not found');
         }
         if (!transactionsList.length) {
-          console.error('Transaction info not found for this animal');
+          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transaction info not found for this animal' });
           throw new Error('Transaction info not found for this animal');
         }
         const sortedTransactions = transactionsList.sort((a, b) => b.date - a.date);
@@ -145,7 +146,7 @@ export default function EditAnimalForm() {
         setMotherId(fetchedAnimal.motherId || '');
         setFatherId(fetchedAnimal.fatherId || '');
       } catch (error) {
-        console.error('Error fetching animal data:', error);
+        logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Error fetching animal data:', data: error });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -380,7 +381,7 @@ export default function EditAnimalForm() {
 
       router.replace('/plam-admin/animales');
     } catch (error) {
-      console.error('Error al guardar el animal:', error);
+      logger({ level: 'error', code: 'SAVE_ANIMAL', message: 'Error al guardar el animal:', data: error });
     }
   };
 

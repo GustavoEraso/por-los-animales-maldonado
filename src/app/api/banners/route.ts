@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { BannerType } from '@/types';
 import { getBannersData } from '@/lib/data/banners';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/banners - Retrieve banners with Next.js native caching
@@ -47,7 +48,7 @@ export async function GET(): Promise<NextResponse<BannerType[] | { error: string
 
     return NextResponse.json(data);
   } catch (err) {
-    console.error('Error fetching banners:', err);
+    logger({ level: 'error', code: 'FETCH_BANNERS', message: 'Error fetching banners:', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

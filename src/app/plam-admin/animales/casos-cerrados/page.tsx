@@ -15,6 +15,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
 import Card from '@/components/Card';
 import { EditIcon, EyeIcon, GridViewIcon, TableViewIcon, TrashIcon } from '@/components/Icons';
+import { logger } from '@/lib/logger';
 
 export default function ClosedCasesPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function ClosedCasesPage() {
           setAnimalsToShow(data as Animal[]);
         })
         .catch((error) => {
-          console.error('Error fetching Animals:', error);
+          logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error fetching Animals:', data: error });
         });
     };
     fetchData().finally(() => {
@@ -196,7 +197,7 @@ export default function ClosedCasesPage() {
 
       setRefresh(!refresh);
     } catch (error) {
-      console.error('Error changing animal status:', error);
+      logger({ level: 'error', code: 'CHANGE_STATUS', message: 'Error changing animal status:', data: error });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

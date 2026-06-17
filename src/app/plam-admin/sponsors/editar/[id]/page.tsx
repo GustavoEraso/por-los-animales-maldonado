@@ -13,6 +13,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 const initialSponsor: SponsorType = {
   id: '',
@@ -46,13 +47,13 @@ export default function EditSponsorForm() {
           id: currentId,
         });
         if (!fetched) {
-          console.error('Sponsor not found');
+          logger({ level: 'error', code: 'SPONSOR_NOT_FOUND', message: 'Sponsor not found' });
           throw new Error('Sponsor not found');
         }
         setOldSponsor(structuredClone(fetched));
         setSponsor(fetched);
       } catch (error) {
-        console.error('Error fetching sponsor data:', error);
+        logger({ level: 'error', code: 'FETCH_SPONSOR_ERROR', message: 'Error fetching sponsor data:', data: error });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -119,7 +120,7 @@ export default function EditSponsorForm() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      console.error('Error al actualizar el sponsor:', error);
+      logger({ level: 'error', code: 'UPDATE_SPONSOR_ERROR', message: 'Error al actualizar el sponsor:', data: error });
     }
   };
 

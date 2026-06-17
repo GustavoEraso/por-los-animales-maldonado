@@ -17,8 +17,6 @@ async function fetchAnimalsFromFirestore(): Promise<Animal[]> {
     expire: 2600000,
   });
 
-  console.log('[animals] 🔥 Cache MISS — fetching from Firestore');
-
   return getFirestoreData({
     currentCollection: 'animals',
     filter: [['isVisible', '==', true]],
@@ -37,11 +35,7 @@ async function fetchAnimalsFromFirestore(): Promise<Animal[]> {
  * @returns Visible animals from the 'animals' Firestore collection
  */
 export async function getAnimalsData(): Promise<Animal[]> {
-  const start = performance.now();
   const data = await fetchAnimalsFromFirestore();
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  console.log(`[animals] ✅ Returned ${data.length} animals in ${elapsed}ms`);
 
   return data;
 }
@@ -60,8 +54,6 @@ async function fetchActiveAnimalsFromFirestore(): Promise<Animal[]> {
     expire: 2600000,
   });
 
-  console.log('[animals:active] 🔥 Cache MISS — fetching from Firestore');
-
   return getFirestoreData({
     currentCollection: 'animals',
     filter: [['status', 'not-in', ['adoptado', 'fallecido']]],
@@ -77,11 +69,7 @@ async function fetchActiveAnimalsFromFirestore(): Promise<Animal[]> {
  * @returns Animals whose status is not 'adoptado' or 'fallecido'
  */
 export async function getActiveAnimalsData(): Promise<Animal[]> {
-  const start = performance.now();
   const data = await fetchActiveAnimalsFromFirestore();
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  console.log(`[animals:active] ✅ Returned ${data.length} animals in ${elapsed}ms`);
 
   return data;
 }
@@ -101,8 +89,6 @@ async function fetchAllAnimalsFromFirestore(): Promise<Animal[]> {
     expire: 2600000,
   });
 
-  console.log('[animals:all] 🔥 Cache MISS — fetching from Firestore');
-
   return getFirestoreData({ currentCollection: 'animals' });
 }
 
@@ -117,11 +103,7 @@ async function fetchAllAnimalsFromFirestore(): Promise<Animal[]> {
  * @returns All animals from the 'animals' Firestore collection
  */
 export async function getAllAnimalsData(): Promise<Animal[]> {
-  const start = performance.now();
   const data = await fetchAllAnimalsFromFirestore();
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  console.log(`[animals:all] ✅ Returned ${data.length} animals in ${elapsed}ms`);
 
   return data;
 }
@@ -139,8 +121,6 @@ async function fetchAnimalById(id: string): Promise<Animal | null> {
     expire: 2600000,
   });
 
-  console.log(`[animal:${id}] 🔥 Cache MISS — fetching from Firestore`);
-
   return getFirestoreDocById<Animal>({
     currentCollection: 'animals',
     id,
@@ -157,14 +137,7 @@ async function fetchAnimalById(id: string): Promise<Animal | null> {
  * @returns The animal data, or null if not found
  */
 export async function getAnimalById(id: string): Promise<Animal | null> {
-  const start = performance.now();
   const animal = await fetchAnimalById(id);
-  const elapsed = (performance.now() - start).toFixed(1);
-
-  console.log(
-    `[animal:${id}] ✅ ${animal ? `Found "${animal.name}"` : 'Not found'} in ${elapsed}ms`
-  );
-
   return animal;
 }
 

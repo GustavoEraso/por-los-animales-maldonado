@@ -10,6 +10,7 @@ import { CalendarIcon } from '@/components/Icons';
 import { eventLabels } from '@/lib/constants/animalLabels';
 import { AnimalActionModalProps, EventFormData, DEFAULT_EVENT_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
+import { logger } from '@/lib/logger';
 
 /**
  * Modal component for registering animal events (medical, vaccination,
@@ -155,7 +156,7 @@ export default function EventModal({
 
       setEventData(DEFAULT_EVENT_DATA);
     } catch (error) {
-      console.error('Error handling event registration:', error);
+      logger({ level: 'error', code: 'EVENT_ERROR', message: 'Error handling event registration:', data: error });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
       if (isDeceasedEvent) {

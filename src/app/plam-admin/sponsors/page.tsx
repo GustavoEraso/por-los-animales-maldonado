@@ -15,6 +15,7 @@ import Link from 'next/link';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { logger } from '@/lib/logger';
 
 /**
  * Admin page for managing sponsors and carousels.
@@ -94,7 +95,7 @@ export default function PlamAdminSponsors() {
       await revalidateCache('sponsors');
       await fetchData();
     } catch (error) {
-      console.error('Error deleting sponsor:', error);
+      logger({ level: 'error', code: 'DELETE_SPONSOR_ERROR', message: 'Error deleting sponsor:', data: error });
     }
   };
 
@@ -121,7 +122,7 @@ export default function PlamAdminSponsors() {
       );
       await revalidateCache('sponsors');
     } catch (error) {
-      console.error('Error toggling carousel:', error);
+      logger({ level: 'error', code: 'TOGGLE_CAROUSEL_ERROR', message: 'Error toggling carousel:', data: error });
       setCarousels((prev) => prev.map((c) => (c.id === carousel.id ? carousel : c)));
     }
   };
@@ -136,7 +137,7 @@ export default function PlamAdminSponsors() {
       });
       await revalidateCache('sponsors');
     } catch (error) {
-      console.error('Error updating placements:', error);
+      logger({ level: 'error', code: 'UPDATE_PLACEMENTS_ERROR', message: 'Error updating placements:', data: error });
       await fetchData();
     }
   };
@@ -195,7 +196,7 @@ export default function PlamAdminSponsors() {
       setCarouselsConfig(cleanedConfig);
       await fetchData();
     } catch (error) {
-      console.error('Error deleting carousel:', error);
+      logger({ level: 'error', code: 'DELETE_CAROUSEL_ERROR', message: 'Error deleting carousel:', data: error });
     }
   };
 

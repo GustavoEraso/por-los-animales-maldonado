@@ -12,6 +12,7 @@ import {
   canManageUser,
   getAssignableRoles,
 } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 /**
  * Authentication context value containing user state and permission helpers.
@@ -117,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setCurrentUser(userData);
           setIsAuthorized(true);
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          logger({ level: 'error', code: 'FETCH_USER_DATA_ERROR', message: 'Error fetching user data:', data: error });
           setAuthError('Failed to load user permissions');
           setCurrentUser(null);
           setIsAuthorized(false);

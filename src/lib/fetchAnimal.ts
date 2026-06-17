@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Animal } from '@/types';
 
 export type PaginationMeta = {
@@ -130,7 +131,7 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
   });
 
   if (!res.ok) {
-    console.error('Error al obtener animales:', res.statusText);
+    logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error al obtener animales:', data: res.statusText });
     return [];
   }
 

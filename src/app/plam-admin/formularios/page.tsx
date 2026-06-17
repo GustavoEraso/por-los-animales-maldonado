@@ -11,6 +11,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import type { GoogleFormEntry, GoogleFormStatus } from '@/types';
+import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -114,7 +115,7 @@ export default function FormulariosPage() {
         });
         setForms(data as GoogleFormEntry[]);
       } catch (error) {
-        console.error('Error fetching forms:', error);
+        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms:', data: error });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;

@@ -117,8 +117,6 @@ export default function UploadImages({
 
       // Ensure URL doesn't have line breaks or extra whitespace
       const cleanUrl = webpUrl.trim().replace(/\s+/g, '');
-
-      console.log('Uploaded image URL:', cleanUrl);
       onImagesAdd([{ imgUrl: cleanUrl, imgId: public_id, imgAlt: 'animal image' }]);
 
       // Reset body overflow after upload modal closes

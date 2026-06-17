@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { handleToast } from '@/lib/handleToast';
+import { logger } from '@/lib/logger';
 
 const variantStyles = {
   primary:
@@ -116,7 +117,7 @@ export default function ShareButton({
           url: urlToShare || window.location.href,
         })
         .catch((error) => {
-          console.error('Error sharing:', error);
+          logger({ level: 'error', code: 'WEB_SHARE_ERROR', message: 'Error sharing:', data: error });
           handleToast({
             type: 'error',
             title: 'Error al compartir',

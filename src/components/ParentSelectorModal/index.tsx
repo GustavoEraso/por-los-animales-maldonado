@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Animal } from '@/types';
 import { fetchAnimals } from '@/lib/fetchAnimal';
 import { XCircleIcon } from '@/components/Icons';
+import { logger } from '@/lib/logger';
 
 interface ParentSelectorModalProps {
   /** Whether the modal is open */
@@ -51,7 +52,7 @@ export default function ParentSelectorModal({
           setAnimals(result);
         }
       } catch (error) {
-        console.error('Error fetching animals for parent selector:', error);
+        logger({ level: 'error', code: 'FETCH_PARENT_ANIMALS_ERROR', message: 'Error fetching animals for parent selector:', data: error });
       } finally {
         setLoading(false);
       }
