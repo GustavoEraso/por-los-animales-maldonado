@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronRightIcon,
+  EyeIcon,
   HomeIcon,
   ImageIcon,
   MailIcon,
@@ -139,6 +140,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <span className="hidden md:block">Sponsors</span>
                       <ImageIcon size={32} className="w-8 h-8 mb-2" title="Sponsors" />
+                    </Link>
+                  </li>
+                </RoleGuard>
+
+                <RoleGuard requiredRole="superadmin">
+                  <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                    <Link
+                      className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1"
+                      href={'/plam-admin/logs'}
+                    >
+                      <span className="hidden md:block">Auditoría</span>
+                      <EyeIcon size={32} className="w-8 h-8 mb-2" title="Auditoría" />
                     </Link>
                   </li>
                 </RoleGuard>
