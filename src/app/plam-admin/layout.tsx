@@ -9,7 +9,8 @@ import {
   EyeIcon,
   HomeIcon,
   ImageIcon,
-  MailIcon,
+  FormIcon,
+  SponsorIcon,
   PetsIcon,
   UserIcon,
   WhatsAppIcon,
@@ -115,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={'/plam-admin/formularios'}
                     >
                       <span className="hidden md:block">Formularios</span>
-                      <MailIcon size={28} className="w-8 h-8 mb-2" title="Formularios" />
+                      <FormIcon size={28} className="w-8 h-8 mb-2" title="Formularios" />
                     </Link>
                   </li>
                 </RoleGuard>
@@ -139,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={'/plam-admin/sponsors'}
                     >
                       <span className="hidden md:block">Sponsors</span>
-                      <ImageIcon size={32} className="w-8 h-8 mb-2" title="Sponsors" />
+                      <SponsorIcon size={32} className="w-8 h-8 mb-2" title="Sponsors" />
                     </Link>
                   </li>
                 </RoleGuard>
