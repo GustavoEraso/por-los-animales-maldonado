@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
 import { getContactsData } from '@/lib/data/contacts';
 
@@ -34,6 +35,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <>
       {children}
       {contacts && contacts.length > 0 && <WhatsAppFloat contacts={contacts} />}
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_ANALYTICS_ID ?? ''} />
     </>
   );
 }
