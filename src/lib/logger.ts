@@ -30,7 +30,7 @@ function sanitize(data: unknown): unknown {
   return data;
 }
 
-export function Logger(entry: LogEntry): void {
+export function logger(entry: LogEntry): void {
   const level = entry.level ?? 'info';
   const ts = formatTimestamp();
   const label = levelLabel[level];

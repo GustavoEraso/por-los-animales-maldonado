@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { Logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import Groq from 'groq-sdk';
 import { GoogleGenAI } from '@google/genai';
 
@@ -452,7 +452,7 @@ async function evaluateWithGoogleAI(
         .trim();
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      Logger({ level: 'error', code: 'GOOGLE_AI_FAILED', errorType: 'GoogleAI', message: model, data: err });
+      logger({ level: 'error', code: 'GOOGLE_AI_FAILED', errorType: 'GoogleAI', message: model, data: err });
     }
   }
   return null;
@@ -482,7 +482,7 @@ async function evaluateWithGroq(
 
       return JSON.parse(content) as GroqEvaluation;
     } catch (err) {
-      Logger({ level: 'error', code: 'GROQ_FAILED', errorType: 'Groq', message: `attempt ${attempt}/${MAX_RETRIES}`, data: err });
+      logger({ level: 'error', code: 'GROQ_FAILED', errorType: 'Groq', message: `attempt ${attempt}/${MAX_RETRIES}`, data: err });
       if (attempt === MAX_RETRIES) {
         return null;
       }
@@ -590,7 +590,7 @@ const EVALUATION_TIMEOUT_MS = 9500;
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
-    Logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid token' });
+    logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid token' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -608,7 +608,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       createdAt: new Date().toISOString(),
     });
   } catch (err) {
-    Logger({ level: 'error', code: 'FIRESTORE_SAVE_FAILED', errorType: 'Firestore', statusCode: 500, message: 'Failed to save form', data: err });
+    logger({ level: 'error', code: 'FIRESTORE_SAVE_FAILED', errorType: 'Firestore', statusCode: 500, message: 'Failed to save form', data: err });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
@@ -644,7 +644,7 @@ async function runFullEvaluation(
         { merge: true }
       );
     } catch (err) {
-      Logger({ level: 'error', code: 'FIRESTORE_MERGE_FAILED', errorType: 'Firestore', message: docId, data: err });
+      logger({ level: 'error', code: 'FIRESTORE_MERGE_FAILED', errorType: 'Firestore', message: docId, data: err });
     }
   }
 
