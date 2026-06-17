@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import Groq from 'groq-sdk';
 import { GoogleGenAI } from '@google/genai';
@@ -591,6 +591,8 @@ export async function GET() {
   return NextResponse.json({ message: 'Hello from Google Forms API route!' });
 }
 
+const EVALUATION_TIMEOUT_MS = 9500;
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
@@ -601,8 +603,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const data = await req.json();
   const mappedData = normalizeFormData(data as Record<string, string[]>);
   const cleanedData = cleanRawData(data as Record<string, string[]>);
-
   const evaluationData = prepareEvaluationData(mappedData);
+
+  let docRef;
+  try {
+    docRef = await addDoc(collection(db, 'googleForms'), {
+      ...mappedData,
+      rawData: cleanedData,
+      evaluation: null,
+      createdAt: new Date().toISOString(),
+    });
+    console.log('Form data saved with ID:', docRef.id);
+  } catch (err) {
+    console.error('Error saving form data:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+
+  const evaluationPromise = runFullEvaluation(docRef.id, evaluationData);
+
+  const evaluation = await Promise.race([
+    evaluationPromise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), EVALUATION_TIMEOUT_MS)),
+  ]);
+
+  if (evaluation) {
+    return NextResponse.json({ id: docRef.id, evaluation }, { status: 201 });
+  }
+
+  return NextResponse.json({ id: docRef.id, status: 'pending' }, { status: 201 });
+}
+
+async function runFullEvaluation(
+  docId: string,
+  evaluationData: Record<string, unknown>
+): Promise<GroqEvaluation | null> {
   let evaluation = await evaluateWithGoogleAI(evaluationData);
 
   if (!evaluation) {
@@ -610,21 +644,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     evaluation = await evaluateWithGroq(evaluationData);
   }
 
-  try {
-    const docRef = await addDoc(collection(db, 'googleForms'), {
-      ...mappedData,
-      rawData: cleanedData,
-      evaluation: evaluation ?? null,
-      createdAt: new Date().toISOString(),
-    });
-
-    console.log('Form data saved with ID:', docRef.id);
-    console.log('Mapped form data:', mappedData);
-    console.log('IA evaluation:', evaluation);
-
-    return NextResponse.json({ id: docRef.id, evaluation });
-  } catch (err) {
-    console.error('Error saving form data:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (evaluation) {
+    try {
+      await setDoc(
+        doc(db, 'googleForms', docId),
+        { evaluation },
+        { merge: true }
+      );
+      console.log('Evaluation saved for form:', docId);
+    } catch (err) {
+      console.error('Error saving evaluation for form', docId, err);
+    }
+  } else {
+    console.warn('No evaluation available for form:', docId);
   }
+
+  return evaluation;
 }
