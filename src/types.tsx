@@ -294,6 +294,9 @@ export interface GoogleFormEntry {
   rawData?: Record<string, string>;
   evaluation: GoogleFormEvaluation | null;
   status?: GoogleFormStatus;
+  // Approved animal reference (does NOT auto-execute adoption)
+  approvedAnimalId?: string;
+  approvedAnimalName?: string;
 }
 
 /**
