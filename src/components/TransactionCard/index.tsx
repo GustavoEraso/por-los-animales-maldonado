@@ -1,5 +1,6 @@
 import { AnimalTransactionType, beforeAfterType } from '@/types';
 import Image from 'next/image';
+import Link from 'next/link';
 import { formatedDateOnly } from '@/lib/dateUtils';
 import { getRescueReasonLabel, getTransactionLabel } from '@/lib/constants/animalLabels';
 import { useRef } from 'react';
@@ -114,6 +115,17 @@ export default function TransactionCard({
             <li className="font-semibold">
               El evento tuvo un costo de:{' '}
               <span className="font-semibold text-red-500">${transaction.cost}</span>
+            </li>
+          )}
+          {transaction.transactionType === 'adoption' && (transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId && (
+            <li className="font-semibold">
+              Formulario:{' '}
+              <Link
+                href={`/plam-admin/formularios/${(transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId}`}
+                className="text-green-600 hover:text-green-800 underline font-normal"
+              >
+                {(transaction as AnimalTransactionType & { adoptionFormName?: string }).adoptionFormName ?? 'Ver formulario'} →
+              </Link>
             </li>
           )}
         </ul>

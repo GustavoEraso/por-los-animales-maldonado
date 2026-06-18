@@ -64,6 +64,8 @@ export interface PrivateInfoType {
   address?: string;
   contacts?: ContactType[];
   totalCost?: number;
+  adoptionFormId?: string;
+  adoptionFormName?: string;
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;

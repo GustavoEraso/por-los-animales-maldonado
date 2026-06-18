@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -288,6 +289,17 @@ export default function AnimalPrivateInfoSection({
                 {contact.type}: <span className="font-normal">{contact.value}</span>
               </li>
             ))}
+          {privateInfo.adoptionFormId && (
+            <li key="adoption-form" className="text-xl font-semibold">
+              Formulario de adopción:{' '}
+              <Link
+                href={`/plam-admin/formularios/${privateInfo.adoptionFormId}`}
+                className="text-green-600 hover:text-green-800 underline font-normal"
+              >
+                {privateInfo.adoptionFormName ?? 'Ver formulario'} →
+              </Link>
+            </li>
+          )}
           <li className="text-xl font-semibold">
             {!notes ||
               (notes.length === 0 && <p className="font-normal">No hay notas disponibles.</p>)}

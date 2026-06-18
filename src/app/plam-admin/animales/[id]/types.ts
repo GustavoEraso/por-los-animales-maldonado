@@ -12,6 +12,8 @@ export interface AdoptionFormData {
   contacts: FormContact[];
   note: string;
   newStatus?: 'transitorio' | 'adoptado';
+  selectedFormId?: string;
+  selectedFormName?: string;
 }
 
 /** Form data for transit change modal */

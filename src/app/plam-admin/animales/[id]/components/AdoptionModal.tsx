@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType } from '@/types';
 import { auth } from '@/firebase';
+import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
@@ -29,16 +31,102 @@ export default function AdoptionModal({
     newStatus: undefined,
   });
 
+  // Form selector state
+  const [formsForAnimal, setFormsForAnimal] = useState<GoogleFormEntry[]>([]);
+  const [formsLoading, setFormsLoading] = useState(false);
+  const [showOtherForms, setShowOtherForms] = useState(false);
+  const [otherForms, setOtherForms] = useState<GoogleFormEntry[]>([]);
+  const [otherFormsLoading, setOtherFormsLoading] = useState(false);
+
+  // Fetch forms approved for this animal when modal opens
+  useEffect(() => {
+    if (!adoptionModalOpen) return;
+
+    const fetchForms = async () => {
+      setFormsLoading(true);
+      try {
+        const data = await getFirestoreData({
+          currentCollection: 'googleForms',
+          filter: [['approvedAnimalId', '==', animal.id]],
+        });
+        setFormsForAnimal(
+          (data as GoogleFormEntry[]).filter((f) => f.status === 'approved')
+        );
+      } catch (error) {
+        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms for adoption:', data: error });
+      } finally {
+        setFormsLoading(false);
+      }
+    };
+
+    setShowOtherForms(false);
+    setOtherForms([]);
+    fetchForms();
+  }, [adoptionModalOpen, animal.id]);
+
+  // Fetch other approved forms when toggled
+  const handleShowOtherForms = async () => {
+    if (showOtherForms) {
+      setShowOtherForms(false);
+      setOtherForms([]);
+      return;
+    }
+
+    setShowOtherForms(true);
+    setOtherFormsLoading(true);
+    try {
+      const data = await getFirestoreData({
+        currentCollection: 'googleForms',
+        filter: [['status', '==', 'approved']],
+      });
+      setOtherForms(
+        (data as GoogleFormEntry[]).filter(
+          (f) => f.approvedAnimalId !== animal.id
+        )
+      );
+    } catch (error) {
+      logger({ level: 'error', code: 'FETCH_OTHER_FORMS_ERROR', message: 'Error fetching other forms:', data: error });
+    } finally {
+      setOtherFormsLoading(false);
+    }
+  };
+
+  const selectForm = (form: GoogleFormEntry) => {
+    setAdoptionData((prev) => ({
+      ...prev,
+      contactName: form.fullName || prev.contactName,
+      contacts: form.phone
+        ? [{ type: 'celular' as const, value: form.phone }]
+        : prev.contacts,
+      selectedFormId: form.id,
+      selectedFormName: form.fullName || form.id,
+    }));
+  };
+
+  const clearFormSelection = () => {
+    setAdoptionData((prev) => ({
+      ...prev,
+      selectedFormId: undefined,
+      selectedFormName: undefined,
+    }));
+  };
+
   const handleAdoption = async (): Promise<void> => {
     setAdoptionModalOpen(false);
 
     const notePrefix = '[Nota de adopción] - ';
 
-    const updatedPrivateInfo = {
+    const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
       notes: [...(privateInfo.notes || []), notePrefix + adoptionData.note],
+      ...(adoptionData.selectedFormId
+        ? {
+            adoptionFormId: adoptionData.selectedFormId,
+            adoptionFormName: adoptionData.selectedFormName,
+          }
+        : {}),
     };
 
     const updatedAnimal = {
@@ -50,7 +138,10 @@ export default function AdoptionModal({
 
     const now = createTimestamp();
 
-    const newTransactionData: AnimalTransactionType = {
+    const newTransactionData: AnimalTransactionType & {
+      adoptionFormId?: string;
+      adoptionFormName?: string;
+    } = {
       id: privateInfo.id,
       name: privateInfo.name || '',
       img: animal.images[0],
@@ -80,6 +171,12 @@ export default function AdoptionModal({
           notes: [notePrefix + adoptionData.note],
         },
       },
+      ...(adoptionData.selectedFormId
+        ? {
+            adoptionFormId: adoptionData.selectedFormId,
+            adoptionFormName: adoptionData.selectedFormName,
+          }
+        : {}),
     };
 
     // Optimistic UI
@@ -142,6 +239,129 @@ export default function AdoptionModal({
         </h2>
 
         <div className="w-full max-w-2xl space-y-4">
+          {/* Form selector */}
+          <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+            <label className="block text-green-dark font-semibold mb-2">
+              Formulario de adopción
+            </label>
+
+            {/* Selected form badge */}
+            {adoptionData.selectedFormId && (
+              <div className="mb-3 flex items-center gap-2 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <span className="text-green-700 font-medium">✓</span>
+                <span className="text-green-800 truncate flex-1">
+                  {adoptionData.selectedFormName}
+                </span>
+                <Link
+                  href={`/plam-admin/formularios/${adoptionData.selectedFormId}`}
+                  className="text-green-600 hover:text-green-800 underline shrink-0"
+                >
+                  Ver
+                </Link>
+                <button
+                  onClick={clearFormSelection}
+                  className="text-red-600 hover:text-red-800 underline text-xs shrink-0"
+                >
+                  Quitar
+                </button>
+              </div>
+            )}
+
+            {/* Forms approved for this animal */}
+            <p className="text-xs text-gray-500 mb-1">
+              Aprobados para {animal.name}:
+            </p>
+            {formsLoading ? (
+              <p className="text-xs text-gray-400 py-1">Cargando...</p>
+            ) : formsForAnimal.length === 0 ? (
+              <p className="text-xs text-gray-400 py-1">Sin formularios</p>
+            ) : (
+              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mb-2">
+                {formsForAnimal.map((form) => (
+                  <button
+                    key={form.id}
+                    type="button"
+                    onClick={() => selectForm(form)}
+                    className={`text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                      adoptionData.selectedFormId === form.id
+                        ? 'bg-green-100 border border-green-300'
+                        : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
+                    }`}
+                  >
+                    <p className="font-medium text-gray-900 truncate">
+                      {form.fullName ?? '—'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(form.createdAt).toLocaleDateString('es-UY', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Toggle other forms */}
+            {!showOtherForms ? (
+              <button
+                type="button"
+                onClick={handleShowOtherForms}
+                className="text-xs text-green-600 hover:text-green-800 underline"
+              >
+                Ver otros formularios aprobados...
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleShowOtherForms}
+                  className="text-xs text-green-600 hover:text-green-800 underline mb-2 block"
+                >
+                  Ocultar otros formularios
+                </button>
+                {otherFormsLoading ? (
+                  <p className="text-xs text-gray-400 py-1">Cargando...</p>
+                ) : otherForms.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-1">
+                    No hay otros formularios aprobados
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                    {otherForms.map((form) => (
+                      <button
+                        key={form.id}
+                        type="button"
+                        onClick={() => selectForm(form)}
+                        className={`text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                          adoptionData.selectedFormId === form.id
+                            ? 'bg-green-100 border border-green-300'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
+                        }`}
+                      >
+                        <p className="font-medium text-gray-900 truncate">
+                          {form.fullName ?? '—'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {form.approvedAnimalName
+                            ? `Aprobado para: ${form.approvedAnimalName}`
+                            : 'Solo aprobado'}{' '}
+                          ·{' '}
+                          {new Date(form.createdAt).toLocaleDateString('es-UY', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {/* Contact Name */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">
