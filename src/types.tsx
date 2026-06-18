@@ -64,6 +64,8 @@ export interface PrivateInfoType {
   address?: string;
   contacts?: ContactType[];
   totalCost?: number;
+  adoptionFormId?: string;
+  adoptionFormName?: string;
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
@@ -294,6 +296,9 @@ export interface GoogleFormEntry {
   rawData?: Record<string, string>;
   evaluation: GoogleFormEvaluation | null;
   status?: GoogleFormStatus;
+  // Approved animal reference (does NOT auto-execute adoption)
+  approvedAnimalId?: string;
+  approvedAnimalName?: string;
 }
 
 /**

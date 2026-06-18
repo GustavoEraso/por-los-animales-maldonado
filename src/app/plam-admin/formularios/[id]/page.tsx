@@ -6,11 +6,12 @@ import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { ArrowLeftIcon } from '@/components/Icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchActiveAnimals } from '../actions';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
-import type { GoogleFormEntry, GoogleFormStatus } from '@/types';
+import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
 import FormChat from './FormChat';
 import { logger } from '@/lib/logger';
 
@@ -129,6 +130,11 @@ export default function FormularioDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [form, setForm] = useState<GoogleFormEntry | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+  const [showApprovalOptions, setShowApprovalOptions] = useState(false);
+  const [showAnimalPicker, setShowAnimalPicker] = useState(false);
+  const [animals, setAnimals] = useState<Animal[]>([]);
+  const [animalsLoading, setAnimalsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -150,13 +156,38 @@ export default function FormularioDetailPage() {
     fetchForm();
   }, [id]);
 
-  const handleStatusChange = async (newStatus: GoogleFormStatus) => {
+  const handleStatusChange = async (
+    newStatus: GoogleFormStatus,
+    approvedAnimal?: { id: string; name: string }
+  ) => {
     if (!form || !currentUser) return;
 
     const previous = resolvedStatus(form);
-    if (previous === newStatus) return;
+    if (previous === newStatus && !approvedAnimal && !form.approvedAnimalId) return;
 
     setUpdatingStatus(true);
+
+    const updateData: Partial<GoogleFormEntry> = { status: newStatus };
+    const changesAfter: Record<string, unknown> = { status: newStatus };
+
+    if (newStatus === 'approved') {
+      if (approvedAnimal) {
+        updateData.approvedAnimalId = approvedAnimal.id;
+        updateData.approvedAnimalName = approvedAnimal.name;
+        changesAfter.approvedAnimalId = approvedAnimal.id;
+        changesAfter.approvedAnimalName = approvedAnimal.name;
+      } else {
+        updateData.approvedAnimalId = '';
+        updateData.approvedAnimalName = '';
+        changesAfter.approvedAnimalId = '';
+        changesAfter.approvedAnimalName = '';
+      }
+    } else {
+      updateData.approvedAnimalId = '';
+      updateData.approvedAnimalName = '';
+      changesAfter.approvedAnimalId = '';
+      changesAfter.approvedAnimalName = '';
+    }
 
     const promise = (async () => {
       await createAuditLog({
@@ -167,18 +198,18 @@ export default function FormularioDetailPage() {
         modifiedBy: currentUser.id,
         modifiedByName: currentUser.name,
         changes: {
-          before: { status: previous },
-          after: { status: newStatus },
+          before: { status: previous, approvedAnimalId: form.approvedAnimalId, approvedAnimalName: form.approvedAnimalName },
+          after: changesAfter,
         },
       });
 
       await postFirestoreData<Partial<GoogleFormEntry>>({
-        data: { status: newStatus },
+        data: updateData,
         currentCollection: 'googleForms',
         id: form.id,
       });
 
-      setForm({ ...form, status: newStatus });
+      setForm({ ...form, ...updateData });
     })();
 
     await handlePromiseToast(promise, {
@@ -190,6 +221,50 @@ export default function FormularioDetailPage() {
     });
 
     setUpdatingStatus(false);
+  };
+
+  // Animal fetching for approval picker
+  useEffect(() => {
+    if (!showAnimalPicker) return;
+    const fetchAnimals = async () => {
+      setAnimalsLoading(true);
+      try {
+        const data = await fetchActiveAnimals();
+        setAnimals(data.sort((a, b) => a.name.localeCompare(b.name)));
+      } catch (error) {
+        logger({ level: 'error', code: 'FETCH_ANIMALS_ERROR', message: `Error fetching animals: ${error instanceof Error ? error.message : String(error)}`, data: error });
+      } finally {
+        setAnimalsLoading(false);
+      }
+    };
+    fetchAnimals();
+  }, [showAnimalPicker]);
+
+  const filteredAnimals = animals.filter((a) =>
+    a.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleApprovedClick = () => {
+    setShowApprovalOptions(true);
+    setShowAnimalPicker(false);
+    setSearchTerm('');
+  };
+
+  const handleSoloApproved = () => {
+    setShowApprovalOptions(false);
+    setShowAnimalPicker(false);
+    handleStatusChange('approved');
+  };
+
+  const handleApprovedForAnimal = (animal: Animal) => {
+    setShowApprovalOptions(false);
+    setShowAnimalPicker(false);
+    setSearchTerm('');
+    handleStatusChange('approved', { id: animal.id, name: animal.name });
+  };
+
+  const handleRemoveAnimal = () => {
+    handleStatusChange('approved');
   };
 
   // ---------------------------------------------------------------------------
@@ -356,24 +431,148 @@ export default function FormularioDetailPage() {
         )}
 
         {/* Status selector */}
-        <div className="border border-gray-200 shadow rounded-xl p-4 bg-gray-50  flex flex-col gap-3">
+        <div className="border border-gray-200 shadow rounded-xl p-4 bg-gray-50 flex flex-col gap-3">
           <p className="text-sm font-semibold text-gray-700">Estado del formulario</p>
           <div className="flex gap-2 flex-wrap">
-            {(Object.keys(STATUS_LABELS) as GoogleFormStatus[]).map((s) => (
-              <button
-                key={s}
-                disabled={updatingStatus}
-                onClick={() => handleStatusChange(s)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                  status === s
-                    ? `${STATUS_COLORS[s]} border-transparent`
-                    : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {STATUS_LABELS[s]}
-              </button>
-            ))}
+            {(Object.keys(STATUS_LABELS) as GoogleFormStatus[]).map((s) => {
+              const isActive = status === s;
+              const isApproved = s === 'approved';
+
+              if (isApproved) {
+                return (
+                  <button
+                    key={s}
+                    disabled={updatingStatus}
+                    onClick={handleApprovedClick}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                      isActive
+                        ? `${STATUS_COLORS[s]} border-transparent`
+                        : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {STATUS_LABELS[s]}
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={s}
+                  disabled={updatingStatus}
+                  onClick={() => {
+                    setShowApprovalOptions(false);
+                    setShowAnimalPicker(false);
+                    handleStatusChange(s);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                    isActive
+                      ? `${STATUS_COLORS[s]} border-transparent`
+                      : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {STATUS_LABELS[s]}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Approval sub-options */}
+          {showApprovalOptions && (
+            <div className="border border-green-200 bg-green-50 rounded-xl p-3 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-green-800">¿Cómo querés aprobarlo?</p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleSoloApproved}
+                  disabled={updatingStatus}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+                >
+                  Solo aprobado
+                </button>
+                <button
+                  onClick={() => setShowAnimalPicker(true)}
+                  disabled={updatingStatus}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+                >
+                  Aprobado para...
+                </button>
+                <button
+                  onClick={() => {
+                    setShowApprovalOptions(false);
+                    setShowAnimalPicker(false);
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Animal picker */}
+          {showAnimalPicker && (
+            <div className="border border-green-200 bg-white rounded-xl p-3 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-gray-700">Seleccionar animal</p>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar animal..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                autoFocus
+              />
+              <div className="max-h-48 overflow-y-auto flex flex-col gap-1">
+                {animalsLoading ? (
+                  <p className="text-xs text-gray-400 text-center py-2">Cargando animales...</p>
+                ) : filteredAnimals.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-2">
+                    {searchTerm ? 'Sin resultados' : 'No hay animales disponibles'}
+                  </p>
+                ) : (
+                  filteredAnimals.map((animal) => (
+                    <button
+                      key={animal.id}
+                      onClick={() => handleApprovedForAnimal(animal)}
+                      disabled={updatingStatus}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                    >
+                      {animal.images?.[0]?.imgUrl ? (
+                        <img
+                          src={animal.images[0].imgUrl}
+                          alt={animal.images[0].imgAlt || animal.name}
+                          className="w-8 h-8 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 shrink-0">
+                          {animal.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{animal.name}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {animal.species} · {animal.size} · {animal.status}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Assigned animal info */}
+          {status === 'approved' && form.approvedAnimalName && !showApprovalOptions && (
+            <div className="flex items-center gap-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <span className="font-medium">✓ Aprobado para:</span>
+              <span className="font-semibold">{form.approvedAnimalName}</span>
+              <button
+                onClick={handleRemoveAnimal}
+                disabled={updatingStatus}
+                className="ml-auto text-xs text-red-600 hover:text-red-800 underline disabled:opacity-50"
+              >
+                Quitar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Raw answers */}
