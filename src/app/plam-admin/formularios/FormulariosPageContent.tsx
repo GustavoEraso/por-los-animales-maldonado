@@ -53,10 +53,18 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
 
 const resolvedStatus = (entry: GoogleFormEntry): GoogleFormStatus => entry.status ?? 'pending';
 
-const sevenDaysAgo = () => {
+const toDateInputValue = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+const defaultDateFrom = (): string => {
   const d = new Date();
   d.setDate(d.getDate() - 7);
-  return d.toISOString();
+  return toDateInputValue(d);
+};
+
+const defaultDateTo = (): string => {
+  return toDateInputValue(new Date());
 };
 
 type FilterTab = GoogleFormStatus | 'all';
@@ -92,6 +100,8 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
   const [refresh, setRefresh] = useState<boolean>(false);
+  const [dateFrom, setDateFrom] = useState(defaultDateFrom());
+  const [dateTo, setDateTo] = useState(defaultDateTo());
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -114,6 +124,10 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
       try {
         const data = await getFirestoreData({
           currentCollection: 'googleForms',
+          filter: [
+            ['createdAt', '>=', `${dateFrom}T00:00:00.000Z`],
+            ['createdAt', '<=', `${dateTo}T23:59:59.999Z`],
+          ],
           orderBy: 'createdAt',
           direction: 'desc',
         });
@@ -132,7 +146,7 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
     };
 
     fetchData();
-  }, [refresh]);
+  }, [dateFrom, dateTo, refresh]);
 
   // Keep selected panel in sync after refresh
   useEffect(() => {
@@ -148,7 +162,7 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
   const totalForms = forms.length;
   const pendingCount = forms.filter((f) => resolvedStatus(f) === 'pending').length;
   const highScoreCount = forms.filter((f) => (f.evaluation?.score ?? 0) > 80).length;
-  const recentCount = forms.filter((f) => f.createdAt >= sevenDaysAgo()).length;
+  const todayCount = forms.filter((f) => f.createdAt.startsWith(dateTo)).length;
 
   // ---------------------------------------------------------------------------
   // Filtered list
@@ -271,9 +285,9 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
             subtitleColor="text-cream-light"
           />
           <MetricCard
-            label="Últimos 7 días"
-            subtitle="Formularios recientes"
-            value={recentCount}
+            label="Hoy"
+            subtitle="Formularios de hoy"
+            value={todayCount}
             bgColor="bg-cream-light"
             textColor="text-green-dark"
             subtitleColor="text-green-dark"
@@ -295,6 +309,37 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
               {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* Date range picker */}
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 font-medium">Desde:</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 font-medium">Hasta:</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setDateFrom(defaultDateFrom());
+              setDateTo(defaultDateTo());
+            }}
+            className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            Últimos 7 días
+          </button>
         </div>
 
         {/* Desktop: split panel */}
