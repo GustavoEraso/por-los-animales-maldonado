@@ -11,7 +11,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
-import FormChat from './FormChat';
+import FormChat from '@/components/FormChat';
 import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
@@ -558,6 +558,9 @@ export default function FormularioDetailContent({ initialAnimals }: FormularioDe
           )}
         </div>
 
+        {/* Internal discussion */}
+        <FormChat formId={form.id} />
+
         {/* Raw answers */}
         <div className="flex flex-col gap-3">
           <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
@@ -587,8 +590,6 @@ export default function FormularioDetailContent({ initialAnimals }: FormularioDe
           )}
         </div>
 
-        {/* Internal discussion */}
-        <FormChat formId={form.id} />
       </div>
     </ProtectedRoute>
   );

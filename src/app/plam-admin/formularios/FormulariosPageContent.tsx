@@ -12,6 +12,7 @@ import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
 import { logger } from '@/lib/logger';
+import FormChat from '@/components/FormChat';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -791,6 +792,9 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: D
           </div>
         )}
       </div>
+
+      {/* Internal discussion */}
+      <FormChat formId={form.id} />
 
       {/* Link to full answers */}
       <Link
