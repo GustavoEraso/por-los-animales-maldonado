@@ -13,6 +13,7 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
 import { logger } from '@/lib/logger';
 import FormChat from '@/components/FormChat';
+import { FIELD_LABELS } from '@/lib/constants/formLabels';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -529,6 +530,11 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: D
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const rawAnswers = form.rawData
+    ? Object.entries(form.rawData).filter(([, v]) => v?.trim())
+    : [];
+  const labelKeys = Object.keys(FIELD_LABELS) as Array<keyof GoogleFormEntry>;
+
   const handleApprovedClick = () => {
     setShowApprovalOptions(true);
     setShowAnimalPicker(false);
@@ -796,13 +802,34 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: D
       {/* Internal discussion */}
       <FormChat formId={form.id} />
 
-      {/* Link to full answers */}
-      <Link
-        href={`/plam-admin/formularios/${form.id}`}
-        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-forest text-white text-sm font-medium hover:bg-green-dark transition-colors self-start"
-      >
-        Ver respuestas completas
-      </Link>
+      {/* Raw answers */}
+      <div className="flex flex-col gap-3">
+        <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
+        {rawAnswers.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {labelKeys.map((key) => {
+              if (typeof form[key] !== 'string') return null;
+
+              const value = form[key];
+              return (
+                <div
+                  key={key}
+                  className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow"
+                >
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    {FIELD_LABELS[key] ?? key}
+                  </p>
+                  <p className="text-sm text-gray-800 leading-relaxed">
+                    {(value as string).trim() || 'Sin respuesta'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
