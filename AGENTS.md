@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions
+# AGENTS - AI Instructions
 
 ## Language Preferences
 
