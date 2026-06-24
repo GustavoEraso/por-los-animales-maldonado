@@ -2,16 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap/dist/gsap';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
-import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
+import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
 import { logger } from '@/lib/logger';
+import FormChat from '@/components/FormChat';
+import { FIELD_LABELS } from '@/lib/constants/formLabels';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -53,13 +57,28 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
 
 const resolvedStatus = (entry: GoogleFormEntry): GoogleFormStatus => entry.status ?? 'pending';
 
-const sevenDaysAgo = () => {
+const toDateInputValue = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+const defaultDateFrom = (): string => {
   const d = new Date();
   d.setDate(d.getDate() - 7);
-  return d.toISOString();
+  return toDateInputValue(d);
+};
+
+const defaultDateTo = (): string => {
+  return toDateInputValue(new Date());
 };
 
 type FilterTab = GoogleFormStatus | 'all';
+
+interface UnreadChatItem {
+  formId: string;
+  formName: string;
+  commentCount: number;
+  lastCommentAt: string;
+}
 
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -75,16 +94,20 @@ const FILTER_TABS: { value: FilterTab; label: string }[] = [
 
 interface FormulariosPageContentProps {
   initialAnimals: Animal[];
+  initialUsers: UserType[];
 }
 
 /**
  * CRM page for visualizing and managing adoption form submissions.
  * Desktop: split panel list + detail. Mobile: card grid navigating to /[id].
  */
-export default function FormulariosPageContent({ initialAnimals }: FormulariosPageContentProps) {
+export default function FormulariosPageContent({ initialAnimals, initialUsers }: FormulariosPageContentProps) {
   const { currentUser } = useAuth();
 
+  const userIds = initialUsers.map((u) => u.id);
+
   const cardsRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [forms, setForms] = useState<GoogleFormEntry[]>([]);
@@ -92,6 +115,9 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
   const [refresh, setRefresh] = useState<boolean>(false);
+  const [dateFrom, setDateFrom] = useState(defaultDateFrom());
+  const [dateTo, setDateTo] = useState(defaultDateTo());
+  const [unreadChats, setUnreadChats] = useState<UnreadChatItem[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -114,12 +140,21 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
       try {
         const data = await getFirestoreData({
           currentCollection: 'googleForms',
+          filter: [
+            ['createdAt', '>=', `${dateFrom}T00:00:00.000Z`],
+            ['createdAt', '<=', `${dateTo}T23:59:59.999Z`],
+          ],
           orderBy: 'createdAt',
           direction: 'desc',
         });
         setForms(data as GoogleFormEntry[]);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FORMS_ERROR',
+          message: 'Error fetching forms:',
+          data: error,
+        });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;
@@ -132,7 +167,7 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
     };
 
     fetchData();
-  }, [refresh]);
+  }, [dateFrom, dateTo, refresh]);
 
   // Keep selected panel in sync after refresh
   useEffect(() => {
@@ -142,13 +177,50 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
     }
   }, [forms, selected]);
 
+  // Real-time unread chat badge (independent of date filter)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'googleFormComments'),
+      where('unreadBy', 'array-contains', currentUser.id)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items: UnreadChatItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        items.push({
+          formId: docSnap.id,
+          formName: data.formName ?? 'Sin nombre',
+          commentCount: data.commentCount ?? 0,
+          lastCommentAt: data.lastCommentAt ?? '',
+        });
+      });
+      setUnreadChats(items);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Panel entrance animation
+  useEffect(() => {
+    if (unreadChats.length > 0 && panelRef.current) {
+      gsap.fromTo(
+        panelRef.current,
+        { opacity: 0, y: -8 },
+        { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
+      );
+    }
+  }, [unreadChats.length]);
+
   // ---------------------------------------------------------------------------
   // Metrics
   // ---------------------------------------------------------------------------
   const totalForms = forms.length;
   const pendingCount = forms.filter((f) => resolvedStatus(f) === 'pending').length;
   const highScoreCount = forms.filter((f) => (f.evaluation?.score ?? 0) > 80).length;
-  const recentCount = forms.filter((f) => f.createdAt >= sevenDaysAgo()).length;
+  const todayCount = forms.filter((f) => f.createdAt.startsWith(dateTo)).length;
 
   // ---------------------------------------------------------------------------
   // Filtered list
@@ -201,7 +273,11 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
         modifiedBy: currentUser.id,
         modifiedByName: currentUser.name,
         changes: {
-          before: { status: previous, approvedAnimalId: selected.approvedAnimalId, approvedAnimalName: selected.approvedAnimalName },
+          before: {
+            status: previous,
+            approvedAnimalId: selected.approvedAnimalId,
+            approvedAnimalName: selected.approvedAnimalName,
+          },
           after: changesAfter,
         },
       });
@@ -244,6 +320,32 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
         {/* Header */}
         <h1 className="text-2xl font-bold text-green-dark">Formularios de adopción</h1>
 
+        {/* Unread messages panel */}
+        {unreadChats.length > 0 && (
+          <div ref={panelRef} className="border border-green-300 bg-green-50 rounded-xl p-4 flex flex-col gap-2">
+            <p className="text-sm font-semibold text-green-900">
+              Mensajes sin leer ({unreadChats.length})
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {unreadChats.map((chat) => (
+                <Link
+                  key={chat.formId}
+                  href={`/plam-admin/formularios/${chat.formId}`}
+                  className="flex items-center gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-green-200 hover:border-green-400 transition-colors"
+                >
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 shrink-0 animate-pulse" />
+                  <span className="font-medium text-gray-900 truncate">
+                    {chat.formName}
+                  </span>
+                  <span className="text-xs text-gray-400 shrink-0">
+                    {chat.commentCount} mensaje{chat.commentCount !== 1 ? 's' : ''}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Metrics */}
         <div ref={cardsRef} className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard
@@ -271,9 +373,9 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
             subtitleColor="text-cream-light"
           />
           <MetricCard
-            label="Últimos 7 días"
-            subtitle="Formularios recientes"
-            value={recentCount}
+            label="Hoy"
+            subtitle="Formularios de hoy"
+            value={todayCount}
             bgColor="bg-cream-light"
             textColor="text-green-dark"
             subtitleColor="text-green-dark"
@@ -297,6 +399,37 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
           ))}
         </div>
 
+        {/* Date range picker */}
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 font-medium">Desde:</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 font-medium">Hasta:</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setDateFrom(defaultDateFrom());
+              setDateTo(defaultDateTo());
+            }}
+            className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            Últimos 7 días
+          </button>
+        </div>
+
         {/* Desktop: split panel */}
         <div className="hidden md:grid md:grid-cols-[280px_1fr] gap-4 flex-1">
           {/* List column */}
@@ -313,7 +446,10 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
                 return (
                   <button
                     key={form.id}
-                    onClick={() => setSelected(form)}
+                    onClick={() => {
+                      setSelected(form);
+                      setUnreadChats((prev) => prev.filter(c => c.formId !== form.id));
+                    }}
                     className={`w-full text-left px-3 py-3 transition-colors ${
                       isActive
                         ? 'bg-amber-sunset/20 border-l-4 border-green-forest'
@@ -323,6 +459,12 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
                     <p className="font-medium text-gray-900 truncate text-sm">
                       {form.fullName ?? '—'}
                     </p>
+                    {unreadChats.some(c => c.formId === form.id) && (
+                      <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium mt-0.5">
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Mensajes sin leer
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 truncate">{form.selectedPet ?? '—'}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(form.createdAt).toLocaleDateString('es-UY', {
@@ -368,6 +510,7 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
                 onStatusChange={handleStatusChange}
                 updatingStatus={updatingStatus}
                 initialAnimals={initialAnimals}
+                userIds={userIds}
               />
             )}
           </div>
@@ -391,6 +534,12 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
                 <p className="font-semibold text-gray-900 text-sm leading-tight truncate">
                   {form.fullName ?? '—'}
                 </p>
+                {unreadChats.some(c => c.formId === form.id) && (
+                  <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium">
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    Mensajes sin leer
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 truncate">{form.selectedPet ?? '—'}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {new Date(form.createdAt).toLocaleDateString('es-UY', {
@@ -400,9 +549,7 @@ export default function FormulariosPageContent({ initialAnimals }: FormulariosPa
                   })}
                 </p>
                 {status === 'approved' && form.approvedAnimalName && (
-                  <p className="text-xs text-green-700 truncate">
-                    ✓ {form.approvedAnimalName}
-                  </p>
+                  <p className="text-xs text-green-700 truncate">✓ {form.approvedAnimalName}</p>
                 )}
                 {score !== undefined && (
                   <span
@@ -461,16 +608,20 @@ function MetricCard({
 
 interface DetailPanelProps {
   form: GoogleFormEntry;
-  onStatusChange: (status: GoogleFormStatus, approvedAnimal?: { id: string; name: string }) => Promise<void>;
+  onStatusChange: (
+    status: GoogleFormStatus,
+    approvedAnimal?: { id: string; name: string }
+  ) => Promise<void>;
   updatingStatus: boolean;
   initialAnimals: Animal[];
+  userIds: string[];
 }
 
 /**
  * Detail panel shown on the right side of the desktop CRM split view.
  * Displays AI evaluation summary and status controls.
  */
-function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: DetailPanelProps) {
+function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals, userIds }: DetailPanelProps) {
   const evaluation = form.evaluation;
   const status = resolvedStatus(form);
 
@@ -482,6 +633,9 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: D
   const filteredAnimals = animals.filter((a) =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const rawAnswers = form.rawData ? Object.entries(form.rawData).filter(([, v]) => v?.trim()) : [];
+  const labelKeys = Object.keys(FIELD_LABELS) as Array<keyof GoogleFormEntry>;
 
   const handleApprovedClick = () => {
     setShowApprovalOptions(true);
@@ -747,13 +901,34 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals }: D
         )}
       </div>
 
-      {/* Link to full answers */}
-      <Link
-        href={`/plam-admin/formularios/${form.id}`}
-        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-forest text-white text-sm font-medium hover:bg-green-dark transition-colors self-start"
-      >
-        Ver respuestas completas
-      </Link>
+      {/* Internal discussion */}
+      <FormChat formId={form.id} userIds={userIds} formName={form.fullName} />
+
+      {/* Raw answers */}
+      <div className="flex flex-col gap-3">
+        <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
+        {rawAnswers.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {labelKeys.map((key) => {
+              if (typeof form[key] !== 'string') return null;
+
+              const value = form[key];
+              return (
+                <div key={key} className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    {FIELD_LABELS[key] ?? key}
+                  </p>
+                  <p className="text-sm text-gray-800 leading-relaxed">
+                    {(value as string).trim() || 'Sin respuesta'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

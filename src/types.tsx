@@ -302,16 +302,14 @@ export interface GoogleFormEntry {
 }
 
 /**
- * A single comment in the adoption form internal discussion thread.
- * Visible only to rescatistas, admins, and superadmins.
+ * A chat message stored inside a googleFormComments/{formId} document.
  */
-export interface FormComment {
-  id: string;
-  formId: string;
-  text: string;
+export interface ChatMessage {
   authorId: string;
   authorName: string;
+  text: string;
   createdAt: string;
+  formId: string;
 }
 
 export interface BannerType {

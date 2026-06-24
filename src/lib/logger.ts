@@ -27,6 +27,15 @@ function sanitize(data: unknown): unknown {
   if (data instanceof Error) {
     return { name: data.name, message: data.message, stack: data.stack };
   }
+  if (data !== null && typeof data === 'object' && 'code' in data && 'message' in data) {
+    const err = data as Record<string, unknown>;
+    return {
+      name: err.name,
+      code: err.code,
+      message: err.message,
+      stack: err.stack,
+    };
+  }
   return data;
 }
 
