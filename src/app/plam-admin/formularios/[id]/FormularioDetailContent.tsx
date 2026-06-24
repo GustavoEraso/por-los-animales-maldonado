@@ -10,7 +10,7 @@ import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
-import type { Animal, GoogleFormEntry, GoogleFormStatus } from '@/types';
+import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
 import { FIELD_LABELS } from '@/lib/constants/formLabels';
 import FormChat from '@/components/FormChat';
 import { logger } from '@/lib/logger';
@@ -59,6 +59,7 @@ const resolvedStatus = (entry: GoogleFormEntry): GoogleFormStatus => entry.statu
 
 interface FormularioDetailContentProps {
   initialAnimals: Animal[];
+  initialUsers: UserType[];
 }
 
 /**
@@ -68,10 +69,12 @@ interface FormularioDetailContentProps {
  * @example
  * // Accessed via /plam-admin/formularios/[id]
  */
-export default function FormularioDetailContent({ initialAnimals }: FormularioDetailContentProps) {
+export default function FormularioDetailContent({ initialAnimals, initialUsers }: FormularioDetailContentProps) {
   const params = useParams();
   const router = useRouter();
   const { currentUser } = useAuth();
+
+  const userIds = initialUsers.map((u) => u.id);
 
   const id = typeof params.id === 'string' ? params.id : '';
 
@@ -504,7 +507,7 @@ export default function FormularioDetailContent({ initialAnimals }: FormularioDe
         </div>
 
         {/* Internal discussion */}
-        <FormChat formId={form.id} />
+        <FormChat formId={form.id} userIds={userIds} formName={form.fullName} />
 
         {/* Raw answers */}
         <div className="flex flex-col gap-3">

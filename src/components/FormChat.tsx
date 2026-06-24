@@ -2,21 +2,29 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  collection,
+  doc,
+  setDoc,
+  updateDoc,
   onSnapshot,
-  addDoc,
-  query,
-  orderBy,
+  increment,
+  arrayUnion,
+  arrayRemove,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { FormComment } from '@/types';
+import type { ChatMessage } from '@/types';
 import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const METADATA_KEYS = new Set(['commentCount', 'lastCommentAt', 'unreadBy', 'formName']);
+
+function generateMessageId(): string {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
 
 function formatTime(iso: string): string {
   const date = new Date(iso);
@@ -41,10 +49,10 @@ function formatDateHeader(iso: string): string {
 }
 
 /**
- * Groups a sorted array of FormComments by calendar day for date separator rendering.
+ * Groups a sorted array of ChatMessages by calendar day for date separator rendering.
  */
-function groupByDay(comments: FormComment[]): { date: string; items: FormComment[] }[] {
-  const groups: { date: string; items: FormComment[] }[] = [];
+function groupByDay(comments: ChatMessage[]): { date: string; items: ChatMessage[] }[] {
+  const groups: { date: string; items: ChatMessage[] }[] = [];
 
   for (const comment of comments) {
     const dayKey = comment.createdAt.slice(0, 10); // YYYY-MM-DD
@@ -65,42 +73,55 @@ function groupByDay(comments: FormComment[]): { date: string; items: FormComment
 
 interface FormChatProps {
   formId: string;
+  userIds?: string[];
+  formName?: string;
 }
 
 /**
  * Real-time WhatsApp-style discussion thread for an adoption form.
  * Accessible only to rescatistas, admins, and superadmins.
- * Uses Firestore `onSnapshot` for live updates.
+ * Stores all comments in a single Firestore document googleFormComments/{formId}.
+ * Uses Firestore `onSnapshot` on a single doc for live updates.
  *
  * @example
  * <FormChat formId={form.id} />
  */
-export default function FormChat({ formId }: FormChatProps) {
+export default function FormChat({ formId, userIds, formName }: FormChatProps) {
   const { currentUser } = useAuth();
-  const [comments, setComments] = useState<FormComment[]>([]);
+  const [comments, setComments] = useState<ChatMessage[]>([]);
   const [text, setText] = useState<string>('');
   const [sending, setSending] = useState<boolean>(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const markedAsReadRef = useRef(false);
 
   // ---------------------------------------------------------------------------
-  // Real-time subscription
+  // Real-time subscription (single document)
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const q = query(collection(db, 'googleFormComments'), orderBy('createdAt', 'asc'));
-
     const unsubscribe: Unsubscribe = onSnapshot(
-      q,
+      doc(db, 'googleFormComments', formId),
       (snapshot) => {
-        const all = snapshot.docs.map((doc) => ({
-          ...(doc.data() as Omit<FormComment, 'id'>),
-          id: doc.id,
-        })) as FormComment[];
+        if (!snapshot.exists()) {
+          setComments([]);
+          return;
+        }
 
-        setComments(all.filter((c) => c.formId === formId));
+        const data = snapshot.data();
+        const messages = Object.entries(data)
+          .filter(([key]) => !METADATA_KEYS.has(key))
+          .map(([, value]) => value as ChatMessage)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+        setComments(messages);
       },
       (error) => {
-        logger({ level: 'error', code: 'FORM_CHAT_SUBSCRIPTION_ERROR', message: 'FormChat subscription error:', data: error });
+        logger({
+          level: 'error',
+          code: 'FORM_CHAT_SUBSCRIPTION_ERROR',
+          message: 'FormChat subscription error:',
+          data: error,
+        });
       }
     );
 
@@ -115,6 +136,18 @@ export default function FormChat({ formId }: FormChatProps) {
     }
   }, [comments]);
 
+  // Mark chat as read for current user when viewing (once per mount)
+  useEffect(() => {
+    if (comments.length > 0 && currentUser && !markedAsReadRef.current) {
+      markedAsReadRef.current = true;
+      setDoc(doc(db, 'googleFormComments', formId), {
+        unreadBy: arrayRemove(currentUser.id),
+      }, { merge: true }).catch(() => {
+        // Silently ignore — non-critical
+      });
+    }
+  }, [comments.length, formId, currentUser]);
+
   // ---------------------------------------------------------------------------
   // Send
   // ---------------------------------------------------------------------------
@@ -125,7 +158,8 @@ export default function FormChat({ formId }: FormChatProps) {
     setSending(true);
 
     try {
-      const comment: Omit<FormComment, 'id'> = {
+      const messageId = generateMessageId();
+      const message: ChatMessage = {
         formId,
         text: trimmed,
         authorId: currentUser.id,
@@ -133,14 +167,38 @@ export default function FormChat({ formId }: FormChatProps) {
         createdAt: new Date().toISOString(),
       };
 
-      await addDoc(collection(db, 'googleFormComments'), comment);
+      const allIds = userIds ?? [];
+
+      const data: Record<string, unknown> = {
+        commentCount: increment(1),
+        lastCommentAt: message.createdAt,
+        unreadBy: arrayUnion(...allIds),
+        [messageId]: message,
+      };
+
+      if (formName) {
+        data.formName = formName;
+      }
+
+      const docRef = doc(db, 'googleFormComments', formId);
+      await setDoc(docRef, data, { merge: true });
+
+      // Remove sender from unreadBy (fire-and-forget)
+      updateDoc(docRef, {
+        unreadBy: arrayRemove(currentUser.id),
+      }).catch(() => {});
+
       setText('');
-      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     } catch (error) {
-      logger({ level: 'error', code: 'SEND_COMMENT_ERROR', message: 'Error sending comment:', data: error });
+      logger({
+        level: 'error',
+        code: 'SEND_COMMENT_ERROR',
+        message: 'Error sending comment:',
+        data: error,
+      });
     } finally {
       setSending(false);
     }
@@ -155,7 +213,6 @@ export default function FormChat({ formId }: FormChatProps) {
 
   const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
-    // Auto-grow
     e.target.style.height = 'auto';
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
@@ -205,7 +262,7 @@ export default function FormChat({ formId }: FormChatProps) {
 
               return (
                 <div
-                  key={comment.id}
+                  key={comment.createdAt + comment.authorId}
                   className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-0.5`}
                 >
                   <div
