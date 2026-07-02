@@ -49,6 +49,16 @@ export const INITIAL_PRIVATE_INFO: PrivateInfoType = {
   name: '',
   contactName: '',
   contacts: [],
+  // ─── Seguimiento sentinel fields ───
+  species: 'perro',
+  mainImageUrl: '',
+  isSterilized: 'no',
+  isAdopted: false,
+  followUpStatus: 'active',
+  adoptionDate: 0,
+  lastFollowUpDate: 0,
+  lastFollowUpNote: '',
+  sterilizationDate: 0,
 };
 
 /** Initial state for the first transaction */

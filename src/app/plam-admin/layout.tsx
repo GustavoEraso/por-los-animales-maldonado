@@ -15,6 +15,7 @@ import {
   UserIcon,
   WhatsAppIcon,
   RefreshIcon,
+  FollowUpIcon,
 } from '@/components/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
@@ -81,6 +82,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       <span className="hidden md:block">Animales</span>
                       <PetsIcon size={32} className="w-8 h-8 mb-2" title="Animales" />
+                    </Link>
+                  </li>
+                </RoleGuard>
+
+                <RoleGuard requiredRole="rescatista">
+                  <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                    <Link
+                      className="flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      href={'/plam-admin/seguimientos'}
+                    >
+                      <span className="hidden md:block">Seguimientos</span>
+                      <FollowUpIcon size={32} className="w-8 h-8 mb-2" title="Seguimientos" />
                     </Link>
                   </li>
                 </RoleGuard>

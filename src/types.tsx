@@ -1,3 +1,5 @@
+import type { Dispatch, SetStateAction } from 'react';
+
 export interface Img {
   imgId: string;
   imgUrl: string;
@@ -66,6 +68,28 @@ export interface PrivateInfoType {
   totalCost?: number;
   adoptionFormId?: string;
   adoptionFormName?: string;
+  /** Timestamp for the next scheduled follow-up. Used by the seguimiento dashboard to highlight pending cases. */
+  nextFollowUpDate?: number;
+
+  // ─── Seguimiento denormalized fields (sentinel-based, never undefined) ───
+  /** Duplicated from Animal.species. Sentinel: 'perro'. */
+  species?: 'perro' | 'gato' | 'otros';
+  /** Duplicated from Animal.images[0].imgUrl. Sentinel: ''. */
+  mainImageUrl?: string;
+  /** Duplicated from Animal.isSterilized. Sentinel: 'no'. */
+  isSterilized?: YesNoUnknown;
+  /** Whether this animal is currently adopted. Sentinel: false. */
+  isAdopted?: boolean;
+  /** Follow-up tracking status. Sentinel: 'active'. */
+  followUpStatus?: 'active' | 'closed';
+  /** Timestamp of the adoption event. Sentinel: 0. */
+  adoptionDate?: number;
+  /** Timestamp of the last follow-up event. Sentinel: 0. */
+  lastFollowUpDate?: number;
+  /** Note from the last follow-up event. Sentinel: ''. */
+  lastFollowUpNote?: string;
+  /** Timestamp of the sterilization event. Sentinel: 0. */
+  sterilizationDate?: number;
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
@@ -351,3 +375,36 @@ export interface CarouselType {
  * e.g. { main: ['id1', 'id2'], adoptions: ['id3'] }
  */
 export type CarouselsConfigType = Record<string, string[]>;
+
+// ---------------------------------------------------------------------------
+// Event modal types (used by EventModal component)
+// ---------------------------------------------------------------------------
+
+/** Event types available for registration */
+export type EventType =
+  | 'medical'
+  | 'vaccination'
+  | 'sterilization'
+  | 'emergency'
+  | 'supply'
+  | 'followup'
+  | 'deceased'
+  | 'other';
+
+/** Form data for event registration modal */
+export interface EventFormData {
+  eventType: EventType;
+  note: string;
+  cost: string;
+  vaccineName?: string;
+  vaccineDate?: string;
+}
+
+/** Shared props for action modals that modify animal/private info */
+export interface AnimalActionModalProps {
+  animal: Animal;
+  privateInfo: PrivateInfoType;
+  setAnimal: Dispatch<SetStateAction<Animal | null>>;
+  setPrivateInfo: Dispatch<SetStateAction<PrivateInfoType | null>>;
+  setAllAnimalTransactions: Dispatch<SetStateAction<AnimalTransactionType[]>>;
+}

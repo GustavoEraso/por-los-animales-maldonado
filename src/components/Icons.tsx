@@ -385,7 +385,31 @@ function SponsorIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
 function RefreshIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
   return (
     <SvgBase {...props} size={size} title={title}>
-      <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 178t-196 72Z" />
+      <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z" />
+    </SvgBase>
+  );
+}
+
+function FollowUpIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v200h-80v-40H200v400h280v80H200Zm0-560h560v-80H200v80Zm0 0v-80 80Zm520 540L600-220l56-56 64 64 144-144 56 56-200 200Z" />
+    </SvgBase>
+  );
+}
+
+function LockClosedIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps): React.ReactElement {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z" />
+    </SvgBase>
+  );
+}
+
+function LockOpenIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps): React.ReactElement {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M240-640h360v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85h-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640Zm0 480h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280Z" />
     </SvgBase>
   );
 }
@@ -456,4 +480,7 @@ export {
   SwapIcon,
   ShareIcon,
   RefreshIcon,
+  FollowUpIcon,
+  LockClosedIcon,
+  LockOpenIcon,
 };

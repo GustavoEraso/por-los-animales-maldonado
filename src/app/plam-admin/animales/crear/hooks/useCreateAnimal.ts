@@ -360,6 +360,10 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       ...privateInfo,
       id: id,
       name: animal.name,
+      // ─── Seguimiento denormalized fields ───
+      species: animal.species,
+      mainImageUrl: images[0]?.imgUrl ?? '',
+      isSterilized: animal.isSterilized,
     };
 
     const newTransaction: AnimalTransactionType = {
@@ -556,6 +560,10 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
         ...privateInfo,
         id,
         name: member.name,
+        // ─── Seguimiento denormalized fields ───
+        species: animal.species,
+        mainImageUrl: member.images[0]?.imgUrl ?? '',
+        isSterilized: animal.isSterilized,
       };
 
       const newTransaction: AnimalTransactionType = {

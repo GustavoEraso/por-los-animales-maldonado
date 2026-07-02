@@ -15,7 +15,7 @@ interface UploadImagesProps {
   /** Maximum number of files that can be uploaded (default: 5) */
   maxFiles?: number;
   /** Current folder in Cloudinary to upload images to */
-  currentFolder?: 'animals' | 'banners' | 'others' | 'sponsor';
+  currentFolder?: 'animals' | 'banners' | 'others' | 'sponsor' | 'follow_up';
 }
 
 /**
@@ -97,6 +97,7 @@ export default function UploadImages({
     banners: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_BANNERS || '',
     others: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_OTHERS || '',
     sponsor: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_SPONSOR || '',
+    follow_up: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_FOLLOW_UP || '',
   };
 
   const uploadPreset = presetMap[currentFolder] || presetMap['others'];

@@ -68,6 +68,22 @@ export default function EditAnimalForm() {
   const params = useParams();
   const currentId = params.id as string;
 
+  /** Applies sentinel defaults for seguimiento denormalized fields
+   *  to avoid false-positive change detections against older Firestore docs. */
+  function normalizePrivateInfoDefaults(pi: PrivateInfoType): PrivateInfoType {
+    return {
+      ...pi,
+      species: pi.species ?? 'perro',
+      mainImageUrl: pi.mainImageUrl ?? '',
+      isSterilized: pi.isSterilized ?? 'no',
+      followUpStatus: pi.followUpStatus ?? 'active',
+      adoptionDate: pi.adoptionDate ?? 0,
+      lastFollowUpDate: pi.lastFollowUpDate ?? 0,
+      lastFollowUpNote: pi.lastFollowUpNote ?? '',
+      sterilizationDate: pi.sterilizationDate ?? 0,
+    };
+  }
+
   const [isLoading, setIsLoading] = useState(true);
   const MIN_LOADING_TIME = 600;
 
@@ -136,10 +152,10 @@ export default function EditAnimalForm() {
         const currentTransactionInfo = sortedTransactions[0];
 
         setOldAnimal(structuredClone(fetchedAnimal));
-        setOldPrivateInfo(structuredClone(fetchedPrivateInfo));
+        setOldPrivateInfo(normalizePrivateInfoDefaults(structuredClone(fetchedPrivateInfo)));
 
         setAnimal(fetchedAnimal);
-        setPrivateInfo(fetchedPrivateInfo);
+        setPrivateInfo(normalizePrivateInfoDefaults(fetchedPrivateInfo));
         setTransactionInfo(currentTransactionInfo);
 
         setImages(fetchedAnimal.images || []);
@@ -173,6 +189,16 @@ export default function EditAnimalForm() {
       compatibility: compatibility,
     }));
   }, [compatibility]);
+
+  // Sync denormalized seguimiento fields from animal state to privateInfo
+  useEffect(() => {
+    setPrivateInfo((prev) => ({
+      ...prev,
+      species: animal.species,
+      mainImageUrl: images[0]?.imgUrl ?? prev.mainImageUrl ?? '',
+      isSterilized: animal.isSterilized ?? 'no',
+    }));
+  }, [animal.species, animal.isSterilized, images]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
