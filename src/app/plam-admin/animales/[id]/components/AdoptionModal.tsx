@@ -115,6 +115,7 @@ export default function AdoptionModal({
     setAdoptionModalOpen(false);
 
     const notePrefix = '[Nota de adopción] - ';
+    const now = createTimestamp();
 
     const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
@@ -127,6 +128,16 @@ export default function AdoptionModal({
             adoptionFormName: adoptionData.selectedFormName,
           }
         : {}),
+      // ─── Seguimiento denormalized fields ───
+      species: animal.species,
+      mainImageUrl: animal.images?.[0]?.imgUrl ?? '',
+      isSterilized: animal.isSterilized,
+      isAdopted: true,
+      followUpStatus: 'active',
+      adoptionDate: now,
+      lastFollowUpDate: 0,
+      lastFollowUpNote: '',
+      sterilizationDate: 0,
     };
 
     const updatedAnimal = {
@@ -135,8 +146,6 @@ export default function AdoptionModal({
       isAvailable: false,
       isVisible: false,
     };
-
-    const now = createTimestamp();
 
     const newTransactionData: AnimalTransactionType & {
       adoptionFormId?: string;

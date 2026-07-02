@@ -116,6 +116,7 @@ export default function ReturnModal({
     const newStatus = adoptionData.newStatus || 'transitorio';
     const isGoingToNewAdopter = newStatus === 'adoptado';
     const notePrefix = isGoingToNewAdopter ? '[Nota de re-adopción] - ' : '[Nota de retorno] - ';
+    const now = createTimestamp();
 
     const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
@@ -128,6 +129,27 @@ export default function ReturnModal({
             adoptionFormName: adoptionData.selectedFormName,
           }
         : { adoptionFormId: '' as const, adoptionFormName: '' as const }),
+      // ─── Seguimiento denormalized fields ───
+      species: animal.species,
+      mainImageUrl: animal.images?.[0]?.imgUrl ?? '',
+      isSterilized: animal.isSterilized,
+      ...(isGoingToNewAdopter
+        ? {
+            isAdopted: true,
+            adoptionDate: now,
+            lastFollowUpDate: 0,
+            lastFollowUpNote: '',
+            sterilizationDate: 0,
+          }
+        : {
+            isAdopted: false,
+            followUpStatus: 'active',
+            adoptionDate: 0,
+            nextFollowUpDate: 0,
+            lastFollowUpDate: 0,
+            lastFollowUpNote: '',
+            sterilizationDate: 0,
+          }),
     };
 
     const updatedAnimal = {
@@ -136,8 +158,6 @@ export default function ReturnModal({
       isAvailable: !isGoingToNewAdopter,
       isVisible: !isGoingToNewAdopter,
     };
-
-    const now = createTimestamp();
 
     const newTransactionData: AnimalTransactionType & {
       adoptionFormId?: string;

@@ -21,7 +21,7 @@ import { logger } from '@/lib/logger';
 import { useAnimalDetail } from './hooks/useAnimalDetail';
 import AnimalInfoSection from './components/AnimalInfoSection';
 import AnimalPrivateInfoSection from './components/AnimalPrivateInfoSection';
-import EventModal from './components/EventModal';
+import EventModal from '@/components/EventModal';
 import TransitChangeModal from './components/TransitChangeModal';
 import AdoptionModal from './components/AdoptionModal';
 import ReturnModal from './components/ReturnModal';
