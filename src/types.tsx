@@ -82,6 +82,10 @@ export interface PrivateInfoType {
   isAdopted?: boolean;
   /** Follow-up tracking status. Sentinel: 'active'. */
   followUpStatus?: 'active' | 'closed';
+  /** Person responsible for follow-up tracking (sentinel: ''). Distinct from caseManager (rescuer). */
+  followUpManager?: string;
+  /** Name given by the adopter, distinct from the original organization name. Sentinel: ''. */
+  newName?: string;
   /** Timestamp of the adoption event. Sentinel: 0. */
   adoptionDate?: number;
   /** Timestamp of the last follow-up event. Sentinel: 0. */
@@ -243,7 +247,8 @@ export interface CollectionsType {
     | 'dashboardAnalytics'
     | 'config'
     | 'googleForms'
-    | 'googleFormComments';
+    | 'googleFormComments'
+    | 'seguimientoMatches';
 }
 
 // ---------------------------------------------------------------------------
