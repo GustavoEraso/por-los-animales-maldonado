@@ -459,8 +459,8 @@ export default function AnimalPage(): React.ReactElement | null {
                   <div className="aspect-square">
                     <Image
                       className="w-full h-full object-cover bg-white"
-                      src={animal.images[0].imgUrl}
-                      alt={animal.images[0].imgAlt}
+src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+alt={animal.images?.[0]?.imgAlt ?? animal.name}
                       width={300}
                       height={300}
                     />
@@ -494,8 +494,8 @@ export default function AnimalPage(): React.ReactElement | null {
                   <div className="aspect-square">
                     <Image
                       className="w-full h-full object-cover bg-white"
-                      src={animal.images[0].imgUrl}
-                      alt={animal.images[0].imgAlt}
+src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+alt={animal.images?.[0]?.imgAlt ?? animal.name}
                       width={300}
                       height={300}
                     />
@@ -596,8 +596,8 @@ export default function AnimalPage(): React.ReactElement | null {
                       <div className="aspect-square">
                         <Image
                           className="w-full h-full object-cover bg-white"
-                          src={animal.images[0].imgUrl}
-                          alt={animal.images[0].imgAlt}
+                          src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+                          alt={animal.images?.[0]?.imgAlt ?? animal.name}
                           width={300}
                           height={300}
                         />
