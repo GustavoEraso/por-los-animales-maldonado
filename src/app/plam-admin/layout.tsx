@@ -16,6 +16,7 @@ import {
   WhatsAppIcon,
   RefreshIcon,
   FollowUpIcon,
+  CheckIcon,
 } from '@/components/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
@@ -96,6 +97,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <FollowUpIcon size={32} className="w-8 h-8 mb-2" title="Seguimientos" />
                     </Link>
                   </li>
+                  {(
+                    (process.env.NEXT_PUBLIC_SEGUIMIENTO_ADMIN_EMAILS || '').split(',').filter(Boolean).includes(firebaseUser?.email || '')
+                  ) && (
+                    <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
+                      <Link
+                        className="flex gap-1 items-center justify-between w-full px-2 py-1"
+                        href={'/plam-admin/seguimientos/confirmar'}
+                      >
+                        <span className="hidden md:block">Confirmar</span>
+                        <CheckIcon size={32} className="w-8 h-8 mb-2" title="Confirmar Matches" />
+                      </Link>
+                    </li>
+                  )}
                 </RoleGuard>
 
                 <RoleGuard requiredRole="admin">
