@@ -30,7 +30,7 @@ type FilterStatus = 'pendiente' | 'al_dia' | 'sin_seguimiento' | 'cerrados' | 't
 type FilterSterilized = 'todos' | 'si' | 'no' | 'no_se';
 type FilterSpecies = 'todos' | 'perro' | 'gato';
 
-type SortField = 'animalName' | 'contactName' | 'caseManager' | 'adoptionDate' | 'isSterilized' | 'vaccinations' | 'nextFollowUpDate' | 'animalId';
+type SortField = 'animalName' | 'contactName' | 'caseManager' | 'followUpManager' | 'adoptionDate' | 'isSterilized' | 'vaccinations' | 'nextFollowUpDate' | 'animalId';
 
 function sortArrow(field: SortField, current: SortField, dir: 'asc' | 'desc'): string {
   if (field !== current) return '↕';
@@ -156,7 +156,8 @@ export default function SeguimientosPageContent(): React.ReactElement {
         (f) =>
           f.animalName.toLowerCase().includes(lower) ||
           (f.contactName || '').toLowerCase().includes(lower) ||
-          f.animalId.toLowerCase().includes(lower)
+          f.animalId.toLowerCase().includes(lower) ||
+          (f.followUpManager || '').toLowerCase().includes(lower)
       );
     }
 
@@ -176,6 +177,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
           break;
         case 'caseManager':
           cmp = (a.caseManager || '').localeCompare(b.caseManager || '');
+          break;
+        case 'followUpManager':
+          cmp = (a.followUpManager || '').localeCompare(b.followUpManager || '');
           break;
         case 'adoptionDate':
           cmp = (a.adoptionDate || Number.MAX_SAFE_INTEGER) - (b.adoptionDate || Number.MAX_SAFE_INTEGER);
@@ -430,6 +434,11 @@ export default function SeguimientosPageContent(): React.ReactElement {
                     </button>
                   </th>
                   <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    <button onClick={() => handleSort('followUpManager')} className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left">
+                      Resp. Seguimiento <span className="text-xs opacity-70">{sortArrow('followUpManager', sortField, sortDirection)}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">
                     <button onClick={() => handleSort('adoptionDate')} className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left">
                       Adopción <span className="text-xs opacity-70">{sortArrow('adoptionDate', sortField, sortDirection)}</span>
                     </button>
@@ -537,6 +546,11 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       {/* Responsable */}
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="text-gray-700">{followup.caseManager || '—'}</span>
+                      </td>
+
+                      {/* Resp. Seguimiento */}
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <span className="text-gray-700">{followup.followUpManager || '—'}</span>
                       </td>
 
                       {/* Adopción */}

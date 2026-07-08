@@ -19,6 +19,7 @@ export interface AdoptedAnimalFollowup {
   animalImageUrl: string;
   isSterilized: 'si' | 'no' | 'no_se';
   caseManager: string;
+  followUpManager: string;
   contactName: string;
   contacts: { type: 'celular' | 'email' | 'other'; value: string | number }[];
   address: string;
@@ -48,6 +49,7 @@ export function mapToFollowup(pi: PrivateInfoType): AdoptedAnimalFollowup {
     animalImageUrl: pi.mainImageUrl ?? SENTINEL_IMAGE,
     isSterilized: pi.isSterilized ?? SENTINEL_STERILIZED,
     caseManager: pi.caseManager ?? '',
+    followUpManager: pi.followUpManager ?? '',
     contactName: pi.contactName ?? '',
     contacts: pi.contacts ?? [],
     address: pi.address ?? '',
