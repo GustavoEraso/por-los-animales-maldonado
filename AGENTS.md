@@ -113,6 +113,7 @@
 
 ### Before Committing
 
+- **Run Prettier** after any code edit: `npx prettier --write <file>` — the project uses `printWidth: 100`, `tabWidth: 2`, `singleQuote`, `trailingComma: es5`. This prevents formatting-only diffs when the user saves in their editor.
 - Ensure no TypeScript errors (`npm run build`)
 - Check for console errors and warnings
 - Test on mobile viewport
