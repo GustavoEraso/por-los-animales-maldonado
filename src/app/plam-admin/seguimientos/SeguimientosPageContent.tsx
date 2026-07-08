@@ -18,11 +18,13 @@ import {
   EyeIcon,
   LockClosedIcon,
   LockOpenIcon,
+  SterilizationIcon,
+  VaccinationIcon,
 } from '@/components/Icons';
 import EventModal from '@/components/EventModal';
 import { mapToFollowup, AdoptedAnimalFollowup, normalizeManager } from '@/lib/data/seguimientos';
 import { formatedDateOnly, createTimestamp } from '@/lib/dateUtils';
-import { Animal, AnimalTransactionType, PrivateInfoType, UserType } from '@/types';
+import { Animal, AnimalTransactionType, PrivateInfoType, UserType, EventType } from '@/types';
 import { logger } from '@/lib/logger';
 
 const MIN_LOADING_TIME = 600;
@@ -117,6 +119,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
   );
   const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
   const [eventModalLoading, setEventModalLoading] = useState<boolean>(false);
+  const [defaultModalEventType, setDefaultModalEventType] = useState<EventType | undefined>(
+    undefined
+  );
   const [users, setUsers] = useState<UserType[]>([]);
 
   useEffect(() => {
@@ -342,7 +347,11 @@ export default function SeguimientosPageContent(): React.ReactElement {
     }
   }, [filterStatus, now]);
 
-  const openEventModalForAnimal = async (followup: AdoptedAnimalFollowup): Promise<void> => {
+  const openEventModalForAnimal = async (
+    followup: AdoptedAnimalFollowup,
+    eventType?: EventType
+  ): Promise<void> => {
+    setDefaultModalEventType(eventType);
     setEventModalLoading(true);
     try {
       const [animalDoc, piDoc] = await Promise.all([
@@ -898,7 +907,23 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => openEventModalForAnimal(followup)}
+                            onClick={() => openEventModalForAnimal(followup, 'sterilization')}
+                            disabled={eventModalLoading}
+                            className="p-1.5 rounded hover:bg-pink-600 hover:text-white transition-colors text-pink-600"
+                            title="Registrar esterilización"
+                          >
+                            <SterilizationIcon size={16} />
+                          </button>
+                          <button
+                            onClick={() => openEventModalForAnimal(followup, 'vaccination')}
+                            disabled={eventModalLoading}
+                            className="p-1.5 rounded hover:bg-purple-600 hover:text-white transition-colors text-purple-600"
+                            title="Registrar vacunación"
+                          >
+                            <VaccinationIcon size={16} />
+                          </button>
+                          <button
+                            onClick={() => openEventModalForAnimal(followup, 'followup')}
                             disabled={eventModalLoading}
                             className="p-1.5 rounded hover:bg-blue-600 hover:text-white transition-colors text-blue-600"
                             title="Registrar evento de seguimiento"
@@ -912,19 +937,6 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           >
                             <EyeIcon size={16} />
                           </Link>
-                          <button
-                            onClick={() =>
-                              toggleFollowUpStatus(followup.animalId, followup.followUpStatus)
-                            }
-                            className={`p-1.5 rounded transition-colors ${
-                              isClosed
-                                ? 'hover:bg-green-600 hover:text-white text-green-600'
-                                : 'hover:bg-gray-600 hover:text-white text-gray-500'
-                            }`}
-                            title={isClosed ? 'Reabrir seguimiento' : 'Cerrar seguimiento'}
-                          >
-                            {isClosed ? <LockOpenIcon size={16} /> : <LockClosedIcon size={16} />}
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -961,6 +973,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
             setAnimal={setEventModalAnimal}
             setPrivateInfo={setEventModalPrivateInfo}
             setAllAnimalTransactions={setEventModalTransactions}
+            defaultEventType={defaultModalEventType}
             hideTriggerButton
             isOpen={eventModalOpen}
             setIsOpen={setEventModalOpen}

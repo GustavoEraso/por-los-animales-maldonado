@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import {
@@ -15,7 +15,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
-import { CalendarIcon } from '@/components/Icons';
+import { CalendarIcon, LockClosedIcon } from '@/components/Icons';
 import { eventLabels } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
 import UploadImages from '@/elements/UploadImage';
@@ -63,6 +63,8 @@ interface EventModalProps extends AnimalActionModalProps {
   setIsOpen?: (open: boolean) => void;
   /** Called after a successful event save */
   onEventSaved?: () => void;
+  /** Pre-selects an event type when the modal opens (e.g. from quick-action buttons) */
+  defaultEventType?: EventFormData['eventType'];
 }
 
 /**
@@ -80,6 +82,7 @@ export default function EventModal({
   isOpen: controlledIsOpen,
   setIsOpen: controlledSetIsOpen,
   onEventSaved,
+  defaultEventType,
 }: EventModalProps): React.ReactElement {
   const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
   const [eventData, setEventData] = useState<EventFormData>(DEFAULT_EVENT_DATA);
@@ -97,6 +100,26 @@ export default function EventModal({
   const isAdopted = animal.status === 'adoptado';
   const isFollowUp = eventData.eventType === 'followup';
   const showFollowUpDate = isFollowUp && isAdopted;
+
+  /**
+   * Sync the closeCase checkbox with the actual follow-up status
+   * whenever the modal opens or the status changes externally.
+   */
+  useEffect(() => {
+    if (isOpen) {
+      setCloseCase(privateInfo.followUpStatus === 'closed');
+    }
+  }, [isOpen, privateInfo.followUpStatus]);
+
+  /**
+   * Pre-select the event type when the modal is opened via a quick-action button
+   * (e.g. "Esterilización" or "Vacunación" buttons from the seguimientos table).
+   */
+  useEffect(() => {
+    if (isOpen && defaultEventType) {
+      setEventData((prev) => ({ ...prev, eventType: defaultEventType }));
+    }
+  }, [isOpen, defaultEventType]);
 
   const handleEvent = async (): Promise<void> => {
     setIsOpen(false);
@@ -331,6 +354,65 @@ export default function EventModal({
     setQuickDayValue('');
   };
 
+  /**
+   * Reopens a closed follow-up case and switches the event type to follow-up
+   * so the user can immediately schedule the next follow-up date.
+   */
+  const handleReopenCase = async (): Promise<void> => {
+    const docRef = doc(db, 'animalPrivateInfo', privateInfo.id);
+
+    // Optimistic UI — reopen case and switch to follow-up event type
+    setPrivateInfo((prev) => {
+      if (!prev) return prev;
+      return { ...prev, followUpStatus: 'active' as const, nextFollowUpDate: 0 };
+    });
+    setCloseCase(false);
+    setEventData((prev) => ({ ...prev, eventType: 'followup' }));
+
+    try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: {
+          before: { followUpStatus: 'closed' },
+          after: { followUpStatus: 'active' },
+        },
+      });
+
+      await handlePromiseToast(
+        updateDoc(docRef, { followUpStatus: 'active', nextFollowUpDate: 0 }),
+        {
+          messages: {
+            pending: { title: 'Reabriendo caso', text: 'Por favor espera...' },
+            success: {
+              title: 'Caso reabierto',
+              text: 'Programá el próximo seguimiento',
+            },
+            error: { title: 'Error', text: 'No se pudo reabrir el caso' },
+          },
+        }
+      );
+
+      onEventSaved?.();
+    } catch (error) {
+      // Revert optimistic UI on failure
+      setPrivateInfo((prev) => {
+        if (!prev) return prev;
+        return { ...prev, followUpStatus: 'closed' as const };
+      });
+      setCloseCase(true);
+      logger({
+        level: 'error',
+        code: 'REOPEN_CASE_ERROR',
+        message: 'Error reopening follow-up case:',
+        data: error,
+      });
+    }
+  };
+
   return (
     <Modal
       buttonStyles={
@@ -353,6 +435,30 @@ export default function EventModal({
         </h2>
 
         <div className="w-full max-w-2xl space-y-4">
+          {/* Closed case banner — shown when follow-up case is closed */}
+          {isAdopted && privateInfo.followUpStatus === 'closed' && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <LockClosedIcon size={20} className="flex-shrink-0 mt-0.5 text-amber-600" />
+                <div className="flex-1">
+                  <h3 className="text-amber-800 font-semibold text-sm">
+                    Este caso de seguimiento está cerrado
+                  </h3>
+                  <p className="text-amber-700 text-xs mt-1">
+                    No se realizarán más seguimientos para este animal.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleReopenCase}
+                    className="mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+                  >
+                    Reabrir caso
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Event Type */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Tipo de Evento *</label>
@@ -467,24 +573,26 @@ export default function EventModal({
                 Programa la próxima fecha en la que se debe contactar al adoptante
               </p>
 
-              {/* Close case checkbox */}
-              <label className="flex items-center gap-2 mb-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={closeCase}
-                  onChange={(e) => {
-                    setCloseCase(e.target.checked);
-                    if (e.target.checked) {
-                      setNextFollowUpDateStr('');
-                      setQuickDayValue('');
-                    }
-                  }}
-                  className="w-4 h-4 accent-red-600"
-                />
-                <span className="text-sm text-red-700 font-medium">
-                  Cerrar caso — no se hará más seguimiento
-                </span>
-              </label>
+              {/* Close case checkbox — only shown when case is currently open */}
+              {privateInfo.followUpStatus !== 'closed' && (
+                <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={closeCase}
+                    onChange={(e) => {
+                      setCloseCase(e.target.checked);
+                      if (e.target.checked) {
+                        setNextFollowUpDateStr('');
+                        setQuickDayValue('');
+                      }
+                    }}
+                    className="w-4 h-4 accent-red-600"
+                  />
+                  <span className="text-sm text-red-700 font-medium">
+                    Cerrar caso — no se hará más seguimiento
+                  </span>
+                </label>
+              )}
 
               {!closeCase && (
                 <>
