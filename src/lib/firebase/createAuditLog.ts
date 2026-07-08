@@ -84,10 +84,12 @@ export async function createAuditLog({
     }
 
     if (changes !== undefined && (changes.before !== undefined || changes.after !== undefined)) {
-      const sanitized = {
-        before: sanitizeObject(changes.before),
-        after: sanitizeObject(changes.after),
-      };
+      const sanitizedBefore = sanitizeObject(changes.before);
+      const sanitizedAfter = sanitizeObject(changes.after);
+      // Only add keys that actually have values — Firestore rejects undefined map fields
+      const sanitized: { before?: Record<string, unknown>; after?: Record<string, unknown> } = {};
+      if (sanitizedBefore) sanitized.before = sanitizedBefore;
+      if (sanitizedAfter) sanitized.after = sanitizedAfter;
       if (sanitized.before || sanitized.after) {
         auditLogData.changes = sanitized;
       }
@@ -101,10 +103,17 @@ export async function createAuditLog({
 
     return docRef.id;
   } catch (error) {
+    // Extract error message regardless of error shape (FirebaseError, plain object, etc.)
+    const errorMessage: string =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as Record<string, unknown>).message)
+          : String(error);
     logger({
       level: 'error',
       code: 'CREATE_AUDIT_LOG',
-      message: 'Error creating audit log:',
+      message: `Error creating audit log: ${errorMessage}`,
       data: error,
     });
     // Don't throw - audit log failures shouldn't break the main operation
