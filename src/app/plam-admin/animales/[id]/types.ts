@@ -15,6 +15,7 @@ export interface AdoptionFormData {
   selectedFormId?: string;
   selectedFormName?: string;
   nextFollowUpDays: number;
+  followUpManager: string;
 }
 
 /** Form data for transit change modal */
@@ -31,6 +32,7 @@ export const DEFAULT_ADOPTION_DATA: AdoptionFormData = {
   note: '',
   newStatus: 'transitorio',
   nextFollowUpDays: 30,
+  followUpManager: '',
 };
 
 /** Default values for transit change form */

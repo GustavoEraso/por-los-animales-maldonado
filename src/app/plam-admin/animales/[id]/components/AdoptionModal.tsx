@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType } from '@/types';
+import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
 import { auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -38,6 +38,7 @@ export default function AdoptionModal({
   const [adoptionData, setAdoptionData] = useState<AdoptionFormData>({
     ...DEFAULT_ADOPTION_DATA,
     newStatus: undefined,
+    followUpManager: auth.currentUser?.email ?? '',
   });
 
   // Form selector state
@@ -46,6 +47,11 @@ export default function AdoptionModal({
   const [showOtherForms, setShowOtherForms] = useState(false);
   const [otherForms, setOtherForms] = useState<GoogleFormEntry[]>([]);
   const [otherFormsLoading, setOtherFormsLoading] = useState(false);
+
+  // Follow-up manager state
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(false);
 
   // Fetch forms approved for this animal when modal opens
   useEffect(() => {
@@ -68,9 +74,24 @@ export default function AdoptionModal({
       }
     };
 
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const data = await getFirestoreData({
+          currentCollection: 'authorizedEmails',
+        });
+        setUsers(data as UserType[]);
+      } catch (error) {
+        logger({ level: 'error', code: 'FETCH_USERS_ERROR', message: 'Error fetching users for followup manager:', data: error });
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
     setShowOtherForms(false);
     setOtherForms([]);
     fetchForms();
+    fetchUsers();
   }, [adoptionModalOpen, animal.id]);
 
   // Fetch other approved forms when toggled
@@ -143,6 +164,7 @@ export default function AdoptionModal({
       isSterilized: animal.isSterilized,
       isAdopted: true,
       followUpStatus: 'active',
+      followUpManager: adoptionData.followUpManager || auth.currentUser?.email || '',
       adoptionDate: now,
       nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
       lastFollowUpDate: 0,
@@ -509,6 +531,66 @@ export default function AdoptionModal({
                 year: 'numeric',
               })}
             </p>
+          </div>
+
+          {/* Follow-up manager */}
+          <div>
+            <label className="block text-green-dark font-semibold mb-2">
+              Responsable del seguimiento
+            </label>
+            {usersLoading ? (
+              <p className="text-xs text-gray-400 py-1">Cargando...</p>
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUsersOpen(!usersOpen)}
+                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
+                >
+                  <span>
+                    {adoptionData.followUpManager
+                      ? users.find((u) => u.id === adoptionData.followUpManager)?.name ??
+                        adoptionData.followUpManager
+                      : 'Sin asignar'}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
+                </button>
+                {usersOpen && (
+                  <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdoptionData((prev) => ({ ...prev, followUpManager: '' }));
+                        setUsersOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-green-50"
+                    >
+                      Sin asignar
+                    </button>
+                    {users
+                      .filter((u) => u.role !== 'user')
+                      .map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            setAdoptionData((prev) => ({ ...prev, followUpManager: user.id }));
+                            setUsersOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-green-50 ${
+                            adoptionData.followUpManager === user.id ? 'bg-green-100' : ''
+                          }`}
+                        >
+                          <span className="block text-sm font-medium text-gray-900">
+                            {user.name}
+                          </span>
+                          <span className="block text-xs text-gray-500">{user.id}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Note */}
