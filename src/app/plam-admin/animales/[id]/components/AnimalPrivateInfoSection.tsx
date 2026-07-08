@@ -6,6 +6,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { postNewAnimalNote } from '@/lib/firebase/postAnimalNote';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditContactModal from './EditContactModal';
@@ -78,7 +79,12 @@ export default function AnimalPrivateInfoSection({
         });
         setUsers(data as UserType[]);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_USERS_INFO', message: 'Error fetching users for display:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_USERS_INFO',
+          message: 'Error fetching users for display:',
+          data: error,
+        });
       }
     };
     fetchUsers();
@@ -101,7 +107,11 @@ export default function AnimalPrivateInfoSection({
     return emails.map((e) => getUserName(e)).join(', ');
   };
 
-  const toggleManager = (email: string, selected: string[], setter: (v: string[]) => void): void => {
+  const toggleManager = (
+    email: string,
+    selected: string[],
+    setter: (v: string[]) => void
+  ): void => {
     if (selected.includes(email)) {
       setter(selected.filter((e) => e !== email));
     } else {
@@ -118,8 +128,13 @@ export default function AnimalPrivateInfoSection({
     const now = createTimestamp();
     const newPI: PrivateInfoType = { ...privateInfo, caseManager: updated };
     const tx: AnimalTransactionType = {
-      id: privateInfo.id, name: privateInfo.name || '', img: animal.images[0],
-      transactionType: 'update', date: now, modifiedBy: auth.currentUser?.email || 'system', since: now,
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'update',
+      date: now,
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: now,
       changes: { before: { caseManager: current }, after: { caseManager: updated } },
     };
 
@@ -127,19 +142,41 @@ export default function AnimalPrivateInfoSection({
     setAllAnimalTransactions((prev) => [tx, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: tx.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
-          postFirestoreData<PrivateInfoType>({ data: newPI, currentCollection: 'animalPrivateInfo', id: privateInfo.id }),
+          postFirestoreData<PrivateInfoType>({
+            data: newPI,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
           postTransactionData({ data: tx }),
         ]),
-        { messages: {
-          pending: { title: 'Guardando', text: 'Actualizando responsable...' },
-          success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
-          error: { title: 'Error', text: 'No se pudo actualizar' },
-        }}
+        {
+          messages: {
+            pending: { title: 'Guardando', text: 'Actualizando responsable...' },
+            success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
+            error: { title: 'Error', text: 'No se pudo actualizar' },
+          },
+        }
       );
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_CASE_MANAGER', message: 'Error updating case manager:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_CASE_MANAGER',
+        message: 'Error updating case manager:',
+        data: error,
+      });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== tx.date));
     }
@@ -154,8 +191,13 @@ export default function AnimalPrivateInfoSection({
     const now = createTimestamp();
     const newPI: PrivateInfoType = { ...privateInfo, followUpManager: updated };
     const tx: AnimalTransactionType = {
-      id: privateInfo.id, name: privateInfo.name || '', img: animal.images[0],
-      transactionType: 'update', date: now, modifiedBy: auth.currentUser?.email || 'system', since: now,
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'update',
+      date: now,
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: now,
       changes: { before: { followUpManager: current }, after: { followUpManager: updated } },
     };
 
@@ -163,19 +205,41 @@ export default function AnimalPrivateInfoSection({
     setAllAnimalTransactions((prev) => [tx, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: tx.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
-          postFirestoreData<PrivateInfoType>({ data: newPI, currentCollection: 'animalPrivateInfo', id: privateInfo.id }),
+          postFirestoreData<PrivateInfoType>({
+            data: newPI,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
           postTransactionData({ data: tx }),
         ]),
-        { messages: {
-          pending: { title: 'Guardando', text: 'Actualizando responsable...' },
-          success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
-          error: { title: 'Error', text: 'No se pudo actualizar' },
-        }}
+        {
+          messages: {
+            pending: { title: 'Guardando', text: 'Actualizando responsable...' },
+            success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
+            error: { title: 'Error', text: 'No se pudo actualizar' },
+          },
+        }
       );
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_FOLLOWUP_MANAGER', message: 'Error updating follow-up manager:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_FOLLOWUP_MANAGER',
+        message: 'Error updating follow-up manager:',
+        data: error,
+      });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== tx.date));
     }
@@ -219,6 +283,17 @@ export default function AnimalPrivateInfoSection({
       setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
       try {
+        await createAuditLog({
+          type: 'animal',
+          action: 'update',
+          entityId: privateInfo.id,
+          entityName: privateInfo.name || animal.name,
+          modifiedBy: auth.currentUser?.email || 'system',
+          changes: newTransactionData.changes as {
+            before?: Record<string, unknown>;
+            after?: Record<string, unknown>;
+          },
+        });
         await handlePromiseToast(
           Promise.all([
             postFirestoreData<PrivateInfoType>({
@@ -241,7 +316,12 @@ export default function AnimalPrivateInfoSection({
 
         delete originalNoteValues.current[index];
       } catch (error) {
-        logger({ level: 'error', code: 'UPDATE_NOTE', message: 'Error updating note:', data: error });
+        logger({
+          level: 'error',
+          code: 'UPDATE_NOTE',
+          message: 'Error updating note:',
+          data: error,
+        });
         setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
       }
     }
@@ -292,6 +372,17 @@ export default function AnimalPrivateInfoSection({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<PrivateInfoType>({
@@ -348,6 +439,17 @@ export default function AnimalPrivateInfoSection({
     setNewNote('');
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         postNewAnimalNote({
           animalId: animal.id,
@@ -380,7 +482,9 @@ export default function AnimalPrivateInfoSection({
               Responsable del caso:{' '}
               <span className="font-normal">{getManagerNames(normalizeManager(caseManager))}</span>
               {hasCustomManager(normalizeManager(caseManager)) && (
-                <span className="text-xs text-amber-700 ml-2">Conviene seleccionar de la lista</span>
+                <span className="text-xs text-amber-700 ml-2">
+                  Conviene seleccionar de la lista
+                </span>
               )}
             </p>
             <button
@@ -400,7 +504,9 @@ export default function AnimalPrivateInfoSection({
         <div className="bg-amber-sunset p-3 rounded-lg flex items-center justify-between">
           <p className="text-xl font-semibold text-green-dark">
             Responsable del seguimiento:{' '}
-            <span className="font-normal">{getManagerNames(normalizeManager(privateInfo.followUpManager))}</span>
+            <span className="font-normal">
+              {getManagerNames(normalizeManager(privateInfo.followUpManager))}
+            </span>
             {hasCustomManager(normalizeManager(privateInfo.followUpManager)) && (
               <span className="text-xs text-amber-700 ml-2">Conviene seleccionar de la lista</span>
             )}
@@ -618,14 +724,18 @@ export default function AnimalPrivateInfoSection({
                         key={user.id}
                         className="flex items-center gap-3 px-4 py-3.5 hover:bg-green-50 cursor-pointer border-b border-gray-100"
                       >
-                          <input
+                        <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleManager(user.id, selectedCaseManagers, setSelectedCaseManagers)}
+                          onChange={() =>
+                            toggleManager(user.id, selectedCaseManagers, setSelectedCaseManagers)
+                          }
                           className="accent-green-700 w-4 h-4"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="block text-base font-medium text-gray-900 truncate">{user.name}</span>
+                          <span className="block text-base font-medium text-gray-900 truncate">
+                            {user.name}
+                          </span>
                           <span className="block text-sm text-gray-500 truncate">{user.id}</span>
                         </div>
                       </label>
@@ -684,7 +794,9 @@ export default function AnimalPrivateInfoSection({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setSelectedCaseManagers((prev) => prev.filter((e) => e !== email))}
+                      onClick={() =>
+                        setSelectedCaseManagers((prev) => prev.filter((e) => e !== email))
+                      }
                       className="text-green-600 hover:text-red-600 font-bold text-lg leading-none"
                     >
                       ×
@@ -748,11 +860,19 @@ export default function AnimalPrivateInfoSection({
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleManager(user.id, selectedFollowUpManagers, setSelectedFollowUpManagers)}
+                          onChange={() =>
+                            toggleManager(
+                              user.id,
+                              selectedFollowUpManagers,
+                              setSelectedFollowUpManagers
+                            )
+                          }
                           className="accent-green-700"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="block text-base font-medium text-gray-900 truncate">{user.name}</span>
+                          <span className="block text-base font-medium text-gray-900 truncate">
+                            {user.name}
+                          </span>
                           <span className="block text-sm text-gray-500 truncate">{user.id}</span>
                         </div>
                       </label>
@@ -771,7 +891,9 @@ export default function AnimalPrivateInfoSection({
                     {getUserName(email)}
                     <button
                       type="button"
-                      onClick={() => setSelectedFollowUpManagers((prev) => prev.filter((e) => e !== email))}
+                      onClick={() =>
+                        setSelectedFollowUpManagers((prev) => prev.filter((e) => e !== email))
+                      }
                       className="text-green-600 hover:text-red-600 font-bold text-lg leading-none"
                     >
                       ×

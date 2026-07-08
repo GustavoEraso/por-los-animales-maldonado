@@ -3,6 +3,18 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { AuditAction, AuditLogType, SystemAuditLog } from '@/types';
 
+/** Strips undefined values from an object so Firestore doesn't reject it */
+function sanitizeObject(
+  obj: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
+  if (!obj) return obj;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) result[key] = value;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 /**
  * Creates an audit log entry in Firestore
  *
@@ -72,7 +84,13 @@ export async function createAuditLog({
     }
 
     if (changes !== undefined && (changes.before !== undefined || changes.after !== undefined)) {
-      auditLogData.changes = changes;
+      const sanitized = {
+        before: sanitizeObject(changes.before),
+        after: sanitizeObject(changes.after),
+      };
+      if (sanitized.before || sanitized.after) {
+        auditLogData.changes = sanitized;
+      }
     }
 
     if (metadata !== undefined && Object.keys(metadata).length > 0) {
@@ -83,7 +101,12 @@ export async function createAuditLog({
 
     return docRef.id;
   } catch (error) {
-    logger({ level: 'error', code: 'CREATE_AUDIT_LOG', message: 'Error creating audit log:', data: error });
+    logger({
+      level: 'error',
+      code: 'CREATE_AUDIT_LOG',
+      message: 'Error creating audit log:',
+      data: error,
+    });
     // Don't throw - audit log failures shouldn't break the main operation
     return '';
   }

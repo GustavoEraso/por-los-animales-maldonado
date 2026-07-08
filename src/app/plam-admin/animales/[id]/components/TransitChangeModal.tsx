@@ -9,6 +9,7 @@ import { SwapIcon } from '@/components/Icons';
 import { AnimalActionModalProps, TransitChangeFormData, DEFAULT_TRANSIT_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 
 /**
  * Modal component for changing the transit caretaker of an animal.
@@ -66,6 +67,17 @@ export default function TransitChangeModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<PrivateInfoType>({
@@ -91,7 +103,12 @@ export default function TransitChangeModal({
 
       setTransitChangeData(DEFAULT_TRANSIT_DATA);
     } catch (error) {
-      logger({ level: 'error', code: 'TRANSIT_CHANGE', message: 'Error handling transit change:', data: error });
+      logger({
+        level: 'error',
+        code: 'TRANSIT_CHANGE',
+        message: 'Error handling transit change:',
+        data: error,
+      });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
     }

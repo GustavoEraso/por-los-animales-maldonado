@@ -7,6 +7,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { HeartIcon } from '@/components/Icons';
 import { AnimalActionModalProps, AdoptionFormData, DEFAULT_ADOPTION_DATA } from '../types';
@@ -64,11 +65,14 @@ export default function AdoptionModal({
           currentCollection: 'googleForms',
           filter: [['approvedAnimalId', '==', animal.id]],
         });
-        setFormsForAnimal(
-          (data as GoogleFormEntry[]).filter((f) => f.status === 'approved')
-        );
+        setFormsForAnimal((data as GoogleFormEntry[]).filter((f) => f.status === 'approved'));
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms for adoption:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FORMS_ERROR',
+          message: 'Error fetching forms for adoption:',
+          data: error,
+        });
       } finally {
         setFormsLoading(false);
       }
@@ -82,7 +86,12 @@ export default function AdoptionModal({
         });
         setUsers(data as UserType[]);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_USERS_ERROR', message: 'Error fetching users for followup manager:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_USERS_ERROR',
+          message: 'Error fetching users for followup manager:',
+          data: error,
+        });
       } finally {
         setUsersLoading(false);
       }
@@ -109,13 +118,14 @@ export default function AdoptionModal({
         currentCollection: 'googleForms',
         filter: [['status', '==', 'approved']],
       });
-      setOtherForms(
-        (data as GoogleFormEntry[]).filter(
-          (f) => f.approvedAnimalId !== animal.id
-        )
-      );
+      setOtherForms((data as GoogleFormEntry[]).filter((f) => f.approvedAnimalId !== animal.id));
     } catch (error) {
-      logger({ level: 'error', code: 'FETCH_OTHER_FORMS_ERROR', message: 'Error fetching other forms:', data: error });
+      logger({
+        level: 'error',
+        code: 'FETCH_OTHER_FORMS_ERROR',
+        message: 'Error fetching other forms:',
+        data: error,
+      });
     } finally {
       setOtherFormsLoading(false);
     }
@@ -125,9 +135,7 @@ export default function AdoptionModal({
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone
-        ? [{ type: 'celular' as const, value: form.phone }]
-        : prev.contacts,
+      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
     }));
@@ -164,7 +172,11 @@ export default function AdoptionModal({
       isSterilized: animal.isSterilized,
       isAdopted: true,
       followUpStatus: 'active',
-      followUpManager: adoptionData.followUpManager ? [adoptionData.followUpManager] : (auth.currentUser?.email ? [auth.currentUser.email] : []),
+      followUpManager: adoptionData.followUpManager
+        ? [adoptionData.followUpManager]
+        : auth.currentUser?.email
+          ? [auth.currentUser.email]
+          : [],
       adoptionDate: now,
       nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
       lastFollowUpDate: 0,
@@ -226,6 +238,17 @@ export default function AdoptionModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({
@@ -255,7 +278,12 @@ export default function AdoptionModal({
 
       setAdoptionData({ ...DEFAULT_ADOPTION_DATA, newStatus: undefined });
     } catch (error) {
-      logger({ level: 'error', code: 'ADOPTION_ERROR', message: 'Error handling adoption:', data: error });
+      logger({
+        level: 'error',
+        code: 'ADOPTION_ERROR',
+        message: 'Error handling adoption:',
+        data: error,
+      });
       setAnimal(animal);
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
@@ -309,9 +337,7 @@ export default function AdoptionModal({
             )}
 
             {/* Forms approved for this animal */}
-            <p className="text-xs text-gray-500 mb-1">
-              Aprobados para {animal.name}:
-            </p>
+            <p className="text-xs text-gray-500 mb-1">Aprobados para {animal.name}:</p>
             {formsLoading ? (
               <p className="text-xs text-gray-400 py-1">Cargando...</p>
             ) : formsForAnimal.length === 0 ? (
@@ -329,9 +355,7 @@ export default function AdoptionModal({
                         : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
                     }`}
                   >
-                    <p className="font-medium text-gray-900 truncate">
-                      {form.fullName ?? '—'}
-                    </p>
+                    <p className="font-medium text-gray-900 truncate">{form.fullName ?? '—'}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(form.createdAt).toLocaleDateString('es-UY', {
                         day: '2-digit',
@@ -365,9 +389,7 @@ export default function AdoptionModal({
                 {otherFormsLoading ? (
                   <p className="text-xs text-gray-400 py-1">Cargando...</p>
                 ) : otherForms.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-1">
-                    No hay otros formularios aprobados
-                  </p>
+                  <p className="text-xs text-gray-400 py-1">No hay otros formularios aprobados</p>
                 ) : (
                   <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                     {otherForms.map((form) => (
@@ -381,9 +403,7 @@ export default function AdoptionModal({
                             : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
                         }`}
                       >
-                        <p className="font-medium text-gray-900 truncate">
-                          {form.fullName ?? '—'}
-                        </p>
+                        <p className="font-medium text-gray-900 truncate">{form.fullName ?? '—'}</p>
                         <p className="text-xs text-gray-500">
                           {form.approvedAnimalName
                             ? `Aprobado para: ${form.approvedAnimalName}`
@@ -549,8 +569,8 @@ export default function AdoptionModal({
                 >
                   <span>
                     {adoptionData.followUpManager
-                      ? users.find((u) => u.id === adoptionData.followUpManager)?.name ??
-                        adoptionData.followUpManager
+                      ? (users.find((u) => u.id === adoptionData.followUpManager)?.name ??
+                        adoptionData.followUpManager)
                       : 'Sin asignar'}
                   </span>
                   <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>

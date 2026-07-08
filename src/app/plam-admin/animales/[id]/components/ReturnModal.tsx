@@ -7,6 +7,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { HeartIcon } from '@/components/Icons';
 import { AnimalActionModalProps, AdoptionFormData, DEFAULT_ADOPTION_DATA } from '../types';
@@ -63,11 +64,14 @@ export default function ReturnModal({
           currentCollection: 'googleForms',
           filter: [['approvedAnimalId', '==', animal.id]],
         });
-        setFormsForAnimal(
-          (data as GoogleFormEntry[]).filter((f) => f.status === 'approved')
-        );
+        setFormsForAnimal((data as GoogleFormEntry[]).filter((f) => f.status === 'approved'));
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms for return:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FORMS_ERROR',
+          message: 'Error fetching forms for return:',
+          data: error,
+        });
       } finally {
         setFormsLoading(false);
       }
@@ -81,7 +85,12 @@ export default function ReturnModal({
         });
         setUsers(data as UserType[]);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_USERS_ERROR', message: 'Error fetching users for followup manager:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_USERS_ERROR',
+          message: 'Error fetching users for followup manager:',
+          data: error,
+        });
       } finally {
         setUsersLoading(false);
       }
@@ -108,13 +117,14 @@ export default function ReturnModal({
         currentCollection: 'googleForms',
         filter: [['status', '==', 'approved']],
       });
-      setOtherForms(
-        (data as GoogleFormEntry[]).filter(
-          (f) => f.approvedAnimalId !== animal.id
-        )
-      );
+      setOtherForms((data as GoogleFormEntry[]).filter((f) => f.approvedAnimalId !== animal.id));
     } catch (error) {
-      logger({ level: 'error', code: 'FETCH_OTHER_FORMS_ERROR', message: 'Error fetching other forms:', data: error });
+      logger({
+        level: 'error',
+        code: 'FETCH_OTHER_FORMS_ERROR',
+        message: 'Error fetching other forms:',
+        data: error,
+      });
     } finally {
       setOtherFormsLoading(false);
     }
@@ -124,9 +134,7 @@ export default function ReturnModal({
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone
-        ? [{ type: 'celular' as const, value: form.phone }]
-        : prev.contacts,
+      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
     }));
@@ -167,7 +175,11 @@ export default function ReturnModal({
         ? {
             isAdopted: true,
             followUpStatus: 'active',
-            followUpManager: adoptionData.followUpManager ? [adoptionData.followUpManager] : (auth.currentUser?.email ? [auth.currentUser.email] : []),
+            followUpManager: adoptionData.followUpManager
+              ? [adoptionData.followUpManager]
+              : auth.currentUser?.email
+                ? [auth.currentUser.email]
+                : [],
             adoptionDate: now,
             nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
             lastFollowUpDate: 0,
@@ -225,12 +237,8 @@ export default function ReturnModal({
           contactName: adoptionData.contactName,
           contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
           notes: [notePrefix + adoptionData.note],
-          adoptionFormId: isGoingToNewAdopter
-            ? adoptionData.selectedFormId || ''
-            : '',
-          adoptionFormName: isGoingToNewAdopter
-            ? adoptionData.selectedFormName || ''
-            : '',
+          adoptionFormId: isGoingToNewAdopter ? adoptionData.selectedFormId || '' : '',
+          adoptionFormName: isGoingToNewAdopter ? adoptionData.selectedFormName || '' : '',
         },
       },
       ...(isGoingToNewAdopter && adoptionData.selectedFormId
@@ -247,6 +255,17 @@ export default function ReturnModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({
@@ -281,7 +300,12 @@ export default function ReturnModal({
 
       setAdoptionData(DEFAULT_ADOPTION_DATA);
     } catch (error) {
-      logger({ level: 'error', code: 'RETURN_ERROR', message: 'Error handling return:', data: error });
+      logger({
+        level: 'error',
+        code: 'RETURN_ERROR',
+        message: 'Error handling return:',
+        data: error,
+      });
       setAnimal(animal);
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
@@ -354,9 +378,7 @@ export default function ReturnModal({
                 </div>
               )}
 
-              <p className="text-xs text-gray-500 mb-1">
-                Aprobados para {animal.name}:
-              </p>
+              <p className="text-xs text-gray-500 mb-1">Aprobados para {animal.name}:</p>
               {formsLoading ? (
                 <p className="text-xs text-gray-400 py-1">Cargando...</p>
               ) : formsForAnimal.length === 0 ? (
@@ -374,9 +396,7 @@ export default function ReturnModal({
                           : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
                       }`}
                     >
-                      <p className="font-medium text-gray-900 truncate">
-                        {form.fullName ?? '—'}
-                      </p>
+                      <p className="font-medium text-gray-900 truncate">{form.fullName ?? '—'}</p>
                       <p className="text-xs text-gray-500">
                         {new Date(form.createdAt).toLocaleDateString('es-UY', {
                           day: '2-digit',
@@ -409,9 +429,7 @@ export default function ReturnModal({
                   {otherFormsLoading ? (
                     <p className="text-xs text-gray-400 py-1">Cargando...</p>
                   ) : otherForms.length === 0 ? (
-                    <p className="text-xs text-gray-400 py-1">
-                      No hay otros formularios aprobados
-                    </p>
+                    <p className="text-xs text-gray-400 py-1">No hay otros formularios aprobados</p>
                   ) : (
                     <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                       {otherForms.map((form) => (
@@ -524,123 +542,123 @@ export default function ReturnModal({
           {/* Follow-up date — only when re-adopting (newStatus === 'adoptado') */}
           {adoptionData.newStatus === 'adoptado' && (
             <>
-            <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
-              <label className="block text-green-dark font-semibold mb-2">
-                Primera fecha de seguimiento
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Programa la primera fecha de contacto con el nuevo adoptante
-              </p>
+              <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                <label className="block text-green-dark font-semibold mb-2">
+                  Primera fecha de seguimiento
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Programa la primera fecha de contacto con el nuevo adoptante
+                </p>
 
-              <div className="flex flex-wrap gap-1 mb-3">
-                {FOLLOW_UP_DATE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.days}
-                    type="button"
-                    onClick={() =>
-                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: preset.days }))
-                    }
-                    className={`text-xs px-2 py-1 rounded transition-colors ${
-                      adoptionData.nextFollowUpDays === preset.days
-                        ? 'bg-green-700 text-white'
-                        : 'bg-green-dark text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
-                  min={1}
-                  max={365}
-                  value={adoptionData.nextFollowUpDays}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val) && val > 0) {
-                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: val }));
-                    } else if (e.target.value === '') {
-                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: 0 }));
-                    }
-                  }}
-                />
-                <span className="text-green-dark text-sm">días</span>
-              </div>
-
-              <p className="text-xs text-green-700 mt-2 font-medium">
-                Fecha programada:{' '}
-                {new Date(
-                  Date.now() + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000
-                ).toLocaleDateString('es-UY', {
-                  day: '2-digit',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-
-            {/* Follow-up manager */}
-            <div className="mt-3">
-              <label className="block text-green-dark font-semibold mb-2">
-                Responsable del seguimiento
-              </label>
-              {usersLoading ? (
-                <p className="text-xs text-gray-400 py-1">Cargando...</p>
-              ) : (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setUsersOpen(!usersOpen)}
-                    className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
-                  >
-                    <span>
-                      {adoptionData.followUpManager
-                        ? users.find((u) => u.id === adoptionData.followUpManager)?.name ??
-                          adoptionData.followUpManager
-                        : 'Sin asignar'}
-                    </span>
-                    <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
-                  </button>
-                  {usersOpen && (
-                    <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAdoptionData((prev) => ({ ...prev, followUpManager: '' }));
-                          setUsersOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-green-50"
-                      >
-                        Sin asignar
-                      </button>
-                      {users
-                        .filter((u) => u.role !== 'user')
-                        .map((user) => (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => {
-                              setAdoptionData((prev) => ({ ...prev, followUpManager: user.id }));
-                              setUsersOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 hover:bg-green-50 ${
-                              adoptionData.followUpManager === user.id ? 'bg-green-100' : ''
-                            }`}
-                          >
-                            <span className="block text-sm font-medium text-gray-900">
-                              {user.name}
-                            </span>
-                            <span className="block text-xs text-gray-500">{user.id}</span>
-                          </button>
-                        ))}
-                    </div>
-                  )}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {FOLLOW_UP_DATE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.days}
+                      type="button"
+                      onClick={() =>
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: preset.days }))
+                      }
+                      className={`text-xs px-2 py-1 rounded transition-colors ${
+                        adoptionData.nextFollowUpDays === preset.days
+                          ? 'bg-green-700 text-white'
+                          : 'bg-green-dark text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                    min={1}
+                    max={365}
+                    value={adoptionData.nextFollowUpDays}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val > 0) {
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: val }));
+                      } else if (e.target.value === '') {
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: 0 }));
+                      }
+                    }}
+                  />
+                  <span className="text-green-dark text-sm">días</span>
+                </div>
+
+                <p className="text-xs text-green-700 mt-2 font-medium">
+                  Fecha programada:{' '}
+                  {new Date(
+                    Date.now() + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString('es-UY', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+
+              {/* Follow-up manager */}
+              <div className="mt-3">
+                <label className="block text-green-dark font-semibold mb-2">
+                  Responsable del seguimiento
+                </label>
+                {usersLoading ? (
+                  <p className="text-xs text-gray-400 py-1">Cargando...</p>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setUsersOpen(!usersOpen)}
+                      className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
+                    >
+                      <span>
+                        {adoptionData.followUpManager
+                          ? (users.find((u) => u.id === adoptionData.followUpManager)?.name ??
+                            adoptionData.followUpManager)
+                          : 'Sin asignar'}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {usersOpen && (
+                      <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdoptionData((prev) => ({ ...prev, followUpManager: '' }));
+                            setUsersOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-green-50"
+                        >
+                          Sin asignar
+                        </button>
+                        {users
+                          .filter((u) => u.role !== 'user')
+                          .map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setAdoptionData((prev) => ({ ...prev, followUpManager: user.id }));
+                                setUsersOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 hover:bg-green-50 ${
+                                adoptionData.followUpManager === user.id ? 'bg-green-100' : ''
+                              }`}
+                            >
+                              <span className="block text-sm font-medium text-gray-900">
+                                {user.name}
+                              </span>
+                              <span className="block text-xs text-gray-500">{user.id}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
 

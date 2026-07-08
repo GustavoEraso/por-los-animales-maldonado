@@ -13,6 +13,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { CalendarIcon } from '@/components/Icons';
 import { eventLabels } from '@/lib/constants/animalLabels';
@@ -231,6 +232,19 @@ export default function EventModal({
     }
 
     try {
+      // Audit log BEFORE main operation
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
+
       const promises: Promise<unknown>[] = [
         postFirestoreData<PrivateInfoType>({
           data: updatedPrivateInfo,

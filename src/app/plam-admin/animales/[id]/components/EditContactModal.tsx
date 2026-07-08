@@ -5,6 +5,7 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { EditIcon } from '@/components/Icons';
 import { createTimestamp } from '@/lib/dateUtils';
@@ -112,6 +113,17 @@ export default function EditContactModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<PrivateInfoType>({
@@ -124,7 +136,10 @@ export default function EditContactModal({
         {
           messages: {
             pending: { title: 'Guardando', text: 'Actualizando datos de contacto...' },
-            success: { title: 'Contacto actualizado', text: 'Los datos se actualizaron correctamente' },
+            success: {
+              title: 'Contacto actualizado',
+              text: 'Los datos se actualizaron correctamente',
+            },
             error: { title: 'Error', text: 'No se pudieron actualizar los datos' },
           },
         }
@@ -133,7 +148,12 @@ export default function EditContactModal({
       await revalidateCache('animals');
       setData(DEFAULT_DATA);
     } catch (error) {
-      logger({ level: 'error', code: 'EDIT_CONTACT', message: 'Error updating contact:', data: error });
+      logger({
+        level: 'error',
+        code: 'EDIT_CONTACT',
+        message: 'Error updating contact:',
+        data: error,
+      });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
     }

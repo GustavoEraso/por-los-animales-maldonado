@@ -3,10 +3,11 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db, auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { handlePromiseToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Loader from '@/components/Loader';
@@ -386,6 +387,12 @@ export default function SeguimientosPageContent(): React.ReactElement {
     );
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: animalId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(updateDoc(docRef, { followUpStatus: newStatus }), {
         messages: {
           pending: { title: 'Actualizando', text: 'Cambiando estado de seguimiento...' },
