@@ -687,9 +687,14 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
       );
       const newConfirmedEntries = [...confirmedData, confirmedEntry];
 
-      // Batch: update privateInfo + remove from current + add to confirmed
+      // Batch: update privateInfo + animal + remove from current + add to confirmed
       const batch = writeBatch(db);
       batch.update(piRef, updates);
+      // Keep Animal.isSterilized in sync with PrivateInfo.isSterilized
+      if (fieldsToMigrate.has('isSterilized') && updates.isSterilized !== undefined) {
+        const animalRef = doc(db, 'animals', selectedAnimal.id);
+        batch.update(animalRef, { isSterilized: updates.isSterilized });
+      }
       batch.set(doc(db, 'seguimientoMatches', 'current'), {
         entries: newCurrentEntries,
         updatedAt: Date.now(),
