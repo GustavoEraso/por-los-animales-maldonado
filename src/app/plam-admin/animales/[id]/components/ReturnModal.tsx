@@ -13,6 +13,15 @@ import { AnimalActionModalProps, AdoptionFormData, DEFAULT_ADOPTION_DATA } from 
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
 
+const FOLLOW_UP_DATE_PRESETS = [
+  { label: '+15 días', days: 15 },
+  { label: '+30 días', days: 30 },
+  { label: '+60 días', days: 60 },
+  { label: '+90 días', days: 90 },
+  { label: '+6 meses', days: 180 },
+  { label: '+1 año', days: 365 },
+];
+
 /**
  * Modal component for registering a return of an adopted animal.
  * Supports returning to transit or re-adopting to a new person.
@@ -137,6 +146,7 @@ export default function ReturnModal({
         ? {
             isAdopted: true,
             adoptionDate: now,
+            nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
             lastFollowUpDate: 0,
             lastFollowUpNote: '',
             sterilizationDate: 0,
@@ -479,6 +489,67 @@ export default function ReturnModal({
               + Agregar Contacto
             </button>
           </div>
+
+          {/* Follow-up date — only when re-adopting (newStatus === 'adoptado') */}
+          {adoptionData.newStatus === 'adoptado' && (
+            <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+              <label className="block text-green-dark font-semibold mb-2">
+                Primera fecha de seguimiento
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Programa la primera fecha de contacto con el nuevo adoptante
+              </p>
+
+              <div className="flex flex-wrap gap-1 mb-3">
+                {FOLLOW_UP_DATE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.days}
+                    type="button"
+                    onClick={() =>
+                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: preset.days }))
+                    }
+                    className={`text-xs px-2 py-1 rounded transition-colors ${
+                      adoptionData.nextFollowUpDays === preset.days
+                        ? 'bg-green-700 text-white'
+                        : 'bg-green-dark text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                  min={1}
+                  max={365}
+                  value={adoptionData.nextFollowUpDays}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val > 0) {
+                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: val }));
+                    } else if (e.target.value === '') {
+                      setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: 0 }));
+                    }
+                  }}
+                />
+                <span className="text-green-dark text-sm">días</span>
+              </div>
+
+              <p className="text-xs text-green-700 mt-2 font-medium">
+                Fecha programada:{' '}
+                {new Date(
+                  Date.now() + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000
+                ).toLocaleDateString('es-UY', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </p>
+            </div>
+          )}
 
           {/* Note */}
           <div>
