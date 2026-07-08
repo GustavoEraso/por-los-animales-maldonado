@@ -149,7 +149,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       const { name } = data;
       setPrivateInfo((prev) => ({
         ...prev,
-        caseManager: name || '',
+        caseManager: name ? [name] : [],
       }));
     };
     getName();

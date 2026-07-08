@@ -38,8 +38,8 @@ export default function PrivateInfoFields({
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
   const [showOtherCaseManager, setShowOtherCaseManager] = useState(
-    !!privateInfo.caseManager &&
-      !privateInfo.caseManager.includes('@')
+    !!privateInfo.caseManager?.length &&
+      !privateInfo.caseManager[0].includes('@')
   );
 
   useEffect(() => {
@@ -74,9 +74,9 @@ export default function PrivateInfoFields({
               className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between font-normal"
             >
               <span>
-                {privateInfo.caseManager
-                  ? users.find((u) => u.id === privateInfo.caseManager)?.name ??
-                    privateInfo.caseManager
+                {privateInfo.caseManager?.length
+                  ? users.find((u) => u.id === privateInfo.caseManager![0])?.name ??
+                    privateInfo.caseManager![0]
                   : 'Seleccionar responsable'}
               </span>
               <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
@@ -90,12 +90,12 @@ export default function PrivateInfoFields({
                       key={user.id}
                       type="button"
                       onClick={() => {
-                        setPrivateInfo((prev) => ({ ...prev, caseManager: user.id }));
+                        setPrivateInfo((prev) => ({ ...prev, caseManager: [user.id] }));
                         setShowOtherCaseManager(false);
                         setUsersOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 transition-colors border ${
-                        privateInfo.caseManager === user.id
+                        privateInfo.caseManager?.includes(user.id)
                           ? 'bg-green-100 border-green-300'
                           : 'border-transparent hover:bg-green-50'
                       }`}
@@ -109,7 +109,7 @@ export default function PrivateInfoFields({
                 <button
                   type="button"
                   onClick={() => {
-                    setPrivateInfo((prev) => ({ ...prev, caseManager: '' }));
+                    setPrivateInfo((prev) => ({ ...prev, caseManager: [] }));
                     setShowOtherCaseManager(true);
                     setUsersOpen(false);
                   }}
@@ -132,9 +132,9 @@ export default function PrivateInfoFields({
               className="outline-2 bg-white outline-gray-200 rounded p-2 font-normal mt-1"
               type="text"
               placeholder="Nombre del responsable"
-              value={privateInfo.caseManager || ''}
+              value={privateInfo.caseManager?.[0] || ''}
               onChange={(e) =>
-                setPrivateInfo((prev) => ({ ...prev, caseManager: e.target.value }))
+                setPrivateInfo((prev) => ({ ...prev, caseManager: e.target.value ? [e.target.value] : [] }))
               }
               required
             />

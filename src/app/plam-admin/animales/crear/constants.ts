@@ -44,7 +44,7 @@ export const INITIAL_ANIMAL: Animal = {
 
 /** Initial state for private info */
 export const INITIAL_PRIVATE_INFO: PrivateInfoType = {
-  caseManager: '',
+  caseManager: [],
   id: '',
   name: '',
   contactName: '',

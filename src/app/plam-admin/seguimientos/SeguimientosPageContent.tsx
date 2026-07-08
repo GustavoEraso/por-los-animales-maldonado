@@ -19,9 +19,9 @@ import {
   LockOpenIcon,
 } from '@/components/Icons';
 import EventModal from '@/components/EventModal';
-import { mapToFollowup, AdoptedAnimalFollowup } from '@/lib/data/seguimientos';
+import { mapToFollowup, AdoptedAnimalFollowup, normalizeManager } from '@/lib/data/seguimientos';
 import { formatedDateOnly, createTimestamp } from '@/lib/dateUtils';
-import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { Animal, AnimalTransactionType, PrivateInfoType, UserType } from '@/types';
 import { logger } from '@/lib/logger';
 
 const MIN_LOADING_TIME = 600;
@@ -91,6 +91,17 @@ export default function SeguimientosPageContent(): React.ReactElement {
   const [_eventModalTransactions, setEventModalTransactions] = useState<AnimalTransactionType[]>([]);
   const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
   const [eventModalLoading, setEventModalLoading] = useState<boolean>(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getFirestoreData({ currentCollection: 'authorizedEmails' });
+        setUsers(data as UserType[]);
+      } catch { /* silently ignore */ }
+    };
+    fetchUsers();
+  }, []);
 
   const now = useMemo(() => createTimestamp(), []);
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -157,7 +168,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
           f.animalName.toLowerCase().includes(lower) ||
           (f.contactName || '').toLowerCase().includes(lower) ||
           f.animalId.toLowerCase().includes(lower) ||
-          (f.followUpManager || '').toLowerCase().includes(lower)
+          (f.followUpManager || []).join(' ').toLowerCase().includes(lower)
       );
     }
 
@@ -176,10 +187,10 @@ export default function SeguimientosPageContent(): React.ReactElement {
           cmp = (a.contactName || '').localeCompare(b.contactName || '');
           break;
         case 'caseManager':
-          cmp = (a.caseManager || '').localeCompare(b.caseManager || '');
+          cmp = (a.caseManager || []).join(',').localeCompare((b.caseManager || []).join(','));
           break;
         case 'followUpManager':
-          cmp = (a.followUpManager || '').localeCompare(b.followUpManager || '');
+          cmp = (a.followUpManager || []).join(',').localeCompare((b.followUpManager || []).join(','));
           break;
         case 'adoptionDate':
           cmp = (a.adoptionDate || Number.MAX_SAFE_INTEGER) - (b.adoptionDate || Number.MAX_SAFE_INTEGER);
@@ -218,6 +229,24 @@ export default function SeguimientosPageContent(): React.ReactElement {
     const phoneContact = followup.contacts?.find((c) => c.type === 'celular');
     return phoneContact ? String(phoneContact.value) : '';
   }, []);
+
+  /** Resolves manager emails to names and formats for table display */
+  const getManagerDisplay = useCallback((emails: string[] | undefined): React.ReactNode => {
+    const list = normalizeManager(emails);
+    if (list.length === 0) return <span className="text-gray-400">—</span>;
+    const names = list.map((e) => users.find((u) => u.id === e)?.name ?? e);
+    if (list.length === 1) return <span className="text-gray-700 truncate block">{names[0]}</span>;
+    if (list.length === 2) return (
+      <span className="text-gray-700">
+        {names[0]}<br /><span className="text-xs text-gray-400">{names[1]}</span>
+      </span>
+    );
+    return (
+      <span className="text-gray-700">
+        {names[0]}<br /><span className="text-xs text-gray-400">+{list.length - 1} más</span>
+      </span>
+    );
+  }, [users]);
 
   const handleSort = useCallback((field: SortField): void => {
     if (sortField === field) {
@@ -516,8 +545,8 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       </td>
 
                       {/* ID */}
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-mono">
+                      <td className="px-4 py-3 hidden sm:table-cell w-[120px]">
+                        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-mono truncate block">
                           {followup.animalId}
                         </code>
                       </td>
@@ -545,12 +574,12 @@ export default function SeguimientosPageContent(): React.ReactElement {
 
                       {/* Responsable */}
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-gray-700">{followup.caseManager || '—'}</span>
+                        {getManagerDisplay(followup.caseManager)}
                       </td>
 
                       {/* Resp. Seguimiento */}
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-gray-700">{followup.followUpManager || '—'}</span>
+                        {getManagerDisplay(followup.followUpManager)}
                       </td>
 
                       {/* Adopción */}

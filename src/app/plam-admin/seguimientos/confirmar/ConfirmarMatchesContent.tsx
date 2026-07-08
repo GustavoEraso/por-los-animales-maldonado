@@ -325,8 +325,8 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
         contactName: f.adoptante || '',
         contacts: f.telefono ? [{ type: 'celular' as const, value: f.telefono }] : [],
         address: f.direccion || '',
-        caseManager: f.responsable || '',
-        followUpManager: f.responsable || '',
+        caseManager: f.responsable ? [f.responsable] : [],
+        followUpManager: f.responsable ? [f.responsable] : [],
         newName: f.name.trim(),
         rescueReason: 'other',
         notes: notes.length > 0 ? notes : undefined,
@@ -541,7 +541,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
         if (data.direccion && data.direccion !== (pi?.address ?? '')) {
           defaults.add('address');
         }
-        if (data.responsable && data.responsable !== (pi?.followUpManager ?? '')) {
+        if (data.responsable && !pi?.followUpManager?.includes(data.responsable)) {
           defaults.add('followUpManager');
         }
         if (data.nombre_actual && data.nombre_actual !== (pi?.newName ?? '')) {
@@ -622,7 +622,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
       updates.address = ev.address;
     }
     if (fieldsToMigrate.has('followUpManager') && ev.followUpManager) {
-      updates.followUpManager = ev.followUpManager;
+      updates.followUpManager = [ev.followUpManager];
     }
     if (fieldsToMigrate.has('newName') && ev.newName) {
       updates.newName = ev.newName;
@@ -782,10 +782,10 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
       {
         key: 'followUpManager',
         label: 'Resp. seguimiento',
-        currentValue: pi?.followUpManager ?? '(vacío)',
+        currentValue: pi?.followUpManager?.join(', ') ?? '(vacío)',
         newValue: ev.followUpManager || '(vacío)',
         hasChanged:
-          (ev.followUpManager || '') !== (pi?.followUpManager ?? '') && !!ev.followUpManager,
+          (ev.followUpManager || '') !== (pi?.followUpManager?.[0] ?? '') && !!ev.followUpManager,
       },
       {
         key: 'newName',

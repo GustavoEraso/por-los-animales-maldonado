@@ -50,7 +50,7 @@ interface Vaccination {
 export interface PrivateInfoType {
   id: string;
   name: string;
-  caseManager?: string;
+  caseManager?: string[];
   rescueReason?:
     | 'abandonment'
     | 'lost'
@@ -83,7 +83,7 @@ export interface PrivateInfoType {
   /** Follow-up tracking status. Sentinel: 'active'. */
   followUpStatus?: 'active' | 'closed';
   /** Person responsible for follow-up tracking (sentinel: ''). Distinct from caseManager (rescuer). */
-  followUpManager?: string;
+  followUpManager?: string[];
   /** Name given by the adopter, distinct from the original organization name. Sentinel: ''. */
   newName?: string;
   /** Timestamp of the adoption event. Sentinel: 0. */

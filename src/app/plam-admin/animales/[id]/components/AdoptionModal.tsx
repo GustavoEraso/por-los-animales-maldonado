@@ -164,7 +164,7 @@ export default function AdoptionModal({
       isSterilized: animal.isSterilized,
       isAdopted: true,
       followUpStatus: 'active',
-      followUpManager: adoptionData.followUpManager || auth.currentUser?.email || '',
+      followUpManager: adoptionData.followUpManager ? [adoptionData.followUpManager] : (auth.currentUser?.email ? [auth.currentUser.email] : []),
       adoptionDate: now,
       nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
       lastFollowUpDate: 0,
