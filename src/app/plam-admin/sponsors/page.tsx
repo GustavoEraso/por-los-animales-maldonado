@@ -10,6 +10,8 @@ import Image from 'next/image';
 import { EditIcon, TrashIcon } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 import { handlePromiseToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 import { deleteImage } from '@/lib/deleteIgame';
 import Link from 'next/link';
 
@@ -76,6 +78,12 @@ export default function PlamAdminSponsors() {
       .map((c) => ({ ...c, sponsorIds: c.sponsorIds.filter((id) => id !== sponsorId) }));
 
     try {
+      await createAuditLog({
+        type: 'sponsor',
+        action: 'delete',
+        entityId: sponsorId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(
         Promise.all([
           deleteImage(current.image.imgId),
@@ -95,7 +103,12 @@ export default function PlamAdminSponsors() {
       await revalidateCache('sponsors');
       await fetchData();
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_SPONSOR_ERROR', message: 'Error deleting sponsor:', data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_SPONSOR_ERROR',
+        message: 'Error deleting sponsor:',
+        data: error,
+      });
     }
   };
 
@@ -122,7 +135,12 @@ export default function PlamAdminSponsors() {
       );
       await revalidateCache('sponsors');
     } catch (error) {
-      logger({ level: 'error', code: 'TOGGLE_CAROUSEL_ERROR', message: 'Error toggling carousel:', data: error });
+      logger({
+        level: 'error',
+        code: 'TOGGLE_CAROUSEL_ERROR',
+        message: 'Error toggling carousel:',
+        data: error,
+      });
       setCarousels((prev) => prev.map((c) => (c.id === carousel.id ? carousel : c)));
     }
   };
@@ -137,7 +155,12 @@ export default function PlamAdminSponsors() {
       });
       await revalidateCache('sponsors');
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_PLACEMENTS_ERROR', message: 'Error updating placements:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_PLACEMENTS_ERROR',
+        message: 'Error updating placements:',
+        data: error,
+      });
       await fetchData();
     }
   };
@@ -167,6 +190,12 @@ export default function PlamAdminSponsors() {
 
   const handleDeleteCarousel = async (carouselId: string) => {
     try {
+      await createAuditLog({
+        type: 'carousel',
+        action: 'delete',
+        entityId: carouselId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       // Build updated config removing the deleted carousel from all places
       const cleanedConfig = Object.fromEntries(
         Object.entries(carouselsConfig).map(([place, ids]) => [
@@ -196,7 +225,12 @@ export default function PlamAdminSponsors() {
       setCarouselsConfig(cleanedConfig);
       await fetchData();
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_CAROUSEL_ERROR', message: 'Error deleting carousel:', data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_CAROUSEL_ERROR',
+        message: 'Error deleting carousel:',
+        data: error,
+      });
     }
   };
 

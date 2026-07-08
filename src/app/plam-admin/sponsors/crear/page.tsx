@@ -12,6 +12,8 @@ import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 
 const initialSponsor: SponsorType = {
   id: '',
@@ -66,6 +68,12 @@ export default function CreateSponsorForm() {
 
       const newSponsor: SponsorType = { ...sponsor, id };
 
+      await createAuditLog({
+        type: 'sponsor',
+        action: 'create',
+        entityId: id,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(
         postFirestoreData<SponsorType>({ data: newSponsor, currentCollection: 'sponsors', id }),
         {
@@ -87,7 +95,12 @@ export default function CreateSponsorForm() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      logger({ level: 'error', code: 'SAVE_SPONSOR_ERROR', message: 'Error al guardar el sponsor:', data: error });
+      logger({
+        level: 'error',
+        code: 'SAVE_SPONSOR_ERROR',
+        message: 'Error al guardar el sponsor:',
+        data: error,
+      });
       setLoading(false);
     } finally {
       const elapsed = Date.now() - start;

@@ -17,6 +17,7 @@ import { EditIcon, TrashIcon, EyeIcon, CheckIcon } from '@/components/Icons';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 
 import { useAnimalDetail } from './hooks/useAnimalDetail';
 import AnimalInfoSection from './components/AnimalInfoSection';
@@ -75,6 +76,17 @@ export default function AnimalPage(): React.ReactElement | null {
     setAllAnimalTransactions((prev) => [newTransaction, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: animal.id,
+        entityName: animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransaction.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({
@@ -99,7 +111,12 @@ export default function AnimalPage(): React.ReactElement | null {
       );
       await revalidateCache('animals');
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_VISIBILITY', message: 'Error updating visibility:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_VISIBILITY',
+        message: 'Error updating visibility:',
+        data: error,
+      });
       setAnimal(animal);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
     } finally {
@@ -139,6 +156,17 @@ export default function AnimalPage(): React.ReactElement | null {
     setAllAnimalTransactions((prev) => [newTransaction, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: animal.id,
+        entityName: animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransaction.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({
@@ -163,7 +191,12 @@ export default function AnimalPage(): React.ReactElement | null {
       );
       await revalidateCache('animals');
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_AVAILABILITY', message: 'Error updating availability:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_AVAILABILITY',
+        message: 'Error updating availability:',
+        data: error,
+      });
       setAnimal(animal);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransaction.date));
     } finally {
@@ -200,6 +233,17 @@ export default function AnimalPage(): React.ReactElement | null {
         },
       };
 
+      await createAuditLog({
+        type: 'animal',
+        action: 'delete',
+        entityId: id,
+        entityName: animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransaction.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id }),
@@ -227,7 +271,12 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_ANIMAL', message: "Error changing the animal's status:", data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_ANIMAL',
+        message: "Error changing the animal's status:",
+        data: error,
+      });
     }
   };
 
@@ -256,6 +305,17 @@ export default function AnimalPage(): React.ReactElement | null {
         },
       };
 
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: id,
+        entityName: animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({ data: updatedAnimal, currentCollection: 'animals', id }),
@@ -283,7 +343,12 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      logger({ level: 'error', code: 'RESTORE_ANIMAL', message: "Error changing the animal's status:", data: error });
+      logger({
+        level: 'error',
+        code: 'RESTORE_ANIMAL',
+        message: "Error changing the animal's status:",
+        data: error,
+      });
     } finally {
       const elapsed = createTimestamp() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -346,6 +411,17 @@ export default function AnimalPage(): React.ReactElement | null {
         },
       };
 
+      await createAuditLog({
+        type: 'animal',
+        action: 'delete',
+        entityId: animalToDelete.id,
+        entityName: animalToDelete.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransaction.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           deleteFirestoreData({ collection: 'animals', docId: animalToDelete.id }),
@@ -373,7 +449,12 @@ export default function AnimalPage(): React.ReactElement | null {
       await revalidateCache('animals');
       router.push('/plam-admin/animales');
     } catch (error) {
-      logger({ level: 'error', code: 'HARD_DELETE_ANIMAL', message: 'Error to delete animal:', data: error });
+      logger({
+        level: 'error',
+        code: 'HARD_DELETE_ANIMAL',
+        message: 'Error to delete animal:',
+        data: error,
+      });
     } finally {
       const elapsed = createTimestamp() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -459,8 +540,8 @@ export default function AnimalPage(): React.ReactElement | null {
                   <div className="aspect-square">
                     <Image
                       className="w-full h-full object-cover bg-white"
-src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
-alt={animal.images?.[0]?.imgAlt ?? animal.name}
+                      src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+                      alt={animal.images?.[0]?.imgAlt ?? animal.name}
                       width={300}
                       height={300}
                     />
@@ -494,8 +575,8 @@ alt={animal.images?.[0]?.imgAlt ?? animal.name}
                   <div className="aspect-square">
                     <Image
                       className="w-full h-full object-cover bg-white"
-src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
-alt={animal.images?.[0]?.imgAlt ?? animal.name}
+                      src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+                      alt={animal.images?.[0]?.imgAlt ?? animal.name}
                       width={300}
                       height={300}
                     />

@@ -11,6 +11,8 @@ import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 
 /**
  * Admin page for creating a new sponsor carousel.
@@ -94,6 +96,12 @@ export default function CreateCarouselPage() {
 
     setLoading(true);
     try {
+      await createAuditLog({
+        type: 'carousel',
+        action: 'create',
+        entityId: id,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(
         postFirestoreData<CarouselType>({ data: carousel, currentCollection: 'carousels', id }),
         {
@@ -107,7 +115,12 @@ export default function CreateCarouselPage() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      logger({ level: 'error', code: 'CREATE_CAROUSEL_ERROR', message: 'Error creating carousel:', data: error });
+      logger({
+        level: 'error',
+        code: 'CREATE_CAROUSEL_ERROR',
+        message: 'Error creating carousel:',
+        data: error,
+      });
     } finally {
       setLoading(false);
     }

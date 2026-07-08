@@ -14,6 +14,8 @@ import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 
 const initialSponsor: SponsorType = {
   id: '',
@@ -53,7 +55,12 @@ export default function EditSponsorForm() {
         setOldSponsor(structuredClone(fetched));
         setSponsor(fetched);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_SPONSOR_ERROR', message: 'Error fetching sponsor data:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_SPONSOR_ERROR',
+          message: 'Error fetching sponsor data:',
+          data: error,
+        });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -99,6 +106,12 @@ export default function EditSponsorForm() {
     }
 
     try {
+      await createAuditLog({
+        type: 'sponsor',
+        action: 'update',
+        entityId: currentId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(
         postFirestoreData<SponsorType>({
           data: sponsor,
@@ -120,7 +133,12 @@ export default function EditSponsorForm() {
       await revalidateCache('sponsors');
       router.replace('/plam-admin/sponsors');
     } catch (error) {
-      logger({ level: 'error', code: 'UPDATE_SPONSOR_ERROR', message: 'Error al actualizar el sponsor:', data: error });
+      logger({
+        level: 'error',
+        code: 'UPDATE_SPONSOR_ERROR',
+        message: 'Error al actualizar el sponsor:',
+        data: error,
+      });
     }
   };
 

@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { EditIcon, TrashIcon } from '@/components/Icons';
 import { Modal } from '@/components/Modal';
 import { handlePromiseToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 import { deleteImage } from '@/lib/deleteIgame';
 import Link from 'next/link';
 
@@ -35,7 +37,12 @@ export default function PlamAdminBanners() {
   const handleDelete = async (bannerId: string) => {
     const currentBanner = banners.find((b) => b.id === bannerId);
     if (!currentBanner) {
-      logger({ level: 'error', code: 'BANNER_NOT_FOUND', message: 'Banner not found:', data: bannerId });
+      logger({
+        level: 'error',
+        code: 'BANNER_NOT_FOUND',
+        message: 'Banner not found:',
+        data: bannerId,
+      });
       return;
     }
     const imgId = currentBanner.image.imgId;
@@ -48,6 +55,12 @@ export default function PlamAdminBanners() {
     ];
 
     try {
+      await createAuditLog({
+        type: 'banner',
+        action: 'delete',
+        entityId: bannerId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(Promise.all(promises), {
         messages: {
           pending: {
@@ -70,7 +83,12 @@ export default function PlamAdminBanners() {
 
       await fetchBanners();
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_BANNER_ERROR', message: 'Error deleting banner:', data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_BANNER_ERROR',
+        message: 'Error deleting banner:',
+        data: error,
+      });
     }
   };
 
