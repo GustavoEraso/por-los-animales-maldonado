@@ -162,6 +162,7 @@ export default function EventModal({
         }),
       ...(isDeceasedEvent && {
         followUpStatus: 'closed' as const,
+        nextFollowUpDate: 0,
       }),
     };
 
