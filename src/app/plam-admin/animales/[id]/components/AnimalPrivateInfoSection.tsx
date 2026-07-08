@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
+import { Animal, AnimalTransactionType, PrivateInfoType, UserType } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
@@ -13,6 +13,7 @@ import { EditIcon, TrashIcon, PlusIcon } from '@/components/Icons';
 import { contactLabelMap, getRescueReasonLabel } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 
 interface AnimalPrivateInfoSectionProps {
   animal: Animal;
@@ -39,6 +40,140 @@ export default function AnimalPrivateInfoSection({
   const noteRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
   const originalNoteValues = useRef<Record<number, string>>({});
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  // Mini-modal states for editing managers
+  const [editCaseManagerOpen, setEditCaseManagerOpen] = useState(false);
+  const [editFollowUpManagerOpen, setEditFollowUpManagerOpen] = useState(false);
+  const [selectedCaseManager, setSelectedCaseManager] = useState('');
+  const [selectedFollowUpManager, setSelectedFollowUpManager] = useState('');
+  const [showOtherCaseManager, setShowOtherCaseManager] = useState(false);
+  const [caseManagerOpen, setCaseManagerOpen] = useState(false);
+  const [followUpManagerOpen, setFollowUpManagerOpen] = useState(false);
+
+  // Fetch authorized users to resolve names from emails
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getFirestoreData({
+          currentCollection: 'authorizedEmails',
+        });
+        setUsers(data as UserType[]);
+      } catch (error) {
+        logger({ level: 'error', code: 'FETCH_USERS_INFO', message: 'Error fetching users for display:', data: error });
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  /** Resolve a user email to their display name, falling back to the email itself */
+  const getUserName = (email: string): string => {
+    return users.find((u) => u.id === email)?.name ?? email;
+  };
+
+  const handleSaveCaseManager = async (): Promise<void> => {
+    setEditCaseManagerOpen(false);
+    if (selectedCaseManager === privateInfo.caseManager) return;
+
+    const now = createTimestamp();
+    const updated: PrivateInfoType = {
+      ...privateInfo,
+      caseManager: selectedCaseManager,
+    };
+    const tx: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'update',
+      date: now,
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: now,
+      changes: {
+        before: { caseManager: privateInfo.caseManager },
+        after: { caseManager: selectedCaseManager },
+      },
+    };
+
+    setPrivateInfo(updated);
+    setAllAnimalTransactions((prev) => [tx, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<PrivateInfoType>({
+            data: updated,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postTransactionData({ data: tx }),
+        ]),
+        {
+          messages: {
+            pending: { title: 'Guardando', text: 'Actualizando responsable...' },
+            success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
+            error: { title: 'Error', text: 'No se pudo actualizar' },
+          },
+        }
+      );
+    } catch (error) {
+      logger({ level: 'error', code: 'UPDATE_CASE_MANAGER', message: 'Error updating case manager:', data: error });
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== tx.date));
+    }
+  };
+
+  const handleSaveFollowUpManager = async (): Promise<void> => {
+    setEditFollowUpManagerOpen(false);
+    if (selectedFollowUpManager === privateInfo.followUpManager) return;
+
+    const now = createTimestamp();
+    const updated: PrivateInfoType = {
+      ...privateInfo,
+      followUpManager: selectedFollowUpManager,
+    };
+    const tx: AnimalTransactionType = {
+      id: privateInfo.id,
+      name: privateInfo.name || '',
+      img: animal.images[0],
+      transactionType: 'update',
+      date: now,
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: now,
+      changes: {
+        before: { followUpManager: privateInfo.followUpManager },
+        after: { followUpManager: selectedFollowUpManager },
+      },
+    };
+
+    setPrivateInfo(updated);
+    setAllAnimalTransactions((prev) => [tx, ...prev]);
+
+    try {
+      await handlePromiseToast(
+        Promise.all([
+          postFirestoreData<PrivateInfoType>({
+            data: updated,
+            currentCollection: 'animalPrivateInfo',
+            id: privateInfo.id,
+          }),
+          postTransactionData({ data: tx }),
+        ]),
+        {
+          messages: {
+            pending: { title: 'Guardando', text: 'Actualizando responsable...' },
+            success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
+            error: { title: 'Error', text: 'No se pudo actualizar' },
+          },
+        }
+      );
+    } catch (error) {
+      logger({ level: 'error', code: 'UPDATE_FOLLOWUP_MANAGER', message: 'Error updating follow-up manager:', data: error });
+      setPrivateInfo(privateInfo);
+      setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== tx.date));
+    }
+  };
+
+  const filteredUsers = users.filter((u) => u.role !== 'user');
 
   const {
     contactName,
@@ -232,12 +367,46 @@ export default function AnimalPrivateInfoSection({
     <>
       <section className="w-full flex flex-col gap-1 max-w-7xl shrink-0 p-4">
         {caseManager && (
-          <div className="bg-amber-sunset p-3 rounded-lg">
+          <div className="bg-amber-sunset p-3 rounded-lg flex items-center justify-between">
             <p className="text-xl font-semibold text-green-dark">
-              Responsable del caso: <span className="font-normal">{caseManager}</span>
+              Responsable del caso:{' '}
+              <span className="font-normal">{getUserName(caseManager)}</span>
             </p>
+            <button
+              className="bg-green-dark text-white px-2 py-1 rounded text-sm hover:bg-green-700 transition flex items-center gap-1"
+              title="Cambiar responsable del caso"
+              onClick={() => {
+                setSelectedCaseManager(caseManager || '');
+                setShowOtherCaseManager(!!caseManager && !caseManager.includes('@'));
+                setEditCaseManagerOpen(true);
+              }}
+            >
+              <EditIcon size={16} />
+              <span className="hidden sm:inline">Cambiar</span>
+            </button>
           </div>
         )}
+        <div className="bg-amber-sunset p-3 rounded-lg flex items-center justify-between">
+          <p className="text-xl font-semibold text-green-dark">
+            Responsable del seguimiento:{' '}
+            <span className="font-normal">
+              {privateInfo.followUpManager
+                ? getUserName(privateInfo.followUpManager)
+                : 'Sin asignar'}
+            </span>
+          </p>
+          <button
+            className="bg-green-dark text-white px-2 py-1 rounded text-sm hover:bg-green-700 transition flex items-center gap-1"
+            title="Cambiar responsable del seguimiento"
+            onClick={() => {
+              setSelectedFollowUpManager(privateInfo.followUpManager || '');
+              setEditFollowUpManagerOpen(true);
+            }}
+          >
+            <EditIcon size={16} />
+            <span className="hidden sm:inline">Cambiar</span>
+          </button>
+        </div>
         {rescueReason && (
           <div className="bg-cream-light p-3 rounded-lg">
             <p className="text-xl font-semibold text-green-dark">
@@ -404,6 +573,177 @@ export default function AnimalPrivateInfoSection({
           </li>
         </ul>
       </section>
+
+      {/* Edit Case Manager Modal */}
+      <Modal
+        buttonStyles="hidden"
+        buttonText=""
+        isOpen={editCaseManagerOpen}
+        setIsOpen={setEditCaseManagerOpen}
+      >
+        <section className="flex flex-col items-center justify-center bg-cream-light w-full h-full p-6 gap-4 text-left">
+          <h2 className="font-extrabold text-3xl text-green-dark text-center">
+            Cambiar responsable del caso
+          </h2>
+          <div className="w-full max-w-md space-y-4">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCaseManagerOpen(!caseManagerOpen)}
+                className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
+              >
+                <span>
+                  {selectedCaseManager && !showOtherCaseManager
+                    ? filteredUsers.find((u) => u.id === selectedCaseManager)?.name ?? selectedCaseManager
+                    : showOtherCaseManager && selectedCaseManager
+                      ? selectedCaseManager
+                      : 'Sin asignar'}
+                </span>
+                <span className="text-xs text-gray-400">{caseManagerOpen ? '▲' : '▼'}</span>
+              </button>
+              {caseManagerOpen && (
+                <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCaseManager(user.id);
+                        setShowOtherCaseManager(false);
+                        setCaseManagerOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 transition-colors border ${
+                        selectedCaseManager === user.id && !showOtherCaseManager
+                          ? 'bg-green-100 border-green-300'
+                          : 'border-transparent hover:bg-green-50'
+                      }`}
+                    >
+                      <span className="block text-sm font-medium text-gray-900">{user.name}</span>
+                      <span className="block text-xs text-gray-500">{user.id}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCaseManager('');
+                      setShowOtherCaseManager(true);
+                      setCaseManagerOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 transition-colors border ${
+                      showOtherCaseManager ? 'bg-green-100 border-green-300' : 'border-transparent hover:bg-green-50'
+                    }`}
+                  >
+                    <span className="block text-sm font-medium text-gray-900">Otro</span>
+                    <span className="block text-xs text-gray-500">Escribir nombre manualmente</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            {showOtherCaseManager && (
+              <>
+                <input
+                  type="text"
+                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                  placeholder="Nombre del responsable"
+                  value={selectedCaseManager}
+                  onChange={(e) => setSelectedCaseManager(e.target.value)}
+                />
+                <p className="text-xs text-amber-700">Conviene seleccionar de la lista.</p>
+              </>
+            )}
+            <div className="flex gap-2">
+              <button
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+                onClick={() => setEditCaseManagerOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="flex-1 bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                onClick={handleSaveCaseManager}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </section>
+      </Modal>
+
+      {/* Edit Follow-up Manager Modal */}
+      <Modal
+        buttonStyles="hidden"
+        buttonText=""
+        isOpen={editFollowUpManagerOpen}
+        setIsOpen={setEditFollowUpManagerOpen}
+      >
+        <section className="flex flex-col items-center justify-center bg-cream-light w-full h-full p-6 gap-4 text-left">
+          <h2 className="font-extrabold text-3xl text-green-dark text-center">
+            Cambiar responsable del seguimiento
+          </h2>
+          <div className="w-full max-w-md space-y-4">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setFollowUpManagerOpen(!followUpManagerOpen)}
+                className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
+              >
+                <span>
+                  {selectedFollowUpManager
+                    ? filteredUsers.find((u) => u.id === selectedFollowUpManager)?.name ?? selectedFollowUpManager
+                    : 'Sin asignar'}
+                </span>
+                <span className="text-xs text-gray-400">{followUpManagerOpen ? '▲' : '▼'}</span>
+              </button>
+              {followUpManagerOpen && (
+                <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFollowUpManager('');
+                      setFollowUpManagerOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-green-50"
+                  >
+                    Sin asignar
+                  </button>
+                  {filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedFollowUpManager(user.id);
+                        setFollowUpManagerOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 transition-colors border ${
+                        selectedFollowUpManager === user.id
+                          ? 'bg-green-100 border-green-300'
+                          : 'border-transparent hover:bg-green-50'
+                      }`}
+                    >
+                      <span className="block text-sm font-medium text-gray-900">{user.name}</span>
+                      <span className="block text-xs text-gray-500">{user.id}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+                onClick={() => setEditFollowUpManagerOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="flex-1 bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                onClick={handleSaveFollowUpManager}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </section>
+      </Modal>
 
       <ConfirmDialog
         isOpen={confirmDeleteIndex !== null}

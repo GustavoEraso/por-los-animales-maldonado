@@ -7,9 +7,9 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { Modal } from '@/components/Modal';
 import { EditIcon } from '@/components/Icons';
-import { AnimalActionModalProps } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+import type { AnimalActionModalProps } from '../types';
 
 interface EditContactModalProps {
   animal: AnimalActionModalProps['animal'];
@@ -18,7 +18,6 @@ interface EditContactModalProps {
   setAllAnimalTransactions: AnimalActionModalProps['setAllAnimalTransactions'];
 }
 
-/** Contact entry shape for editing */
 interface FormContact {
   type: 'celular' | 'email' | 'other';
   value: string;
@@ -41,7 +40,6 @@ const DEFAULT_DATA: EditContactData = {
 /**
  * Modal to edit contact details (name, contacts, address) of an animal
  * without changing its status or triggering a return/re-adoption.
- * Works for both adopted and in-transit animals.
  */
 export default function EditContactModal({
   animal,
@@ -52,7 +50,6 @@ export default function EditContactModal({
   const [open, setOpen] = useState<boolean>(false);
   const [data, setData] = useState<EditContactData>(DEFAULT_DATA);
 
-  // Pre-populate from privateInfo when modal opens
   useEffect(() => {
     if (!open) return;
     setData({
@@ -72,10 +69,6 @@ export default function EditContactModal({
     const notePrefix = '[Edición de contacto] - ';
     const now = createTimestamp();
     const validContacts = data.contacts.filter((c) => c.value.trim() !== '');
-
-    const beforeContactName = privateInfo.contactName;
-    const beforeContacts = privateInfo.contacts;
-    const beforeAddress = privateInfo.address;
 
     const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
@@ -99,29 +92,22 @@ export default function EditContactModal({
       modifiedBy: auth.currentUser?.email || 'system',
       since: now,
       contactName: data.contactName,
-      contacts: validContacts.map((c) => ({
-        type: c.type,
-        value: c.value,
-      })),
+      contacts: validContacts.map((c) => ({ type: c.type, value: c.value })),
       changes: {
         before: {
-          contactName: beforeContactName,
-          contacts: beforeContacts,
-          address: beforeAddress,
+          contactName: privateInfo.contactName,
+          contacts: privateInfo.contacts,
+          address: privateInfo.address,
         },
         after: {
           contactName: data.contactName,
-          contacts: validContacts.map((c) => ({
-            type: c.type,
-            value: c.value,
-          })),
+          contacts: validContacts.map((c) => ({ type: c.type, value: c.value })),
           address: data.address,
           ...(data.note.trim() ? { notes: [notePrefix + data.note] } : {}),
         },
       },
     };
 
-    // Optimistic UI
     setPrivateInfo(updatedPrivateInfo);
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
@@ -133,14 +119,12 @@ export default function EditContactModal({
             currentCollection: 'animalPrivateInfo',
             id: privateInfo.id,
           }),
-          postTransactionData({
-            data: newTransactionData,
-          }),
+          postTransactionData({ data: newTransactionData }),
         ]),
         {
           messages: {
             pending: { title: 'Guardando', text: 'Actualizando datos de contacto...' },
-            success: { title: 'Contacto actualizado', text: 'Los datos de contacto se actualizaron correctamente' },
+            success: { title: 'Contacto actualizado', text: 'Los datos se actualizaron correctamente' },
             error: { title: 'Error', text: 'No se pudieron actualizar los datos' },
           },
         }
@@ -157,10 +141,10 @@ export default function EditContactModal({
 
   return (
     <Modal
-      buttonStyles="bg-blue-600 text-white text-3xl px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
+      buttonStyles="bg-blue-600 text-white text-xl px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
       buttonText={
         <div className="flex flex-row gap-2 justify-center items-center">
-          <EditIcon size={24} />
+          <EditIcon size={20} />
           <span>Editar Contacto</span>
         </div>
       }
@@ -173,7 +157,6 @@ export default function EditContactModal({
         </h2>
 
         <div className="w-full max-w-2xl space-y-4">
-          {/* Contact Name */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">
               Nombre del contacto *
@@ -187,7 +170,6 @@ export default function EditContactModal({
             />
           </div>
 
-          {/* Contacts */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Contactos</label>
             {data.contacts.map((contact, index) => (
@@ -242,7 +224,6 @@ export default function EditContactModal({
             </button>
           </div>
 
-          {/* Address */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Dirección</label>
             <input
@@ -254,7 +235,6 @@ export default function EditContactModal({
             />
           </div>
 
-          {/* Note */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Nota (opcional)</label>
             <textarea
