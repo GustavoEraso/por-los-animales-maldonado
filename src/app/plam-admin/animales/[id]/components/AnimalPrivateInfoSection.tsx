@@ -8,6 +8,7 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import { postNewAnimalNote } from '@/lib/firebase/postAnimalNote';
 import { Modal } from '@/components/Modal';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import EditContactModal from './EditContactModal';
 import { EditIcon, TrashIcon, PlusIcon } from '@/components/Icons';
 import { contactLabelMap, getRescueReasonLabel } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
@@ -279,16 +280,6 @@ export default function AnimalPrivateInfoSection({
           </div>
         )}
         <ul className="list-none p bg-cream-light flex flex-col gap-2 px-2 rounded-lg">
-          <li className="text-xl font-semibold">
-            <span>{contactLabelMap[status]}</span>:{' '}
-            <span className="font-normal">{contactName}</span>
-          </li>
-          {contacts &&
-            contacts.map((contact, index) => (
-              <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">
-                {contact.type}: <span className="font-normal">{contact.value}</span>
-              </li>
-            ))}
           {privateInfo.adoptionFormId && (
             <li key="adoption-form" className="text-xl font-semibold">
               Formulario de adopción:{' '}
@@ -300,6 +291,29 @@ export default function AnimalPrivateInfoSection({
               </Link>
             </li>
           )}
+          <li className="text-xl font-semibold">
+            <span>{contactLabelMap[status]}</span>:{' '}
+            <span className="font-normal">{contactName}</span>
+          </li>
+          {contacts &&
+            contacts.map((contact, index) => (
+              <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">
+                {contact.type}: <span className="font-normal">{contact.value}</span>
+              </li>
+            ))}
+          {privateInfo.address && (
+            <li className="text-xl font-semibold">
+              Dirección: <span className="font-normal">{privateInfo.address}</span>
+            </li>
+          )}
+          <li className="flex justify-center items-center pt-2">
+            <EditContactModal
+              animal={animal}
+              privateInfo={privateInfo}
+              setPrivateInfo={setPrivateInfo}
+              setAllAnimalTransactions={setAllAnimalTransactions}
+            />
+          </li>
           <li className="text-xl font-semibold">
             {!notes ||
               (notes.length === 0 && <p className="font-normal">No hay notas disponibles.</p>)}
