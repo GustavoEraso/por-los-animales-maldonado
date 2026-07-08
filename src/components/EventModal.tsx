@@ -7,6 +7,7 @@ import {
   AnimalActionModalProps,
   EventFormData,
   Img,
+  UserType,
 } from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -15,11 +16,12 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
-import { CalendarIcon, LockClosedIcon } from '@/components/Icons';
+import { CalendarIcon, LockClosedIcon, EditIcon } from '@/components/Icons';
 import { eventLabels } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
 import UploadImages from '@/elements/UploadImage';
 import { logger } from '@/lib/logger';
+import { normalizeManager } from '@/lib/data/seguimientos';
 
 /** Default values for event form */
 const DEFAULT_EVENT_DATA: EventFormData = {
@@ -65,6 +67,8 @@ interface EventModalProps extends AnimalActionModalProps {
   onEventSaved?: () => void;
   /** Pre-selects an event type when the modal opens (e.g. from quick-action buttons) */
   defaultEventType?: EventFormData['eventType'];
+  /** Authorized users list for the follow-up manager dropdown */
+  users?: UserType[];
 }
 
 /**
@@ -83,6 +87,7 @@ export default function EventModal({
   setIsOpen: controlledSetIsOpen,
   onEventSaved,
   defaultEventType,
+  users,
 }: EventModalProps): React.ReactElement {
   const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
   const [eventData, setEventData] = useState<EventFormData>(DEFAULT_EVENT_DATA);
@@ -92,6 +97,25 @@ export default function EventModal({
   const [quickDayValue, setQuickDayValue] = useState<string>('');
   const [closeCase, setCloseCase] = useState<boolean>(false);
   const [eventImage, setEventImage] = useState<Img | null>(null);
+
+  // --- Follow-up manager view state ---
+  const [showManagerView, setShowManagerView] = useState<boolean>(false);
+  const [selectedFollowUpManagers, setSelectedFollowUpManagers] = useState<string[]>([]);
+
+  const filteredUsers = (users || []).filter((u) => u.role !== 'user');
+  const currentManagers = normalizeManager(privateInfo.followUpManager);
+  const hasCustomManager = currentManagers.some((e) => !e.includes('@'));
+
+  /** Resolve user email to display name */
+  const getUserName = (email: string): string =>
+    (users || []).find((u) => u.id === email)?.name ?? email;
+
+  /** Toggle a manager email in the selection */
+  const toggleManager = (email: string): void => {
+    setSelectedFollowUpManagers((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
+  };
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : eventModalOpen;
   const setIsOpen = controlledSetIsOpen || setEventModalOpen;
@@ -413,6 +437,62 @@ export default function EventModal({
     }
   };
 
+  /**
+   * Saves the updated follow-up manager list to Firestore.
+   * Uses optimistic UI and creates an audit log.
+   */
+  const handleSaveFollowUpManager = async (): Promise<void> => {
+    const updated = [...new Set(selectedFollowUpManagers)].filter(Boolean);
+    if (updated.join(',') === currentManagers.join(',')) {
+      setShowManagerView(false);
+      return;
+    }
+
+    const newPI: PrivateInfoType = { ...privateInfo, followUpManager: updated };
+    setPrivateInfo(newPI);
+
+    try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: {
+          before: { followUpManager: currentManagers },
+          after: { followUpManager: updated },
+        },
+      });
+
+      await handlePromiseToast(
+        postFirestoreData<PrivateInfoType>({
+          data: newPI,
+          currentCollection: 'animalPrivateInfo',
+          id: privateInfo.id,
+        }),
+        {
+          messages: {
+            pending: { title: 'Guardando', text: 'Actualizando responsable...' },
+            success: { title: 'Actualizado', text: 'Responsable actualizado correctamente' },
+            error: { title: 'Error', text: 'No se pudo actualizar' },
+          },
+        }
+      );
+
+      onEventSaved?.();
+      setShowManagerView(false);
+    } catch (error) {
+      setPrivateInfo(privateInfo);
+      setShowManagerView(false);
+      logger({
+        level: 'error',
+        code: 'UPDATE_FOLLOWUP_MANAGER',
+        message: 'Error updating follow-up manager:',
+        data: error,
+      });
+    }
+  };
+
   return (
     <Modal
       buttonStyles={
@@ -430,261 +510,379 @@ export default function EventModal({
       setIsOpen={setIsOpen}
     >
       <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
-        <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
-          Registrar Evento
-        </h2>
-
-        <div className="w-full max-w-2xl space-y-4">
-          {/* Closed case banner — shown when follow-up case is closed */}
-          {isAdopted && privateInfo.followUpStatus === 'closed' && (
-            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <LockClosedIcon size={20} className="flex-shrink-0 mt-0.5 text-amber-600" />
-                <div className="flex-1">
-                  <h3 className="text-amber-800 font-semibold text-sm">
-                    Este caso de seguimiento está cerrado
-                  </h3>
-                  <p className="text-amber-700 text-xs mt-1">
-                    No se realizarán más seguimientos para este animal.
+        {showManagerView ? (
+          <>
+            <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+              Responsable del seguimiento
+            </h2>
+            <div className="w-full max-w-2xl space-y-4">
+              <p className="text-sm text-gray-500 text-center">
+                {animal.name} —{' '}
+                {currentManagers.length === 0
+                  ? 'Sin responsable asignado'
+                  : `Actualmente: ${currentManagers.map((e) => getUserName(e)).join(', ')}`}
+              </p>
+              <div className="border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredUsers.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">
+                    No hay usuarios disponibles
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleReopenCase}
-                    className="mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
-                  >
-                    Reabrir caso
-                  </button>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <label
+                      key={user.id}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-green-50 cursor-pointer border-b border-gray-100"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedFollowUpManagers.includes(user.id)}
+                        onChange={() => toggleManager(user.id)}
+                        className="accent-green-700"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-base font-medium text-gray-900 truncate">
+                          {user.name}
+                        </span>
+                        <span className="block text-sm text-gray-500 truncate">{user.id}</span>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+              {selectedFollowUpManagers.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedFollowUpManagers.map((email) => (
+                    <span
+                      key={email}
+                      className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-sm px-3 py-1.5 rounded-lg"
+                    >
+                      {getUserName(email)}
+                      <button
+                        type="button"
+                        onClick={() => toggleManager(email)}
+                        className="text-green-600 hover:text-red-600 font-bold text-lg leading-none"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Event Type */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Tipo de Evento *</label>
-            <select
-              className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
-              value={eventData.eventType}
-              onChange={(e) =>
-                setEventData((prev) => ({
-                  ...prev,
-                  eventType: e.target.value as EventFormData['eventType'],
-                }))
-              }
-            >
-              {!isDeceased && <option value="followup">Seguimiento</option>}
-              {!isDeceased && <option value="vaccination">Vacunación</option>}
-              {!isDeceased && <option value="sterilization">Esterilización</option>}
-              {!isDeceased && <option value="medical">Médico</option>}
-              {!isDeceased && <option value="emergency">Emergencia</option>}
-              {!isDeceased && <option value="supply">Suministro alimento insumos etc</option>}
-              {!isDeceased && <option value="deceased">Fallecimiento</option>}
-              <option value="other">Otro</option>
-            </select>
-          </div>
-
-          {/* Vaccination specific fields */}
-          {eventData.eventType === 'vaccination' && (
-            <>
-              <div>
-                <label className="block text-green-dark font-semibold mb-2">
-                  Nombre de la Vacuna *
-                </label>
-                <input
-                  type="text"
-                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
-                  placeholder="Ej: Rabia, Séxtuple, etc."
-                  value={eventData.vaccineName || ''}
-                  onChange={(e) =>
-                    setEventData((prev) => ({ ...prev, vaccineName: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-green-dark font-semibold mb-2">
-                  Fecha de Vacunación *
-                </label>
-                <input
-                  type="date"
-                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
-                  value={eventData.vaccineDate || ''}
-                  onChange={(e) =>
-                    setEventData((prev) => ({ ...prev, vaccineDate: e.target.value }))
-                  }
-                />
-              </div>
-            </>
-          )}
-
-          {/* Note */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">
-              Descripción del Evento {eventData.eventType === 'vaccination' ? '(opcional)' : '*'}
-            </label>
-            <textarea
-              className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
-              placeholder="Escribe información sobre el evento..."
-              value={eventData.note}
-              onChange={(e) => setEventData((prev) => ({ ...prev, note: e.target.value }))}
-            />
-          </div>
-
-          {/* Event image upload */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Imagen (opcional)</label>
-            {eventImage ? (
-              <div className="flex items-center gap-3">
-                <img
-                  src={eventImage.imgUrl}
-                  alt={eventImage.imgAlt}
-                  className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
-                />
+              )}
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setEventImage(null)}
-                  className="text-red-600 hover:text-red-800 text-sm underline"
+                  onClick={handleSaveFollowUpManager}
+                  className="flex-1 bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Quitar imagen
+                  Guardar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowManagerView(false)}
+                  className="px-4 py-2 border-2 border-green-dark text-green-dark rounded-lg hover:bg-green-50 transition-colors"
+                >
+                  Volver
                 </button>
               </div>
-            ) : (
-              <UploadImages
-                maxFiles={1}
-                currentFolder="follow_up"
-                onImagesAdd={(imgs) => {
-                  if (imgs[0]) {
-                    setEventImage({
-                      ...imgs[0],
-                      imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
-                    });
-                  }
-                }}
-              />
-            )}
-          </div>
-
-          {/* Next follow-up date (only for adopted animals + followup events) */}
-          {showFollowUpDate && (
-            <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
-              <label className="block text-green-dark font-semibold mb-2">
-                Próxima fecha de seguimiento (opcional)
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Programa la próxima fecha en la que se debe contactar al adoptante
-              </p>
-
-              {/* Close case checkbox — only shown when case is currently open */}
-              {privateInfo.followUpStatus !== 'closed' && (
-                <label className="flex items-center gap-2 mb-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={closeCase}
-                    onChange={(e) => {
-                      setCloseCase(e.target.checked);
-                      if (e.target.checked) {
-                        setNextFollowUpDateStr('');
-                        setQuickDayValue('');
-                      }
-                    }}
-                    className="w-4 h-4 accent-red-600"
-                  />
-                  <span className="text-sm text-red-700 font-medium">
-                    Cerrar caso — no se hará más seguimiento
-                  </span>
-                </label>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+              Registrar Evento
+            </h2>
+            <div className="w-full max-w-2xl space-y-4">
+              {/* Closed case banner — shown when follow-up case is closed */}
+              {isAdopted && privateInfo.followUpStatus === 'closed' && (
+                <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <LockClosedIcon size={20} className="flex-shrink-0 mt-0.5 text-amber-600" />
+                    <div className="flex-1">
+                      <h3 className="text-amber-800 font-semibold text-sm">
+                        Este caso de seguimiento está cerrado
+                      </h3>
+                      <p className="text-amber-700 text-xs mt-1">
+                        No se realizarán más seguimientos para este animal.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleReopenCase}
+                        className="mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+                      >
+                        Reabrir caso
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {!closeCase && (
+              {/* Event Type */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">Tipo de Evento *</label>
+                <select
+                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                  value={eventData.eventType}
+                  onChange={(e) =>
+                    setEventData((prev) => ({
+                      ...prev,
+                      eventType: e.target.value as EventFormData['eventType'],
+                    }))
+                  }
+                >
+                  {!isDeceased && <option value="followup">Seguimiento</option>}
+                  {!isDeceased && <option value="vaccination">Vacunación</option>}
+                  {!isDeceased && <option value="sterilization">Esterilización</option>}
+                  {!isDeceased && <option value="medical">Médico</option>}
+                  {!isDeceased && <option value="emergency">Emergencia</option>}
+                  {!isDeceased && <option value="supply">Suministro alimento insumos etc</option>}
+                  {!isDeceased && <option value="deceased">Fallecimiento</option>}
+                  <option value="other">Otro</option>
+                </select>
+              </div>
+
+              {/* Vaccination specific fields */}
+              {eventData.eventType === 'vaccination' && (
                 <>
-                  {/* Quick action buttons */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {quickDateOptions().map((opt) => (
-                      <button
-                        key={opt.days}
-                        type="button"
-                        onClick={() => handleQuickDateForFollowUp(opt.days)}
-                        className="text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Custom date picker */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <input
-                      type="date"
-                      className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
-                      value={nextFollowUpDateStr}
-                      onChange={(e) => setNextFollowUpDateStr(e.target.value)}
-                    />
-                  </div>
-                  {/* Quick N days input */}
-                  <div className="flex items-center gap-2">
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Nombre de la Vacuna *
+                    </label>
                     <input
                       type="text"
-                      className="w-20 p-2 border border-gray-300 rounded-lg text-sm"
-                      placeholder="N días"
-                      value={quickDayValue}
-                      onChange={(e) => setQuickDayValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleQuickDaysForFollowUp();
-                      }}
+                      className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                      placeholder="Ej: Rabia, Séxtuple, etc."
+                      value={eventData.vaccineName || ''}
+                      onChange={(e) =>
+                        setEventData((prev) => ({ ...prev, vaccineName: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Fecha de Vacunación *
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                      value={eventData.vaccineDate || ''}
+                      onChange={(e) =>
+                        setEventData((prev) => ({ ...prev, vaccineDate: e.target.value }))
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Note */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Descripción del Evento{' '}
+                  {eventData.eventType === 'vaccination' ? '(opcional)' : '*'}
+                </label>
+                <textarea
+                  className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                  placeholder="Escribe información sobre el evento..."
+                  value={eventData.note}
+                  onChange={(e) => setEventData((prev) => ({ ...prev, note: e.target.value }))}
+                />
+              </div>
+
+              {/* Event image upload */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Imagen (opcional)
+                </label>
+                {eventImage ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={eventImage.imgUrl}
+                      alt={eventImage.imgAlt}
+                      className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
                     />
                     <button
                       type="button"
-                      onClick={handleQuickDaysForFollowUp}
-                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                      onClick={() => setEventImage(null)}
+                      className="text-red-600 hover:text-red-800 text-sm underline"
                     >
-                      + días
+                      Quitar imagen
                     </button>
                   </div>
-                  {nextFollowUpDateStr && (
-                    <p className="text-xs text-green-700 mt-2 font-medium">
-                      Fecha seleccionada:{' '}
-                      {new Date(nextFollowUpDateStr + 'T00:00:00').toLocaleDateString('es-UY', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
+                ) : (
+                  <UploadImages
+                    maxFiles={1}
+                    currentFolder="follow_up"
+                    onImagesAdd={(imgs) => {
+                      if (imgs[0]) {
+                        setEventImage({
+                          ...imgs[0],
+                          imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Next follow-up date (only for adopted animals + followup events) */}
+              {showFollowUpDate && (
+                <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                  <label className="block text-green-dark font-semibold mb-2">
+                    Próxima fecha de seguimiento (opcional)
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Programa la próxima fecha en la que se debe contactar al adoptante
+                  </p>
+
+                  {/* Close case checkbox — only shown when case is currently open */}
+                  {privateInfo.followUpStatus !== 'closed' && (
+                    <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={closeCase}
+                        onChange={(e) => {
+                          setCloseCase(e.target.checked);
+                          if (e.target.checked) {
+                            setNextFollowUpDateStr('');
+                            setQuickDayValue('');
+                          }
+                        }}
+                        className="w-4 h-4 accent-red-600"
+                      />
+                      <span className="text-sm text-red-700 font-medium">
+                        Cerrar caso — no se hará más seguimiento
+                      </span>
+                    </label>
                   )}
-                </>
+
+                  {!closeCase && (
+                    <>
+                      {/* Quick action buttons */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {quickDateOptions().map((opt) => (
+                          <button
+                            key={opt.days}
+                            type="button"
+                            onClick={() => handleQuickDateForFollowUp(opt.days)}
+                            className="text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Custom date picker */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="date"
+                          className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
+                          value={nextFollowUpDateStr}
+                          onChange={(e) => setNextFollowUpDateStr(e.target.value)}
+                        />
+                      </div>
+                      {/* Quick N days input */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="w-20 p-2 border border-gray-300 rounded-lg text-sm"
+                          placeholder="N días"
+                          value={quickDayValue}
+                          onChange={(e) => setQuickDayValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleQuickDaysForFollowUp();
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleQuickDaysForFollowUp}
+                          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                        >
+                          + días
+                        </button>
+                      </div>
+                      {nextFollowUpDateStr && (
+                        <p className="text-xs text-green-700 mt-2 font-medium">
+                          Fecha seleccionada:{' '}
+                          {new Date(nextFollowUpDateStr + 'T00:00:00').toLocaleDateString('es-UY', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Cost */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Costo (opcional)</label>
-            <div className="flex items-center gap-2">
-              <span className="text-green-dark text-xl">$</span>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
-                placeholder="0"
-                value={eventData.cost}
-                onChange={(e) => setEventData((prev) => ({ ...prev, cost: e.target.value }))}
-              />
-            </div>
-          </div>
+              {/* Cost */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">Costo (opcional)</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-dark text-xl">$</span>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                    placeholder="0"
+                    value={eventData.cost}
+                    onChange={(e) => setEventData((prev) => ({ ...prev, cost: e.target.value }))}
+                  />
+                </div>
+              </div>
 
-          <button
-            className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              eventData.eventType === 'vaccination'
-                ? !eventData.vaccineName?.trim()
-                : !eventData.note.trim()
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              handleEvent();
-            }}
-          >
-            Registrar Evento
-          </button>
-        </div>
+              {/* Follow-up manager — only for adopted animals */}
+              {isAdopted && (
+                <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                  <label className="block text-green-dark font-semibold mb-2">
+                    Responsable del seguimiento
+                  </label>
+                  {currentManagers.length === 0 ? (
+                    <p className="text-sm text-gray-500 mb-2">
+                      Sin asignar — asigná un responsable
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-700 mb-1">
+                        {currentManagers.map((e) => getUserName(e)).join(', ')}
+                      </p>
+                      {hasCustomManager && (
+                        <p className="text-xs text-amber-700 mb-2">
+                          Conviene seleccionar de la lista de usuarios
+                        </p>
+                      )}
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFollowUpManagers([...currentManagers]);
+                      setShowManagerView(true);
+                    }}
+                    className="flex items-center gap-1 text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
+                  >
+                    <EditIcon size={14} />
+                    <span>{currentManagers.length === 0 ? 'Asignar' : 'Cambiar'}</span>
+                  </button>
+                </div>
+              )}
+
+              <button
+                className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={
+                  eventData.eventType === 'vaccination'
+                    ? !eventData.vaccineName?.trim()
+                    : !eventData.note.trim()
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEvent();
+                }}
+              >
+                Registrar Evento
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </Modal>
   );

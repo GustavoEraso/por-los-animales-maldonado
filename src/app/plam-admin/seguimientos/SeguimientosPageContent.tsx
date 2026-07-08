@@ -974,6 +974,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
             setPrivateInfo={setEventModalPrivateInfo}
             setAllAnimalTransactions={setEventModalTransactions}
             defaultEventType={defaultModalEventType}
+            users={users}
             hideTriggerButton
             isOpen={eventModalOpen}
             setIsOpen={setEventModalOpen}
