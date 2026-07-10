@@ -55,6 +55,8 @@ export default function EditContactModal({
 
   useEffect(() => {
     if (!open) return;
+    // Sync form fields from latest privateInfo on modal open (legitimate prop→state pattern)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setData({
       contactName: privateInfo.contactName || '',
       contacts: (privateInfo.contacts || []).map((c) => ({
@@ -110,11 +112,11 @@ export default function EditContactModal({
         },
         after: {
           contactName: data.contactName,
-      contacts: validContacts.map((c) => ({
-        type: c.type,
-        value: c.value,
-        label: c.label || '',
-      })),
+          contacts: validContacts.map((c) => ({
+            type: c.type,
+            value: c.value,
+            label: c.label || '',
+          })),
           address: data.address,
           ...(data.note.trim() ? { notes: [notePrefix + data.note] } : {}),
         },

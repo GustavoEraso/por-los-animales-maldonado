@@ -134,6 +134,7 @@ export default function EventModal({
    */
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCloseCase(privateInfo.followUpStatus === 'closed');
     }
   }, [isOpen, privateInfo.followUpStatus]);
@@ -144,6 +145,7 @@ export default function EventModal({
    */
   useEffect(() => {
     if (isOpen && defaultEventType) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEventData((prev) => ({ ...prev, eventType: defaultEventType }));
     }
   }, [isOpen, defaultEventType]);
@@ -154,6 +156,7 @@ export default function EventModal({
    */
   useEffect(() => {
     if (eventData.eventType === 'rename') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRenameName(privateInfo.newName || '');
     }
   }, [eventData.eventType, privateInfo.newName]);
