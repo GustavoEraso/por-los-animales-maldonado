@@ -5,6 +5,7 @@ allowBuilds:
   '@firebase/util': false
   '@google/genai': false
   '@tailwindcss/oxide': false
+  core-js: false
   protobufjs: false
   sharp: false
   unrs-resolver: false
