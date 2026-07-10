@@ -13,6 +13,7 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
 import { FIELD_LABELS } from '@/lib/constants/formLabels';
 import FormChat from '@/components/FormChat';
+import EvaluationMissingCard from '@/components/EvaluationMissingCard';
 import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +70,10 @@ interface FormularioDetailContentProps {
  * @example
  * // Accessed via /plam-admin/formularios/[id]
  */
-export default function FormularioDetailContent({ initialAnimals, initialUsers }: FormularioDetailContentProps) {
+export default function FormularioDetailContent({
+  initialAnimals,
+  initialUsers,
+}: FormularioDetailContentProps) {
   const params = useParams();
   const router = useRouter();
   const { currentUser } = useAuth();
@@ -97,7 +101,12 @@ export default function FormularioDetailContent({ initialAnimals, initialUsers }
         });
         setForm(data ? { ...data, id } : null);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FORM_ERROR', message: 'Error fetching form:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FORM_ERROR',
+          message: 'Error fetching form:',
+          data: error,
+        });
       } finally {
         setLoading(false);
       }
@@ -148,7 +157,11 @@ export default function FormularioDetailContent({ initialAnimals, initialUsers }
         modifiedBy: currentUser.id,
         modifiedByName: currentUser.name,
         changes: {
-          before: { status: previous, approvedAnimalId: form.approvedAnimalId, approvedAnimalName: form.approvedAnimalName },
+          before: {
+            status: previous,
+            approvedAnimalId: form.approvedAnimalId,
+            approvedAnimalName: form.approvedAnimalName,
+          },
           after: changesAfter,
         },
       });
@@ -266,13 +279,14 @@ export default function FormularioDetailContent({ initialAnimals, initialUsers }
 
         {/* AI Evaluation card */}
         {!evaluation ? (
-          <div className="border border-gray-200 rounded-xl p-4">
-            <p className="text-sm text-gray-400 italic">
-              Evaluación de{' '}
-              <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span>{' '}
-              no disponible para este formulario.
-            </p>
-          </div>
+          <EvaluationMissingCard
+            formId={form.id}
+            formName={form.fullName}
+            rawFormData={form as unknown as Record<string, unknown>}
+            onEvaluationComplete={(newEval) => {
+              setForm((prev) => (prev ? { ...prev, evaluation: newEval } : prev));
+            }}
+          />
         ) : (
           <div className="border border-gray-200 shadow rounded-xl  bg-gray-50  p-5 flex flex-col gap-4 ">
             <h2 className="font-semibold text-gray-800">
@@ -537,7 +551,6 @@ export default function FormularioDetailContent({ initialAnimals, initialUsers }
             </div>
           )}
         </div>
-
       </div>
     </ProtectedRoute>
   );
