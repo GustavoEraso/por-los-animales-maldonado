@@ -166,7 +166,7 @@ export default function CreateUserPage() {
       setFormData({
         email: '',
         name: '',
-        role: 'user',
+        role: 'rescatista',
       });
 
       router.push('/plam-admin/usuarios');
@@ -242,6 +242,7 @@ export default function CreateUserPage() {
                 onChange={handleInputChange}
                 required
                 disabled={loading}
+                autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-forest focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
                 {availableRoles.map((role) => (

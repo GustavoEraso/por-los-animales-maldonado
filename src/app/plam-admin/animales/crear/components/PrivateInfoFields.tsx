@@ -156,6 +156,7 @@ export default function PrivateInfoFields({
           className="outline-2  bg-white outline-gray-200 rounded p-2"
           type="text"
           name="contactName"
+          value={privateInfo.contactName ?? ''}
           onChange={handlePrivateInfoChange}
         />
       </label>
