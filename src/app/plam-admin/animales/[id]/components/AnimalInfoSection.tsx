@@ -44,6 +44,9 @@ export default function AnimalInfoSection({
           />
           <ul className="list-disc pl-4 text-green-dark">
             <li className="text-xl font-semibold">
+              <span className="font-bold bg-green-100 text-green-800 px-2 py-1 rounded-lg">ID: {animal.id}</span>
+            </li>
+            <li className="text-xl font-semibold">
               Estado: <span className="font-normal">{status}</span>
             </li>
             <li className="text-xl font-semibold">

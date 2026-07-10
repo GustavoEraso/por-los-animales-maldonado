@@ -77,7 +77,7 @@ service cloud.firestore {
 
       allow create: if isAuthenticated()
         && request.resource.data.keys().hasAll(['type', 'action', 'entityId', 'modifiedBy', 'date'])
-        && request.resource.data.type in ['user', 'banner', 'contact', 'animal', 'config']
+        && request.resource.data.type in ['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form']
         && request.resource.data.action in ['create', 'update', 'delete']
         && request.resource.data.entityId is string
         && request.resource.data.modifiedBy is string
@@ -128,6 +128,46 @@ service cloud.firestore {
     match /dashboardAnalytics/{docId} {
       allow read: if true;
       allow write: if isRescuer();
+    }
+
+    /* ───── 9) sponsors ───── */
+    match /sponsors/{sponsorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 10) carousels ───── */
+    match /carousels/{carouselId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 11) config ───── */
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isRescuer();
+    }
+
+    /* ───── 12) googleForms ───── */
+    match /googleForms/{formId} {
+      allow read: if isRescuer();
+      allow write: if true;
+    }
+
+    /* ───── 13) googleFormComments ───── */
+    match /googleFormComments/{commentId} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 14) logs ───── */
+    match /logs/{logId} {
+      allow read: if isSuperadmin();
+      allow write: if true;
+    }
+
+    /* ───── 15) seguimientoMatches ───── */
+    match /seguimientoMatches/{doc} {
+      allow read, write: if isAdmin();
     }
 
   }
@@ -184,7 +224,7 @@ Shorthand functions that combine `isAuthenticated()` and `getRoleLevel()` to che
 - **Create**: Any authenticated user (validated structure)
 - **Update/Delete**: Always denied (immutable)
 - Validates required fields: `type`, `action`, `entityId`, `modifiedBy`, `date`
-- Validates `type` ∈ `['user', 'banner', 'contact', 'animal', 'config']`
+- Validates `type` ∈ `['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form']`
 - Validates `action` ∈ `['create', 'update', 'delete']`
 
 ### 6. `authorizedEmails` — User management
@@ -204,6 +244,40 @@ Shorthand functions that combine `isAuthenticated()` and `getRoleLevel()` to che
 
 - **Read**: Public (enables server-side caching via `'use cache'`)
 - **Write**: Rescuer or higher (transactions write analytics data)
+
+### 9. `sponsors` — Sponsor management
+
+- **Read**: Public (displayed on the site)
+- **Write**: Admin or higher
+
+### 10. `carousels` — Carousel configuration
+
+- **Read**: Public (displayed on the site)
+- **Write**: Admin or higher
+
+### 11. `config` — Application configuration
+
+- **Read**: Public
+- **Write**: Rescuer or higher
+- Stores app-wide configuration documents (e.g., `idCounters` for sequential animal IDs)
+
+### 12. `googleForms` — Public form submissions
+
+- **Read**: Rescuer or higher (internal use)
+- **Write**: Public (anyone can submit a form)
+
+### 13. `googleFormComments` — Form comment threads
+
+- **Read/Write**: Rescuer or higher
+
+### 14. `logs` — Application logs
+
+- **Read**: Superadmin only
+- **Write**: Public (client-side logger writes errors)
+
+### 15. `seguimientoMatches` — CSV import match data
+
+- **Read/Write**: Admin or higher
 
 ## Testing
 

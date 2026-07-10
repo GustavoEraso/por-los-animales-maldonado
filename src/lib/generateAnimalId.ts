@@ -1,46 +1,64 @@
+import { doc, runTransaction } from 'firebase/firestore';
+import { db } from '@/firebase';
+import { logger } from '@/lib/logger';
+
+const COUNTER_DOC_PATH = 'config/idCounters';
+const COUNTER_FIELD = 'animalId';
+
 /**
- * Generates a unique animal ID based on the provided name by calling the internal API.
+ * Generates the next sequential numeric animal ID using an atomic Firestore counter.
  *
- * Sends a POST request to /api/generate-animal-id with the animal's name.
- * Requires an internal token for authorization, provided in the 'x-internal-token' header.
- * The value for 'x-internal-token' must be set as the environment variable NEXT_PUBLIC_INTERNAL_API_SECRET.
+ * Reads and increments a counter stored in the `config/idCounters` document
+ * via `runTransaction`, which guarantees no duplicate IDs even under concurrent
+ * writes. The counter auto-creates with value 0 on first use.
  *
- * If the name does not exist, returns the name (e.g., 'luna').
- * If the name already exists, returns the name with a number appended (e.g., 'luna1', 'luna2', etc.).
- *
- * @param {string} name - The name of the animal to generate an ID for.
- * @returns {Promise<string>} A promise that resolves to the generated animal ID.
+ * @returns {Promise<string>} Numeric ID as a plain string (e.g. "1", "42")
  *
  * @example
- * // Generate an animal ID for "Luna"
- * const id = await generateAnimalId('Luna'); // returns 'luna' or 'luna1'
+ * const id = await generateAnimalId(); // "1", "2", "3", ...
  */
-export async function generateAnimalId(name: string): Promise<string> {
-  const res = await fetch('/api/generate-animal-id', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET!,
-    },
-    body: JSON.stringify({ name }),
-  });
-
-  const data = await res.json();
-  return data.id;
+export async function generateAnimalId(): Promise<string> {
+  const ids = await generateAnimalIds(1);
+  return ids[0];
 }
 
-/* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
+/**
+ * Reserves a block of sequential numeric IDs in a single atomic transaction.
+ * Essential for litters to avoid N individual roundtrips.
+ *
+ * @param {number} count - Number of IDs to reserve (must be >= 1)
+ * @returns {Promise<string[]>} Array of numeric ID strings
+ *
+ * @example
+ * const ids = await generateAnimalIds(3); // ["5", "6", "7"]
+ */
+export async function generateAnimalIds(count: number): Promise<string[]> {
+  if (count < 1) return [];
 
-1) Generate an animal ID for a new name
-   const id = await generateAnimalId('Luna');
-   // Returns: 'luna' if it does not exist, or 'luna1' if 'luna' already exists
+  try {
+    const startId = await runTransaction(db, async (transaction) => {
+      const counterRef = doc(db, COUNTER_DOC_PATH);
+      const snap = await transaction.get(counterRef);
 
-2) Generate an animal ID for a name that already exists multiple times
-   const id = await generateAnimalId('Max');
-   // Returns: 'max', 'max1', 'max2', etc. depending on existing IDs
+      const current: number =
+        snap.exists() && typeof snap.data()[COUNTER_FIELD] === 'number'
+          ? (snap.data()[COUNTER_FIELD] as number)
+          : 0;
 
-3) Use the generated ID to create a new animal
-   const id = await generateAnimalId('Bella');
-   await postFirestoreData<Animal>({ data: animalData, currentCollection: 'animals', id });
+      const next = current + 1;
+      transaction.set(counterRef, { [COUNTER_FIELD]: current + count }, { merge: true });
 
-──────────────────────────────────────────────────────────────────────────── */
+      return next;
+    });
+
+    return Array.from({ length: count }, (_, i) => String(startId + i));
+  } catch (err) {
+    logger({
+      level: 'error',
+      code: 'GENERATE_ID_COUNTER',
+      message: 'Failed to generate sequential animal ID via Firestore transaction',
+      data: err,
+    });
+    throw err;
+  }
+}

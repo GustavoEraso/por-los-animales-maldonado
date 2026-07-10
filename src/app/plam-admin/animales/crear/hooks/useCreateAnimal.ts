@@ -6,7 +6,7 @@ import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType 
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
-import { generateAnimalId } from '@/lib/generateAnimalId';
+import { generateAnimalId, generateAnimalIds } from '@/lib/generateAnimalId';
 import { generateLitterId } from '@/lib/generateLitterId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
@@ -344,7 +344,52 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
 
   /** Handles submission for a single animal (original flow) */
   const handleSingleSubmit = async (start: number): Promise<void> => {
-    const id = await generateAnimalId(animal.name);
+    const errors: FormErrors = {
+      name: animal.name === '',
+      images: !images.length,
+      description: animal.description === '',
+      rescueReason: !privateInfo.rescueReason || (privateInfo.rescueReason as string) === '',
+      contactName: privateInfo.contactName === '',
+      contacts: !privateInfo?.contacts?.length || !privateInfo.contacts.some((c) => c.value !== ''),
+      litterName: false,
+      litterMembers: false,
+    };
+
+    setFormErrors(errors);
+    if (errors.name) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.name });
+    }
+    if (errors.description) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.description });
+    }
+    if (errors.rescueReason) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.rescueReason });
+    }
+    if (errors.contactName) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.contactName });
+    }
+    if (errors.contacts) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.contacts });
+    }
+    if (errors.images) {
+      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.images });
+    }
+
+    if (Object.values(errors).some(Boolean)) {
+      const elapsed = createTimestamp() - start;
+      const remaining = MIN_LOADING_TIME - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => {
+          setLoading(false);
+        }, remaining);
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Generate ID only after validation passes to avoid gaps
+    const id = await generateAnimalId();
 
     const newAnimal: Animal = {
       ...animal,
@@ -401,51 +446,6 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
         },
       },
     };
-
-    const errors: FormErrors = {
-      name: newAnimal.name === '',
-      images: !images.length,
-      description: newAnimal.description === '',
-      rescueReason: !newPrivateInfo.rescueReason || (newPrivateInfo.rescueReason as string) === '',
-      contactName: newPrivateInfo.contactName === '',
-      contacts:
-        !newPrivateInfo?.contacts?.length || !newPrivateInfo.contacts.some((c) => c.value !== ''),
-      litterName: false,
-      litterMembers: false,
-    };
-
-    setFormErrors(errors);
-    if (errors.name) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.name });
-    }
-    if (errors.description) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.description });
-    }
-    if (errors.rescueReason) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.rescueReason });
-    }
-    if (errors.contactName) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.contactName });
-    }
-    if (errors.contacts) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.contacts });
-    }
-    if (errors.images) {
-      handleToast({ type: 'error', title: 'Ups!', text: FIELD_ERROR_MESSAGES.images });
-    }
-
-    if (Object.values(errors).some(Boolean)) {
-      const elapsed = createTimestamp() - start;
-      const remaining = MIN_LOADING_TIME - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => {
-          setLoading(false);
-        }, remaining);
-      } else {
-        setLoading(false);
-      }
-      return;
-    }
 
     const promises = Promise.all([
       postFirestoreData<Animal>({ data: newAnimal, currentCollection: 'animals', id }),
@@ -530,10 +530,8 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
 
     const litterId = await generateLitterId(litterName);
 
-    // Generate IDs for all members in parallel
-    const memberIds = await Promise.all(
-      litterMembers.map((member) => generateAnimalId(member.name))
-    );
+    // Generate all member IDs in a single atomic transaction
+    const memberIds = await generateAnimalIds(litterMembers.length);
 
     // Build all Firebase operations for the litter
     const allPromises: Promise<unknown>[] = [];
