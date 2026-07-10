@@ -16,6 +16,7 @@ import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/type
 import { logger } from '@/lib/logger';
 import FormChat from '@/components/FormChat';
 import EvaluationMissingCard from '@/components/EvaluationMissingCard';
+import { downloadFormPdf } from '@/lib/generateFormPdf';
 import { FIELD_LABELS } from '@/lib/constants/formLabels';
 
 // ---------------------------------------------------------------------------
@@ -655,6 +656,16 @@ function DetailPanel({
   const [showAnimalPicker, setShowAnimalPicker] = useState(false);
   const [animals] = useState<Animal[]>(initialAnimals);
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      await downloadFormPdf(form);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const filteredAnimals = animals.filter((a) =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -690,7 +701,53 @@ function DetailPanel({
     <div className="flex flex-col gap-5">
       {/* Name + date */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            title="Descargar formulario como PDF"
+          >
+            {downloadingPdf ? (
+              <>
+                <svg
+                  className="animate-spin h-3.5 w-3.5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                PDF...
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                PDF
+              </>
+            )}
+          </button>
+        </div>
         {form.selectedPet && (
           <p className="text-sm text-gray-500 mt-0.5">Mascota: {form.selectedPet}</p>
         )}
