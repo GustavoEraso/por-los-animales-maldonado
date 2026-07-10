@@ -500,8 +500,17 @@ export default function ReturnModal({
           {/* Contacts */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Contactos *</label>
+            <datalist id="contact-label-suggestions">
+              <option value="Familiar" />
+              <option value="Pareja" />
+              <option value="Vecino/a" />
+              <option value="Veterinario/a" />
+              <option value="Trabajo" />
+              <option value="Amigo/a" />
+              <option value="Rescatista" />
+            </datalist>
             {adoptionData.contacts.map((contact, index) => (
-              <div key={index} className="flex gap-2 mb-2">
+              <div key={index} className="flex flex-wrap gap-2 mb-2">
                 <select
                   className="p-2 border-2 border-green-dark bg-white rounded-lg"
                   value={contact.type}
@@ -517,7 +526,19 @@ export default function ReturnModal({
                 </select>
                 <input
                   type="text"
-                  className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                  className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
+                  placeholder="Etiqueta"
+                  list="contact-label-suggestions"
+                  value={contact.label || ''}
+                  onChange={(e) => {
+                    const newContacts = [...adoptionData.contacts];
+                    newContacts[index].label = e.target.value || undefined;
+                    setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                  }}
+                />
+                <input
+                  type="text"
+                  className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
                   placeholder="Valor del contacto"
                   value={contact.value}
                   onChange={(e) => {
@@ -539,12 +560,16 @@ export default function ReturnModal({
                 )}
               </div>
             ))}
+            <p className="text-xs text-gray-500 mt-1 mb-2">
+              Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto (ej:
+              familiar, pareja).
+            </p>
             <button
               className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
               onClick={() => {
                 setAdoptionData((prev) => ({
                   ...prev,
-                  contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                  contacts: [...prev.contacts, { type: 'celular', value: '', label: undefined }],
                 }));
               }}
             >

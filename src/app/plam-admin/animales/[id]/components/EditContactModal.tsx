@@ -22,6 +22,8 @@ interface EditContactModalProps {
 interface FormContact {
   type: 'celular' | 'email' | 'other';
   value: string;
+  /** Identifies whose contact this is (e.g. "familiar", "pareja", "vecino"). */
+  label?: string;
 }
 
 interface EditContactData {
@@ -58,6 +60,7 @@ export default function EditContactModal({
       contacts: (privateInfo.contacts || []).map((c) => ({
         type: c.type,
         value: String(c.value || ''),
+        label: c.label || undefined,
       })),
       address: privateInfo.address || '',
       note: '',
@@ -77,6 +80,7 @@ export default function EditContactModal({
       contacts: validContacts.map((c) => ({
         type: c.type,
         value: c.value,
+        label: c.label || undefined,
       })),
       address: data.address,
       notes: data.note.trim()
@@ -93,7 +97,11 @@ export default function EditContactModal({
       modifiedBy: auth.currentUser?.email || 'system',
       since: now,
       contactName: data.contactName,
-      contacts: validContacts.map((c) => ({ type: c.type, value: c.value })),
+      contacts: validContacts.map((c) => ({
+        type: c.type,
+        value: c.value,
+        label: c.label || undefined,
+      })),
       changes: {
         before: {
           contactName: privateInfo.contactName,
@@ -102,7 +110,11 @@ export default function EditContactModal({
         },
         after: {
           contactName: data.contactName,
-          contacts: validContacts.map((c) => ({ type: c.type, value: c.value })),
+      contacts: validContacts.map((c) => ({
+        type: c.type,
+        value: c.value,
+        label: c.label || '',
+      })),
           address: data.address,
           ...(data.note.trim() ? { notes: [notePrefix + data.note] } : {}),
         },
@@ -192,8 +204,17 @@ export default function EditContactModal({
 
           <div>
             <label className="block text-green-dark font-semibold mb-2">Contactos</label>
+            <datalist id="contact-label-suggestions">
+              <option value="Familiar" />
+              <option value="Pareja" />
+              <option value="Vecino/a" />
+              <option value="Veterinario/a" />
+              <option value="Trabajo" />
+              <option value="Amigo/a" />
+              <option value="Rescatista" />
+            </datalist>
             {data.contacts.map((contact, index) => (
-              <div key={index} className="flex gap-2 mb-2">
+              <div key={index} className="flex flex-wrap gap-2 mb-2">
                 <select
                   className="p-2 border-2 border-green-dark bg-white rounded-lg"
                   value={contact.type}
@@ -209,7 +230,19 @@ export default function EditContactModal({
                 </select>
                 <input
                   type="text"
-                  className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                  className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
+                  placeholder="Etiqueta"
+                  list="contact-label-suggestions"
+                  value={contact.label || ''}
+                  onChange={(e) => {
+                    const newContacts = [...data.contacts];
+                    newContacts[index].label = e.target.value || undefined;
+                    setData((prev) => ({ ...prev, contacts: newContacts }));
+                  }}
+                />
+                <input
+                  type="text"
+                  className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
                   placeholder="Valor del contacto"
                   value={contact.value}
                   onChange={(e) => {
@@ -231,12 +264,19 @@ export default function EditContactModal({
                 </button>
               </div>
             ))}
+            <p className="text-xs text-gray-500 mt-1 mb-2">
+              Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto (ej:
+              familiar, pareja).
+            </p>
             <button
               className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
               onClick={() => {
                 setData((prev) => ({
                   ...prev,
-                  contacts: [...prev.contacts, { type: 'celular' as const, value: '' }],
+                  contacts: [
+                    ...prev.contacts,
+                    { type: 'celular' as const, value: '', label: undefined },
+                  ],
                 }));
               }}
             >

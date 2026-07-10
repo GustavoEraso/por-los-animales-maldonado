@@ -117,17 +117,20 @@ export default function TransactionCard({
               <span className="font-semibold text-red-500">${transaction.cost}</span>
             </li>
           )}
-          {transaction.transactionType === 'adoption' && (transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId && (
-            <li className="font-semibold">
-              Formulario:{' '}
-              <Link
-                href={`/plam-admin/formularios/${(transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId}`}
-                className="text-green-600 hover:text-green-800 underline font-normal"
-              >
-                {(transaction as AnimalTransactionType & { adoptionFormName?: string }).adoptionFormName ?? 'Ver formulario'} →
-              </Link>
-            </li>
-          )}
+          {transaction.transactionType === 'adoption' &&
+            (transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId && (
+              <li className="font-semibold">
+                Formulario:{' '}
+                <Link
+                  href={`/plam-admin/formularios/${(transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId}`}
+                  className="text-green-600 hover:text-green-800 underline font-normal"
+                >
+                  {(transaction as AnimalTransactionType & { adoptionFormName?: string })
+                    .adoptionFormName ?? 'Ver formulario'}{' '}
+                  →
+                </Link>
+              </li>
+            )}
         </ul>
 
         {transaction.transactionType && (
@@ -339,7 +342,8 @@ function ChangeList({
       {list.contacts &&
         list.contacts.map((contact, index) => (
           <li key={`${index}-${contact.value}`} className=" font-semibold ">
-            {contact.type}: <span className="font-normal">{contact.value}</span>
+            {contact.label ? `${contact.label} (${contact.type})` : contact.type}:{' '}
+            <span className="font-normal">{contact.value}</span>
           </li>
         ))}
       {list.totalCost !== undefined && (

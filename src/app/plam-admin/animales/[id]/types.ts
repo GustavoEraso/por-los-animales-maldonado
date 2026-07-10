@@ -4,6 +4,8 @@ import type { AnimalActionModalProps } from '@/types';
 export interface FormContact {
   type: 'celular' | 'email' | 'other';
   value: string;
+  /** Identifies whose contact this is (e.g. "familiar", "pareja", "vecino"). */
+  label?: string;
 }
 
 /** Shared form data for adoption and return modals */

@@ -41,6 +41,8 @@ export interface Animal {
 interface ContactType {
   type: 'celular' | 'email' | 'other';
   value: string | number;
+  /** Identifies whose contact this is (e.g. "familiar", "pareja", "vecino"). */
+  label?: string;
 }
 interface Vaccination {
   date: number;

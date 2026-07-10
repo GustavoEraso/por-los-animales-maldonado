@@ -583,7 +583,17 @@ export default function AnimalPrivateInfoSection({
           {contacts &&
             contacts.map((contact, index) => (
               <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">
-                {contact.type}: <span className="font-normal">{contact.value}</span>
+                {contact.label ? (
+                  <>
+                    {contact.label}{' '}
+                    <span className="text-sm text-gray-500 font-normal lowercase">
+                      ({contact.type})
+                    </span>
+                  </>
+                ) : (
+                  contact.type
+                )}
+                : <span className="font-normal">{contact.value}</span>
               </li>
             ))}
           {privateInfo.address && (
