@@ -43,7 +43,7 @@ const initialAnimal: Animal = {
 const initialPrivateInfo: PrivateInfoType = {
   id: '',
   name: '',
-  caseManager: '',
+  caseManager: [],
   contactName: '',
   contacts: [],
   vaccinations: [],

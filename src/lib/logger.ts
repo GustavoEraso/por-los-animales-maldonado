@@ -24,17 +24,26 @@ function formatTimestamp(): string {
 }
 
 function sanitize(data: unknown): unknown {
+  if (data === null || data === undefined) return data;
   if (data instanceof Error) {
     return { name: data.name, message: data.message, stack: data.stack };
   }
-  if (data !== null && typeof data === 'object' && 'code' in data && 'message' in data) {
-    const err = data as Record<string, unknown>;
-    return {
-      name: err.name,
-      code: err.code,
-      message: err.message,
-      stack: err.stack,
-    };
+  if (typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    // Firebase errors often have code/message on the prototype, not as own properties.
+    // Access them directly via property access (not 'in' or try-catch).
+    const extracted: Record<string, unknown> = {};
+    if (obj.code !== undefined) extracted.code = obj.code;
+    if (obj.message !== undefined) extracted.message = obj.message;
+    if (obj.name !== undefined) extracted.name = obj.name;
+    if (obj.stack !== undefined) extracted.stack = obj.stack;
+    if (Object.keys(extracted).length > 0) return extracted;
+    // No useful properties found — always return a string so it never logs as {}
+    try {
+      return `[${obj.constructor?.name || 'Object'}] ${String(obj)}`;
+    } catch {
+      return '[unserializable object]';
+    }
   }
   return data;
 }
@@ -47,19 +56,28 @@ export function logger(entry: LogEntry): void {
 
   const sanitized = entry.data !== undefined ? sanitize(entry.data) : undefined;
 
+  // Safety net: if sanitize still returned an empty object, convert to string
+  const safeSanitized =
+    sanitized !== null &&
+    sanitized !== undefined &&
+    typeof sanitized === 'object' &&
+    Object.keys(sanitized as Record<string, unknown>).length === 0
+      ? `[${(sanitized as Record<string, unknown>).constructor?.name || 'Unknown'}]`
+      : sanitized;
+
   const base = {
     message: entry.message,
     ...(entry.errorType ? { errorType: entry.errorType } : {}),
     ...(entry.statusCode ? { statusCode: entry.statusCode } : {}),
   };
 
-  if (sanitized !== undefined) {
+  if (safeSanitized !== undefined) {
     if (level === 'error') {
-      console.error(prefix, JSON.stringify(base), sanitized);
+      console.error(prefix, JSON.stringify(base), safeSanitized);
     } else if (level === 'warn') {
-      console.warn(prefix, JSON.stringify(base), sanitized);
+      console.warn(prefix, JSON.stringify(base), safeSanitized);
     } else {
-      console.log(prefix, JSON.stringify(base), sanitized);
+      console.log(prefix, JSON.stringify(base), safeSanitized);
     }
   } else {
     if (level === 'error') {
@@ -72,7 +90,7 @@ export function logger(entry: LogEntry): void {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    persistToFirestore(entry, sanitized);
+    persistToFirestore(entry, safeSanitized);
   }
 }
 

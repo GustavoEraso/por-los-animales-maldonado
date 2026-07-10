@@ -15,6 +15,8 @@ interface Props {
   imgAlt?: string;
   /** Title to display on the hero section */
   title?: string;
+  /** Optional subtitle shown below the title (e.g. original name when renamed by adopter) */
+  subtitle?: string;
   /** Enables share action next to title */
   enableShare?: boolean;
   /** Custom URL to share when share action is enabled */
@@ -62,6 +64,7 @@ export default function Hero({
   imgURL,
   imgAlt,
   title,
+  subtitle,
   enableShare = false,
   shareUrl,
 }: Props): React.ReactElement {
@@ -88,9 +91,16 @@ export default function Hero({
       >
         <section className="flex flex-col gap-4 w-full h-2/3 justify-end max-w-4xl xl:pr-60 ">
           <div className="flex items-end gap-2 lg:gap-4 self-start">
-            <h3 className="text-5xl lg:text-8xl font-extrabold text-green-dark uppercase ">
-              {displayTitle}
-            </h3>
+            <div>
+              <h3 className="text-5xl lg:text-8xl font-extrabold text-green-dark uppercase ">
+                {displayTitle}
+              </h3>
+              {subtitle && (
+                <p className="text-lg lg:text-2xl text-green-dark/60 italic mt-0.5">
+                  antes: {subtitle}
+                </p>
+              )}
+            </div>
             {enableShare && (
               <ShareButton
                 animate={false}

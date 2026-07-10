@@ -7,6 +7,8 @@ import { Img } from '@/types';
 interface AnimalInfoSectionProps {
   animal: Animal;
   images: Img[];
+  /** Name given by the adopter, distinct from the original animal name. */
+  newName?: string;
 }
 
 /**
@@ -16,6 +18,7 @@ interface AnimalInfoSectionProps {
 export default function AnimalInfoSection({
   animal,
   images,
+  newName,
 }: AnimalInfoSectionProps): React.ReactElement {
   const {
     description,
@@ -43,6 +46,17 @@ export default function AnimalInfoSection({
             disabled
           />
           <ul className="list-disc pl-4 text-green-dark">
+            <li className="text-xl font-semibold">
+              <span className="font-bold bg-green-100 text-green-800 px-2 py-1 rounded-lg">
+                ID: {animal.id}
+              </span>
+            </li>
+            {newName && (
+              <li className="text-xl font-semibold">
+                Nombre actual: <span className="font-normal">{newName}</span>{' '}
+                <span className="text-base text-gray-500">(antes: {animal.name})</span>
+              </li>
+            )}
             <li className="text-xl font-semibold">
               Estado: <span className="font-normal">{status}</span>
             </li>

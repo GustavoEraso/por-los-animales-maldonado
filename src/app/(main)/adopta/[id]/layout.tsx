@@ -41,9 +41,12 @@ export async function generateMetadata(
 }
 
 /* -------- RootLayout -------- */
-export default function RootLayout(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { children, params: _ }: { children: React.ReactNode; params: Promise<RouteParams> } // 👈  Promise<...>
-) {
+export default function RootLayout({
+  children,
+  params: _,
+}: {
+  children: React.ReactNode;
+  params: Promise<RouteParams>;
+}) {
   return <div>{children}</div>;
 }

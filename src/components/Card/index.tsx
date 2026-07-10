@@ -67,6 +67,11 @@ export default function Card({
 
         <div className="flex flex-col items-center gap-1 p-2">
           <h3 className="uppercase text-2xl text-center font-extrabold">{name}</h3>
+          {adminView && (
+            <span className="font-bold bg-green-100 text-green-800 px-2 py-1 rounded-lg text-xs max-w-32 truncate">
+              ID: {animal.id}
+            </span>
+          )}
           {status != 'fallecido' && <p className="text-center">{`${gender} | ${lifeStage} `}</p>}
         </div>
         {(adminView || animal.litterId) && (

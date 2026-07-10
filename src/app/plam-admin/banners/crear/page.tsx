@@ -7,6 +7,8 @@ import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { useRouter } from 'next/navigation';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 import { PlusIcon } from '@/components/Icons';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -72,6 +74,12 @@ export default function CreateAnimalForm() {
         postFirestoreData<BannerType>({ data: newBanner, currentCollection: 'banners', id }),
       ]);
 
+      await createAuditLog({
+        type: 'banner',
+        action: 'create',
+        entityId: id,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(promises, {
         messages: {
           pending: {
@@ -94,7 +102,12 @@ export default function CreateAnimalForm() {
 
       router.replace('/plam-admin/banners');
     } catch (error) {
-      logger({ level: 'error', code: 'SAVE_BANNER_ERROR', message: 'Error al guardar el banner:', data: error });
+      logger({
+        level: 'error',
+        code: 'SAVE_BANNER_ERROR',
+        message: 'Error al guardar el banner:',
+        data: error,
+      });
       setLoading(false);
     } finally {
       const elapsed = Date.now() - start;

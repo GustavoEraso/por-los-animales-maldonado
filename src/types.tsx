@@ -41,6 +41,8 @@ export interface Animal {
 interface ContactType {
   type: 'celular' | 'email' | 'other';
   value: string | number;
+  /** Identifies whose contact this is (e.g. "familiar", "pareja", "vecino"). */
+  label?: string;
 }
 interface Vaccination {
   date: number;
@@ -50,7 +52,7 @@ interface Vaccination {
 export interface PrivateInfoType {
   id: string;
   name: string;
-  caseManager?: string;
+  caseManager?: string[];
   rescueReason?:
     | 'abandonment'
     | 'lost'
@@ -83,7 +85,7 @@ export interface PrivateInfoType {
   /** Follow-up tracking status. Sentinel: 'active'. */
   followUpStatus?: 'active' | 'closed';
   /** Person responsible for follow-up tracking (sentinel: ''). Distinct from caseManager (rescuer). */
-  followUpManager?: string;
+  followUpManager?: string[];
   /** Name given by the adopter, distinct from the original organization name. Sentinel: ''. */
   newName?: string;
   /** Timestamp of the adoption event. Sentinel: 0. */
@@ -113,6 +115,7 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     | 'emergency'
     | 'supply'
     | 'followup'
+    | 'rename'
     | 'deceased'
     | 'note'
     | 'other';
@@ -393,6 +396,7 @@ export type EventType =
   | 'emergency'
   | 'supply'
   | 'followup'
+  | 'rename'
   | 'deceased'
   | 'other';
 

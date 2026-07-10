@@ -4,6 +4,8 @@ import type { AnimalActionModalProps } from '@/types';
 export interface FormContact {
   type: 'celular' | 'email' | 'other';
   value: string;
+  /** Identifies whose contact this is (e.g. "familiar", "pareja", "vecino"). */
+  label?: string;
 }
 
 /** Shared form data for adoption and return modals */
@@ -14,6 +16,10 @@ export interface AdoptionFormData {
   newStatus?: 'transitorio' | 'adoptado';
   selectedFormId?: string;
   selectedFormName?: string;
+  nextFollowUpDays: number;
+  followUpManager: string;
+  /** Name given by the adopter, distinct from the original animal name. */
+  newName: string;
 }
 
 /** Form data for transit change modal */
@@ -28,7 +34,10 @@ export const DEFAULT_ADOPTION_DATA: AdoptionFormData = {
   contactName: '',
   contacts: [{ type: 'celular', value: '' }],
   note: '',
+  newName: '',
   newStatus: 'transitorio',
+  nextFollowUpDays: 30,
+  followUpManager: '',
 };
 
 /** Default values for transit change form */

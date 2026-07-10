@@ -1,17 +1,41 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType } from '@/types';
+import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
 import { auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { revalidateCache } from '@/lib/revalidateCache';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { HeartIcon } from '@/components/Icons';
 import { AnimalActionModalProps, AdoptionFormData, DEFAULT_ADOPTION_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+
+const FOLLOW_UP_DATE_PRESETS = [
+  { label: '+15 días', days: 15 },
+  { label: '+30 días', days: 30 },
+  { label: '+60 días', days: 60 },
+  { label: '+90 días', days: 90 },
+  { label: '+6 meses', days: 180 },
+  { label: '+1 año', days: 365 },
+];
+
+/**
+ * Returns today's date as an ISO date string (YYYY-MM-DD).
+ */
+const todayISO = (): string => new Date().toISOString().split('T')[0];
+
+/**
+ * Returns the date N days ago as an ISO date string.
+ */
+const daysAgoISO = (days: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+};
 
 /**
  * Modal component for registering an animal adoption.
@@ -29,14 +53,22 @@ export default function AdoptionModal({
   const [adoptionData, setAdoptionData] = useState<AdoptionFormData>({
     ...DEFAULT_ADOPTION_DATA,
     newStatus: undefined,
+    followUpManager: auth.currentUser?.email ?? '',
   });
 
   // Form selector state
   const [formsForAnimal, setFormsForAnimal] = useState<GoogleFormEntry[]>([]);
   const [formsLoading, setFormsLoading] = useState(false);
-  const [showOtherForms, setShowOtherForms] = useState(false);
+  const [viewMode, setViewMode] = useState<'main' | 'search'>('main');
   const [otherForms, setOtherForms] = useState<GoogleFormEntry[]>([]);
   const [otherFormsLoading, setOtherFormsLoading] = useState(false);
+  const [otherFormsDateFrom, setOtherFormsDateFrom] = useState(daysAgoISO(3));
+  const [otherFormsDateTo, setOtherFormsDateTo] = useState(todayISO());
+
+  // Follow-up manager state
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(false);
 
   // Fetch forms approved for this animal when modal opens
   useEffect(() => {
@@ -49,58 +81,88 @@ export default function AdoptionModal({
           currentCollection: 'googleForms',
           filter: [['approvedAnimalId', '==', animal.id]],
         });
-        setFormsForAnimal(
-          (data as GoogleFormEntry[]).filter((f) => f.status === 'approved')
-        );
+        setFormsForAnimal((data as GoogleFormEntry[]).filter((f) => f.status === 'approved'));
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FORMS_ERROR', message: 'Error fetching forms for adoption:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FORMS_ERROR',
+          message: 'Error fetching forms for adoption:',
+          data: error,
+        });
       } finally {
         setFormsLoading(false);
       }
     };
 
-    setShowOtherForms(false);
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const data = await getFirestoreData({
+          currentCollection: 'authorizedEmails',
+        });
+        setUsers(data as UserType[]);
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'FETCH_USERS_ERROR',
+          message: 'Error fetching users for followup manager:',
+          data: error,
+        });
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
+    setViewMode('main');
     setOtherForms([]);
+    setOtherFormsDateFrom(daysAgoISO(3));
+    setOtherFormsDateTo(todayISO());
     fetchForms();
+    fetchUsers();
   }, [adoptionModalOpen, animal.id]);
 
-  // Fetch other approved forms when toggled
-  const handleShowOtherForms = async () => {
-    if (showOtherForms) {
-      setShowOtherForms(false);
-      setOtherForms([]);
-      return;
-    }
+  // Fetch other approved forms when entering search view or changing date range
+  useEffect(() => {
+    if (viewMode !== 'search') return;
 
-    setShowOtherForms(true);
-    setOtherFormsLoading(true);
-    try {
-      const data = await getFirestoreData({
-        currentCollection: 'googleForms',
-        filter: [['status', '==', 'approved']],
-      });
-      setOtherForms(
-        (data as GoogleFormEntry[]).filter(
-          (f) => f.approvedAnimalId !== animal.id
-        )
-      );
-    } catch (error) {
-      logger({ level: 'error', code: 'FETCH_OTHER_FORMS_ERROR', message: 'Error fetching other forms:', data: error });
-    } finally {
-      setOtherFormsLoading(false);
-    }
-  };
+    const fetchOtherForms = async () => {
+      setOtherFormsLoading(true);
+      try {
+        const data = await getFirestoreData({
+          currentCollection: 'googleForms',
+          filter: [
+            ['status', '==', 'approved'],
+            ['createdAt', '>=', `${otherFormsDateFrom}T00:00:00.000Z`],
+            ['createdAt', '<=', `${otherFormsDateTo}T23:59:59.999Z`],
+          ],
+          orderBy: 'createdAt',
+          direction: 'desc',
+        });
+        setOtherForms((data as GoogleFormEntry[]).filter((f) => f.approvedAnimalId !== animal.id));
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'FETCH_OTHER_FORMS_ERROR',
+          message: `Error fetching other forms: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          data: error instanceof Error ? error.stack : error,
+        });
+      } finally {
+        setOtherFormsLoading(false);
+      }
+    };
+
+    fetchOtherForms();
+  }, [viewMode, otherFormsDateFrom, otherFormsDateTo, animal.id]);
 
   const selectForm = (form: GoogleFormEntry) => {
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone
-        ? [{ type: 'celular' as const, value: form.phone }]
-        : prev.contacts,
+      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
     }));
+    setViewMode('main');
   };
 
   const clearFormSelection = () => {
@@ -117,11 +179,14 @@ export default function AdoptionModal({
     const notePrefix = '[Nota de adopción] - ';
     const now = createTimestamp();
 
+    const newName = adoptionData.newName.trim();
+
     const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
       notes: [...(privateInfo.notes || []), notePrefix + adoptionData.note],
+      ...(newName ? { newName } : { newName: '' }),
       ...(adoptionData.selectedFormId
         ? {
             adoptionFormId: adoptionData.selectedFormId,
@@ -134,7 +199,13 @@ export default function AdoptionModal({
       isSterilized: animal.isSterilized,
       isAdopted: true,
       followUpStatus: 'active',
+      followUpManager: adoptionData.followUpManager
+        ? [adoptionData.followUpManager]
+        : auth.currentUser?.email
+          ? [auth.currentUser.email]
+          : [],
       adoptionDate: now,
+      nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
       lastFollowUpDate: 0,
       lastFollowUpNote: '',
       sterilizationDate: 0,
@@ -170,6 +241,7 @@ export default function AdoptionModal({
           isVisible: animal.isVisible,
           contactName: privateInfo.contactName,
           contacts: privateInfo.contacts,
+          newName: privateInfo.newName,
         },
         after: {
           status: 'adoptado',
@@ -178,6 +250,7 @@ export default function AdoptionModal({
           contactName: adoptionData.contactName,
           contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
           notes: [notePrefix + adoptionData.note],
+          newName: newName || '',
         },
       },
       ...(adoptionData.selectedFormId
@@ -194,6 +267,17 @@ export default function AdoptionModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<Animal>({
@@ -223,7 +307,12 @@ export default function AdoptionModal({
 
       setAdoptionData({ ...DEFAULT_ADOPTION_DATA, newStatus: undefined });
     } catch (error) {
-      logger({ level: 'error', code: 'ADOPTION_ERROR', message: 'Error handling adoption:', data: error });
+      logger({
+        level: 'error',
+        code: 'ADOPTION_ERROR',
+        message: 'Error handling adoption:',
+        data: error,
+      });
       setAnimal(animal);
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
@@ -243,116 +332,88 @@ export default function AdoptionModal({
       setIsOpen={setAdoptionModalOpen}
     >
       <section className="flex flex-col items-center justify-start bg-cream-light w-full h-full p-6 gap-4 text-left overflow-y-auto">
-        <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
-          Registrar Adopción
-        </h2>
-
-        <div className="w-full max-w-2xl space-y-4">
-          {/* Form selector */}
-          <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
-            <label className="block text-green-dark font-semibold mb-2">
-              Formulario de adopción
-            </label>
-
-            {/* Selected form badge */}
-            {adoptionData.selectedFormId && (
-              <div className="mb-3 flex items-center gap-2 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                <span className="text-green-700 font-medium">✓</span>
-                <span className="text-green-800 truncate flex-1">
-                  {adoptionData.selectedFormName}
-                </span>
-                <Link
-                  href={`/plam-admin/formularios/${adoptionData.selectedFormId}`}
-                  className="text-green-600 hover:text-green-800 underline shrink-0"
-                >
-                  Ver
-                </Link>
-                <button
-                  onClick={clearFormSelection}
-                  className="text-red-600 hover:text-red-800 underline text-xs shrink-0"
-                >
-                  Quitar
-                </button>
-              </div>
-            )}
-
-            {/* Forms approved for this animal */}
-            <p className="text-xs text-gray-500 mb-1">
-              Aprobados para {animal.name}:
-            </p>
-            {formsLoading ? (
-              <p className="text-xs text-gray-400 py-1">Cargando...</p>
-            ) : formsForAnimal.length === 0 ? (
-              <p className="text-xs text-gray-400 py-1">Sin formularios</p>
-            ) : (
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mb-2">
-                {formsForAnimal.map((form) => (
-                  <button
-                    key={form.id}
-                    type="button"
-                    onClick={() => selectForm(form)}
-                    className={`text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                      adoptionData.selectedFormId === form.id
-                        ? 'bg-green-100 border border-green-300'
-                        : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
-                    }`}
-                  >
-                    <p className="font-medium text-gray-900 truncate">
-                      {form.fullName ?? '—'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(form.createdAt).toLocaleDateString('es-UY', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Toggle other forms */}
-            {!showOtherForms ? (
+        {viewMode === 'search' ? (
+          <>
+            {/* ── Search view header ── */}
+            <div className="w-full max-w-2xl flex items-center gap-3 mb-2">
               <button
                 type="button"
-                onClick={handleShowOtherForms}
-                className="text-xs text-green-600 hover:text-green-800 underline"
+                onClick={() => setViewMode('main')}
+                className="text-green-dark hover:text-green-700 transition-colors shrink-0"
               >
-                Ver otros formularios aprobados...
+                ← Volver
               </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleShowOtherForms}
-                  className="text-xs text-green-600 hover:text-green-800 underline mb-2 block"
-                >
-                  Ocultar otros formularios
-                </button>
-                {otherFormsLoading ? (
-                  <p className="text-xs text-gray-400 py-1">Cargando...</p>
-                ) : otherForms.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-1">
-                    No hay otros formularios aprobados
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                    {otherForms.map((form) => (
+              <h2 className="font-extrabold text-3xl sm:text-4xl text-green-dark">
+                Buscar formulario aprobado
+              </h2>
+            </div>
+
+            <div className="w-full max-w-2xl space-y-4">
+              {/* Date range filter */}
+              <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                <label className="block text-green-dark font-semibold mb-2">Rango de fechas</label>
+                <div className="flex gap-3 items-center flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Desde:</label>
+                    <input
+                      type="date"
+                      value={otherFormsDateFrom}
+                      onChange={(e) => setOtherFormsDateFrom(e.target.value)}
+                      className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Hasta:</label>
+                    <input
+                      type="date"
+                      value={otherFormsDateTo}
+                      onChange={(e) => setOtherFormsDateTo(e.target.value)}
+                      className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtherFormsDateFrom(daysAgoISO(3));
+                      setOtherFormsDateTo(todayISO());
+                    }}
+                    className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors"
+                  >
+                    Últimos 3 días
+                  </button>
+                </div>
+              </div>
+
+              {/* Form list */}
+              {otherFormsLoading ? (
+                <p className="text-sm text-gray-400 text-center py-4">Cargando formularios...</p>
+              ) : otherForms.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">
+                  No hay formularios aprobados en este rango
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {otherForms.map((form) => (
+                    <div
+                      key={form.id}
+                      className="flex items-stretch bg-white border border-gray-200 rounded-lg hover:border-green-300 transition-colors overflow-hidden"
+                    >
                       <button
-                        key={form.id}
                         type="button"
                         onClick={() => selectForm(form)}
-                        className={`text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                          adoptionData.selectedFormId === form.id
-                            ? 'bg-green-100 border border-green-300'
-                            : 'bg-gray-50 border border-gray-200 hover:bg-green-50 hover:border-green-200'
-                        }`}
+                        className="text-left px-4 py-3 flex-1 hover:bg-green-50 transition-colors"
                       >
-                        <p className="font-medium text-gray-900 truncate">
-                          {form.fullName ?? '—'}
-                        </p>
-                        <p className="text-xs text-gray-500">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium text-gray-900 truncate">
+                            {form.fullName ?? '—'}
+                          </p>
+                          {form.evaluation?.score !== undefined && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-800 shrink-0">
+                              Score {form.evaluation.score}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">
                           {form.approvedAnimalName
                             ? `Aprobado para: ${form.approvedAnimalName}`
                             : 'Solo aprobado'}{' '}
@@ -364,110 +425,383 @@ export default function AdoptionModal({
                           })}
                         </p>
                       </button>
+                      <Link
+                        href={`/plam-admin/formularios/${form.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center px-3 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-50 border-l border-gray-200 shrink-0 transition-colors"
+                        title="Ver formulario en otra pestaña"
+                      >
+                        Ver
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* ── Main adoption form view ── */}
+            <h2 className="font-extrabold text-4xl sm:text-5xl text-green-dark text-center">
+              Registrar Adopción
+            </h2>
+
+            <div className="w-full max-w-2xl space-y-4">
+              {/* Form selector */}
+              <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                <label className="block text-green-dark font-semibold mb-2">
+                  Formulario de adopción
+                </label>
+
+                {/* Selected form badge */}
+                {adoptionData.selectedFormId && (
+                  <div className="mb-3 flex items-center gap-2 text-sm bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <span className="text-green-700 font-medium">✓</span>
+                    <span className="text-green-800 truncate flex-1">
+                      {adoptionData.selectedFormName}
+                    </span>
+                    <Link
+                      href={`/plam-admin/formularios/${adoptionData.selectedFormId}`}
+                      className="text-green-600 hover:text-green-800 underline shrink-0"
+                    >
+                      Ver
+                    </Link>
+                    <button
+                      onClick={clearFormSelection}
+                      className="text-red-600 hover:text-red-800 underline text-xs shrink-0"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                )}
+
+                {/* Forms approved for this animal */}
+                <p className="text-xs text-gray-500 mb-1">Aprobados para {animal.name}:</p>
+                {formsLoading ? (
+                  <p className="text-xs text-gray-400 py-1">Cargando...</p>
+                ) : formsForAnimal.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-1">Sin formularios</p>
+                ) : (
+                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mb-2">
+                    {formsForAnimal.map((form) => (
+                      <div
+                        key={form.id}
+                        className={`flex items-stretch rounded-lg overflow-hidden ${
+                          adoptionData.selectedFormId === form.id
+                            ? 'bg-green-100 border border-green-300'
+                            : 'bg-gray-50 border border-gray-200'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => selectForm(form)}
+                          className={`text-left px-3 py-2 text-sm flex-1 hover:bg-green-50 transition-colors`}
+                        >
+                          <p className="font-medium text-gray-900 truncate">
+                            {form.fullName ?? '—'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(form.createdAt).toLocaleDateString('es-UY', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </button>
+                        <Link
+                          href={`/plam-admin/formularios/${form.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center px-2.5 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-100 border-l border-gray-200 shrink-0 transition-colors"
+                          title="Ver formulario en otra pestaña"
+                        >
+                          Ver
+                        </Link>
+                      </div>
                     ))}
                   </div>
                 )}
-              </>
-            )}
-          </div>
 
-          {/* Contact Name */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">
-              Nombre del Adoptante *
-            </label>
-            <input
-              type="text"
-              className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
-              placeholder="Nombre completo"
-              value={adoptionData.contactName}
-              onChange={(e) =>
-                setAdoptionData((prev) => ({ ...prev, contactName: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* Contacts */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Contactos *</label>
-            {adoptionData.contacts.map((contact, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <select
-                  className="p-2 border-2 border-green-dark bg-white rounded-lg"
-                  value={contact.type}
-                  onChange={(e) => {
-                    const newContacts = [...adoptionData.contacts];
-                    newContacts[index].type = e.target.value as 'celular' | 'email' | 'other';
-                    setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
-                  }}
+                {/* Button to search other forms */}
+                <button
+                  type="button"
+                  onClick={() => setViewMode('search')}
+                  className="text-xs text-green-600 hover:text-green-800 underline"
                 >
-                  <option value="celular">Celular</option>
-                  <option value="email">Email</option>
-                  <option value="other">Otro</option>
-                </select>
+                  Ver otros formularios aprobados...
+                </button>
+              </div>
+
+              {/* Contact Name */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Nombre del Adoptante *
+                </label>
                 <input
                   type="text"
-                  className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
-                  placeholder="Valor del contacto"
-                  value={contact.value}
-                  onChange={(e) => {
-                    const newContacts = [...adoptionData.contacts];
-                    newContacts[index].value = e.target.value;
-                    setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
-                  }}
+                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                  placeholder="Nombre completo"
+                  value={adoptionData.contactName}
+                  onChange={(e) =>
+                    setAdoptionData((prev) => ({ ...prev, contactName: e.target.value }))
+                  }
                 />
-                {adoptionData.contacts.length > 1 && (
-                  <button
-                    className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
-                    onClick={() => {
-                      const newContacts = adoptionData.contacts.filter((_, i) => i !== index);
-                      setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+              </div>
+
+              {/* New Name (adopter-given) */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Nombre que le pondrá el adoptante (opcional)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Si la familia ya decidió cómo llamará al animal, registralo acá.
+                </p>
+                <input
+                  type="text"
+                  className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                  placeholder={animal.name}
+                  value={adoptionData.newName}
+                  onChange={(e) =>
+                    setAdoptionData((prev) => ({ ...prev, newName: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* Contacts */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">Contactos *</label>
+                <datalist id="contact-label-suggestions">
+                  <option value="Familiar" />
+                  <option value="Pareja" />
+                  <option value="Vecino/a" />
+                  <option value="Veterinario/a" />
+                  <option value="Trabajo" />
+                  <option value="Amigo/a" />
+                  <option value="Rescatista" />
+                </datalist>
+                {adoptionData.contacts.map((contact, index) => (
+                  <div key={index} className="flex flex-wrap gap-2 mb-2">
+                    <select
+                      className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                      value={contact.type}
+                      onChange={(e) => {
+                        const newContacts = [...adoptionData.contacts];
+                        newContacts[index].type = e.target.value as 'celular' | 'email' | 'other';
+                        setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                      }}
+                    >
+                      <option value="celular">Celular</option>
+                      <option value="email">Email</option>
+                      <option value="other">Otro</option>
+                    </select>
+                    <input
+                      type="text"
+                      className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
+                      placeholder="Etiqueta"
+                      list="contact-label-suggestions"
+                      value={contact.label || ''}
+                      onChange={(e) => {
+                        const newContacts = [...adoptionData.contacts];
+                        newContacts[index].label = e.target.value || undefined;
+                        setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
+                      placeholder="Valor del contacto"
+                      value={contact.value}
+                      onChange={(e) => {
+                        const newContacts = [...adoptionData.contacts];
+                        newContacts[index].value = e.target.value;
+                        setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                      }}
+                    />
+                    {adoptionData.contacts.length > 1 && (
+                      <button
+                        className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                        onClick={() => {
+                          const newContacts = adoptionData.contacts.filter((_, i) => i !== index);
+                          setAdoptionData((prev) => ({ ...prev, contacts: newContacts }));
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto
+                  (ej: familiar, pareja).
+                </p>
+                <button
+                  className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                  onClick={() => {
+                    setAdoptionData((prev) => ({
+                      ...prev,
+                      contacts: [
+                        ...prev.contacts,
+                        { type: 'celular', value: '', label: undefined },
+                      ],
+                    }));
+                  }}
+                >
+                  + Agregar Contacto
+                </button>
+              </div>
+
+              {/* Follow-up date */}
+              <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                <label className="block text-green-dark font-semibold mb-2">
+                  Primera fecha de seguimiento
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Programa la primera fecha de contacto con el adoptante
+                </p>
+
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {FOLLOW_UP_DATE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.days}
+                      type="button"
+                      onClick={() =>
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: preset.days }))
+                      }
+                      className={`text-xs px-2 py-1 rounded transition-colors ${
+                        adoptionData.nextFollowUpDays === preset.days
+                          ? 'bg-green-700 text-white'
+                          : 'bg-green-dark text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                    min={1}
+                    max={365}
+                    value={adoptionData.nextFollowUpDays}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val > 0) {
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: val }));
+                      } else if (e.target.value === '') {
+                        setAdoptionData((prev) => ({ ...prev, nextFollowUpDays: 0 }));
+                      }
                     }}
-                  >
-                    ✕
-                  </button>
+                  />
+                  <span className="text-green-dark text-sm">días</span>
+                </div>
+
+                <p className="text-xs text-green-700 mt-2 font-medium">
+                  Fecha programada:{' '}
+                  {new Date(
+                    Date.now() + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString('es-UY', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+
+              {/* Follow-up manager */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Responsable del seguimiento
+                </label>
+                {usersLoading ? (
+                  <p className="text-xs text-gray-400 py-1">Cargando...</p>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setUsersOpen(!usersOpen)}
+                      className="w-full p-2 border-2 border-green-dark bg-white rounded-lg text-left flex items-center justify-between"
+                    >
+                      <span>
+                        {adoptionData.followUpManager
+                          ? (users.find((u) => u.id === adoptionData.followUpManager)?.name ??
+                            adoptionData.followUpManager)
+                          : 'Sin asignar'}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {usersOpen && (
+                      <div className="absolute z-10 w-full mt-1 border-2 border-green-dark bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdoptionData((prev) => ({ ...prev, followUpManager: '' }));
+                            setUsersOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-green-50"
+                        >
+                          Sin asignar
+                        </button>
+                        {users
+                          .filter((u) => u.role !== 'user')
+                          .map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setAdoptionData((prev) => ({ ...prev, followUpManager: user.id }));
+                                setUsersOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 hover:bg-green-50 ${
+                                adoptionData.followUpManager === user.id ? 'bg-green-100' : ''
+                              }`}
+                            >
+                              <span className="block text-sm font-medium text-gray-900">
+                                {user.name}
+                              </span>
+                              <span className="block text-xs text-gray-500">{user.id}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            ))}
-            <button
-              className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
-              onClick={() => {
-                setAdoptionData((prev) => ({
-                  ...prev,
-                  contacts: [...prev.contacts, { type: 'celular', value: '' }],
-                }));
-              }}
-            >
-              + Agregar Contacto
-            </button>
-          </div>
 
-          {/* Note */}
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Nota de Adopción *</label>
-            <textarea
-              className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
-              placeholder="Escribe información sobre la adopción..."
-              value={adoptionData.note}
-              onChange={(e) => setAdoptionData((prev) => ({ ...prev, note: e.target.value }))}
-            />
-          </div>
+              {/* Note */}
+              <div>
+                <label className="block text-green-dark font-semibold mb-2">
+                  Nota de Adopción *
+                </label>
+                <textarea
+                  className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                  placeholder="Escribe información sobre la adopción..."
+                  value={adoptionData.note}
+                  onChange={(e) => setAdoptionData((prev) => ({ ...prev, note: e.target.value }))}
+                />
+              </div>
 
-          <button
-            className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              !adoptionData.contactName.trim() ||
-              !adoptionData.note.trim() ||
-              adoptionData.contacts.every((c) => !c.value.trim())
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              handleAdoption();
-            }}
-          >
-            Registrar Adopción
-          </button>
-        </div>
+              <button
+                className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={
+                  !adoptionData.contactName.trim() ||
+                  !adoptionData.note.trim() ||
+                  adoptionData.contacts.every((c) => !c.value.trim())
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleAdoption();
+                }}
+              >
+                Registrar Adopción
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </Modal>
   );

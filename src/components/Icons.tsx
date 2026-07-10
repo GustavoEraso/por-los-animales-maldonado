@@ -413,6 +413,32 @@ function LockOpenIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps): Reac
     </SvgBase>
   );
 }
+
+/** Surgical / sterilization icon */
+function SterilizationIcon({
+  size = DEFAULT_SIZE,
+  title,
+  ...props
+}: IconProps): React.ReactElement {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M496-346 346-496l332-332q12-12 28.5-12t28.5 12l93 93q12 12 12 28.5T828-678L496-346Zm0-114 248-247-37-37-247 248 36 36Zm-56 340 80-80h360v80H440Zm-237 0q-46 0-88.5-18T40-188l265-264 104 104q14 14 22 32t8 38q0 20-8 38.5T409-207l-19 19q-32 32-74.5 50T227-120h-24Zm0-80h24q30 0 58-11.5t49-32.5l19-19q6-6 6-14t-6-14l-48-48-136 135q8 2 17 3t17 1Zm541-507-37-37 37 37ZM305-339Z" />
+    </SvgBase>
+  );
+}
+
+/** Vaccination / syringe icon */
+function VaccinationIcon({
+  size = DEFAULT_SIZE,
+  title,
+  ...props
+}: IconProps): React.ReactElement {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="m320-60-80-60v-160h-40q-33 0-56.5-23.5T120-360v-300q-17 0-28.5-11.5T80-700q0-17 11.5-28.5T120-740h120v-60h-20q-17 0-28.5-11.5T180-840q0-17 11.5-28.5T220-880h120q17 0 28.5 11.5T380-840q0 17-11.5 28.5T340-800h-20v60h120q17 0 28.5 11.5T480-700q0 17-11.5 28.5T440-660v300q0 33-23.5 56.5T360-280h-40v220ZM200-360h160v-60h-70q-12 0-21-9t-9-21q0-12 9-21t21-9h70v-60h-70q-12 0-21-9t-9-21q0-12 9-21t21-9h70v-60H200v300ZM600-80q-33 0-56.5-23.5T520-160v-260q0-29 10-48t21-33q11-14 20-22.5t9-16.5v-20q-17 0-28.5-11.5T540-600q0-17 11.5-28.5T580-640h200q17 0 28.5 11.5T820-600q0 17-11.5 28.5T780-560v20q0 8 10 18t22 24q11 14 19.5 33t8.5 45v260q0 33-23.5 56.5T760-80H600Zm0-320h160v-20q0-15-9-26t-20-24q-11-13-21-29t-10-41v-20h-40v20q0 24-9.5 40T630-471q-11 13-20.5 24.5T600-420v20Zm0 120h160v-60H600v60Zm0 120h160v-60H600v60Zm0-120h160-160Z" />
+    </SvgBase>
+  );
+}
 function SvgBase({ title, size, color, viewBox, children, ...props }: IconProps) {
   const iconSize = typeof size === 'string' ? sizeMap[size] || DEFAULT_SIZE : size || DEFAULT_SIZE;
 
@@ -483,4 +509,6 @@ export {
   FollowUpIcon,
   LockClosedIcon,
   LockOpenIcon,
+  SterilizationIcon,
+  VaccinationIcon,
 };

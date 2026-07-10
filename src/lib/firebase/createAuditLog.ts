@@ -3,6 +3,18 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { AuditAction, AuditLogType, SystemAuditLog } from '@/types';
 
+/** Strips undefined values from an object so Firestore doesn't reject it */
+function sanitizeObject(
+  obj: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
+  if (!obj) return obj;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) result[key] = value;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 /**
  * Creates an audit log entry in Firestore
  *
@@ -72,7 +84,15 @@ export async function createAuditLog({
     }
 
     if (changes !== undefined && (changes.before !== undefined || changes.after !== undefined)) {
-      auditLogData.changes = changes;
+      const sanitizedBefore = sanitizeObject(changes.before);
+      const sanitizedAfter = sanitizeObject(changes.after);
+      // Only add keys that actually have values — Firestore rejects undefined map fields
+      const sanitized: { before?: Record<string, unknown>; after?: Record<string, unknown> } = {};
+      if (sanitizedBefore) sanitized.before = sanitizedBefore;
+      if (sanitizedAfter) sanitized.after = sanitizedAfter;
+      if (sanitized.before || sanitized.after) {
+        auditLogData.changes = sanitized;
+      }
     }
 
     if (metadata !== undefined && Object.keys(metadata).length > 0) {
@@ -83,7 +103,19 @@ export async function createAuditLog({
 
     return docRef.id;
   } catch (error) {
-    logger({ level: 'error', code: 'CREATE_AUDIT_LOG', message: 'Error creating audit log:', data: error });
+    // Extract error message regardless of error shape (FirebaseError, plain object, etc.)
+    const errorMessage: string =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as Record<string, unknown>).message)
+          : String(error);
+    logger({
+      level: 'error',
+      code: 'CREATE_AUDIT_LOG',
+      message: `Error creating audit log: ${errorMessage}`,
+      data: error,
+    });
     // Don't throw - audit log failures shouldn't break the main operation
     return '';
   }

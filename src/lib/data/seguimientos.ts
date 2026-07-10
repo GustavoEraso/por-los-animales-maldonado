@@ -1,6 +1,16 @@
 import { PrivateInfoType } from '@/types';
 
 /**
+ * Normalizes legacy single-string or array values into a clean string[].
+ * Backward-compatible: accepts string | string[] | undefined | null.
+ */
+export function normalizeManager(value: string | string[] | undefined | null): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return [value];
+}
+
+/**
  * Sentinel defaults applied at read time for fields that may be missing
  * in older Firestore documents.
  */
@@ -15,10 +25,13 @@ const SENTINEL_EMPTY_STRING = '';
 export interface AdoptedAnimalFollowup {
   animalId: string;
   animalName: string;
+  /** Name given by the adopter. Empty string if not renamed. */
+  newName: string;
   animalSpecies: 'perro' | 'gato' | 'otros';
   animalImageUrl: string;
   isSterilized: 'si' | 'no' | 'no_se';
-  caseManager: string;
+  caseManager: string[];
+  followUpManager: string[];
   contactName: string;
   contacts: { type: 'celular' | 'email' | 'other'; value: string | number }[];
   address: string;
@@ -44,10 +57,12 @@ export function mapToFollowup(pi: PrivateInfoType): AdoptedAnimalFollowup {
   return {
     animalId: pi.id,
     animalName: pi.name,
+    newName: pi.newName ?? SENTINEL_EMPTY_STRING,
     animalSpecies: pi.species ?? SENTINEL_SPECIES,
     animalImageUrl: pi.mainImageUrl ?? SENTINEL_IMAGE,
     isSterilized: pi.isSterilized ?? SENTINEL_STERILIZED,
-    caseManager: pi.caseManager ?? '',
+    caseManager: normalizeManager(pi.caseManager),
+    followUpManager: normalizeManager(pi.followUpManager),
     contactName: pi.contactName ?? '',
     contacts: pi.contacts ?? [],
     address: pi.address ?? '',

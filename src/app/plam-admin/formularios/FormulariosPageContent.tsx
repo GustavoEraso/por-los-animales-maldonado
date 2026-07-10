@@ -15,6 +15,8 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
 import { logger } from '@/lib/logger';
 import FormChat from '@/components/FormChat';
+import EvaluationMissingCard from '@/components/EvaluationMissingCard';
+import { downloadFormPdf } from '@/lib/generateFormPdf';
 import { FIELD_LABELS } from '@/lib/constants/formLabels';
 
 // ---------------------------------------------------------------------------
@@ -101,7 +103,10 @@ interface FormulariosPageContentProps {
  * CRM page for visualizing and managing adoption form submissions.
  * Desktop: split panel list + detail. Mobile: card grid navigating to /[id].
  */
-export default function FormulariosPageContent({ initialAnimals, initialUsers }: FormulariosPageContentProps) {
+export default function FormulariosPageContent({
+  initialAnimals,
+  initialUsers,
+}: FormulariosPageContentProps) {
   const { currentUser } = useAuth();
 
   const userIds = initialUsers.map((u) => u.id);
@@ -322,7 +327,10 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
 
         {/* Unread messages panel */}
         {unreadChats.length > 0 && (
-          <div ref={panelRef} className="border border-green-300 bg-green-50 rounded-xl p-4 flex flex-col gap-2">
+          <div
+            ref={panelRef}
+            className="border border-green-300 bg-green-50 rounded-xl p-4 flex flex-col gap-2"
+          >
             <p className="text-sm font-semibold text-green-900">
               Mensajes sin leer ({unreadChats.length})
             </p>
@@ -334,9 +342,7 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                   className="flex items-center gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-green-200 hover:border-green-400 transition-colors"
                 >
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500 shrink-0 animate-pulse" />
-                  <span className="font-medium text-gray-900 truncate">
-                    {chat.formName}
-                  </span>
+                  <span className="font-medium text-gray-900 truncate">{chat.formName}</span>
                   <span className="text-xs text-gray-400 shrink-0">
                     {chat.commentCount} mensaje{chat.commentCount !== 1 ? 's' : ''}
                   </span>
@@ -448,7 +454,7 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                     key={form.id}
                     onClick={() => {
                       setSelected(form);
-                      setUnreadChats((prev) => prev.filter(c => c.formId !== form.id));
+                      setUnreadChats((prev) => prev.filter((c) => c.formId !== form.id));
                     }}
                     className={`w-full text-left px-3 py-3 transition-colors ${
                       isActive
@@ -459,7 +465,7 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                     <p className="font-medium text-gray-900 truncate text-sm">
                       {form.fullName ?? '—'}
                     </p>
-                    {unreadChats.some(c => c.formId === form.id) && (
+                    {unreadChats.some((c) => c.formId === form.id) && (
                       <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium mt-0.5">
                         <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         Mensajes sin leer
@@ -479,11 +485,15 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                       </p>
                     )}
                     <div className="flex gap-1 mt-1 flex-wrap">
-                      {score !== undefined && (
+                      {score !== undefined ? (
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-semibold ${SCORE_COLOR(score)}`}
                         >
                           Score {score}
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                          Sin evaluación
                         </span>
                       )}
                       <span
@@ -511,6 +521,10 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                 updatingStatus={updatingStatus}
                 initialAnimals={initialAnimals}
                 userIds={userIds}
+                onFormUpdate={(updatedForm) => {
+                  setSelected(updatedForm);
+                  setForms((prev) => prev.map((f) => (f.id === updatedForm.id ? updatedForm : f)));
+                }}
               />
             )}
           </div>
@@ -534,7 +548,7 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                 <p className="font-semibold text-gray-900 text-sm leading-tight truncate">
                   {form.fullName ?? '—'}
                 </p>
-                {unreadChats.some(c => c.formId === form.id) && (
+                {unreadChats.some((c) => c.formId === form.id) && (
                   <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium">
                     <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     Mensajes sin leer
@@ -551,11 +565,15 @@ export default function FormulariosPageContent({ initialAnimals, initialUsers }:
                 {status === 'approved' && form.approvedAnimalName && (
                   <p className="text-xs text-green-700 truncate">✓ {form.approvedAnimalName}</p>
                 )}
-                {score !== undefined && (
+                {score !== undefined ? (
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-semibold self-start ${SCORE_COLOR(score)}`}
                   >
                     Score {score}
+                  </span>
+                ) : (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-medium self-start">
+                    Sin evaluación
                   </span>
                 )}
                 <span
@@ -615,13 +633,22 @@ interface DetailPanelProps {
   updatingStatus: boolean;
   initialAnimals: Animal[];
   userIds: string[];
+  /** Callback to update the form in the parent state (e.g. after evaluation retry). */
+  onFormUpdate: (updatedForm: GoogleFormEntry) => void;
 }
 
 /**
  * Detail panel shown on the right side of the desktop CRM split view.
  * Displays AI evaluation summary and status controls.
  */
-function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals, userIds }: DetailPanelProps) {
+function DetailPanel({
+  form,
+  onStatusChange,
+  updatingStatus,
+  initialAnimals,
+  userIds,
+  onFormUpdate,
+}: DetailPanelProps) {
   const evaluation = form.evaluation;
   const status = resolvedStatus(form);
 
@@ -629,6 +656,16 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals, use
   const [showAnimalPicker, setShowAnimalPicker] = useState(false);
   const [animals] = useState<Animal[]>(initialAnimals);
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      await downloadFormPdf(form);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const filteredAnimals = animals.filter((a) =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -664,7 +701,53 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals, use
     <div className="flex flex-col gap-5">
       {/* Name + date */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            title="Descargar formulario como PDF"
+          >
+            {downloadingPdf ? (
+              <>
+                <svg
+                  className="animate-spin h-3.5 w-3.5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                PDF...
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                PDF
+              </>
+            )}
+          </button>
+        </div>
         {form.selectedPet && (
           <p className="text-sm text-gray-500 mt-0.5">Mascota: {form.selectedPet}</p>
         )}
@@ -681,11 +764,14 @@ function DetailPanel({ form, onStatusChange, updatingStatus, initialAnimals, use
 
       {/* Evaluation */}
       {!evaluation ? (
-        <p className="text-sm text-gray-400 italic">
-          Evaluación de{' '}
-          <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span> no
-          disponible para este formulario.
-        </p>
+        <EvaluationMissingCard
+          formId={form.id}
+          formName={form.fullName}
+          rawFormData={form as unknown as Record<string, unknown>}
+          onEvaluationComplete={(newEval) => {
+            onFormUpdate({ ...form, evaluation: newEval });
+          }}
+        />
       ) : (
         <>
           {/* Score + recommendation */}

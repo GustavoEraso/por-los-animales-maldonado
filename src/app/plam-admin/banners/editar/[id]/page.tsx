@@ -9,6 +9,8 @@ import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import Loader from '@/components/Loader';
 import { getChangedFields } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { auth } from '@/firebase';
 import Image from 'next/image';
 import { PlusIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -57,7 +59,12 @@ export default function EditBannerForm() {
 
         setBanner(fetchedBanner);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_BANNER_ERROR', message: 'Error fetching banner data:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_BANNER_ERROR',
+          message: 'Error fetching banner data:',
+          data: error,
+        });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -126,6 +133,12 @@ export default function EditBannerForm() {
       }
 
       const promises = Promise.all(promisesList);
+      await createAuditLog({
+        type: 'banner',
+        action: 'update',
+        entityId: currentId,
+        modifiedBy: auth.currentUser?.email || 'system',
+      });
       await handlePromiseToast(promises, {
         messages: {
           pending: {
@@ -148,7 +161,12 @@ export default function EditBannerForm() {
 
       router.replace('/plam-admin/banners');
     } catch (error) {
-      logger({ level: 'error', code: 'SAVE_BANNER_ERROR', message: 'Error al guardar el banner:', data: error });
+      logger({
+        level: 'error',
+        code: 'SAVE_BANNER_ERROR',
+        message: 'Error al guardar el banner:',
+        data: error,
+      });
     }
   };
 

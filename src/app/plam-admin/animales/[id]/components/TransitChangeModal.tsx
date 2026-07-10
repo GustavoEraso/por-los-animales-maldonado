@@ -9,6 +9,7 @@ import { SwapIcon } from '@/components/Icons';
 import { AnimalActionModalProps, TransitChangeFormData, DEFAULT_TRANSIT_DATA } from '../types';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
 
 /**
  * Modal component for changing the transit caretaker of an animal.
@@ -66,6 +67,17 @@ export default function TransitChangeModal({
     setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
 
     try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: privateInfo.id,
+        entityName: privateInfo.name || animal.name,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: newTransactionData.changes as {
+          before?: Record<string, unknown>;
+          after?: Record<string, unknown>;
+        },
+      });
       await handlePromiseToast(
         Promise.all([
           postFirestoreData<PrivateInfoType>({
@@ -91,7 +103,12 @@ export default function TransitChangeModal({
 
       setTransitChangeData(DEFAULT_TRANSIT_DATA);
     } catch (error) {
-      logger({ level: 'error', code: 'TRANSIT_CHANGE', message: 'Error handling transit change:', data: error });
+      logger({
+        level: 'error',
+        code: 'TRANSIT_CHANGE',
+        message: 'Error handling transit change:',
+        data: error,
+      });
       setPrivateInfo(privateInfo);
       setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
     }
@@ -134,8 +151,17 @@ export default function TransitChangeModal({
           {/* Contacts */}
           <div>
             <label className="block text-green-dark font-semibold mb-2">Contactos *</label>
+            <datalist id="contact-label-suggestions">
+              <option value="Familiar" />
+              <option value="Pareja" />
+              <option value="Vecino/a" />
+              <option value="Veterinario/a" />
+              <option value="Trabajo" />
+              <option value="Amigo/a" />
+              <option value="Rescatista" />
+            </datalist>
             {transitChangeData.contacts.map((contact, index) => (
-              <div key={index} className="flex gap-2 mb-2">
+              <div key={index} className="flex flex-wrap gap-2 mb-2">
                 <select
                   className="p-2 border-2 border-green-dark bg-white rounded-lg"
                   value={contact.type}
@@ -151,7 +177,19 @@ export default function TransitChangeModal({
                 </select>
                 <input
                   type="text"
-                  className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                  className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
+                  placeholder="Etiqueta"
+                  list="contact-label-suggestions"
+                  value={contact.label || ''}
+                  onChange={(e) => {
+                    const newContacts = [...transitChangeData.contacts];
+                    newContacts[index].label = e.target.value || undefined;
+                    setTransitChangeData((prev) => ({ ...prev, contacts: newContacts }));
+                  }}
+                />
+                <input
+                  type="text"
+                  className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
                   placeholder="Valor del contacto"
                   value={contact.value}
                   onChange={(e) => {
@@ -173,12 +211,16 @@ export default function TransitChangeModal({
                 )}
               </div>
             ))}
+            <p className="text-xs text-gray-500 mt-1 mb-2">
+              Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto (ej:
+              familiar, pareja).
+            </p>
             <button
               className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
               onClick={() => {
                 setTransitChangeData((prev) => ({
                   ...prev,
-                  contacts: [...prev.contacts, { type: 'celular', value: '' }],
+                  contacts: [...prev.contacts, { type: 'celular', value: '', label: undefined }],
                 }));
               }}
             >
