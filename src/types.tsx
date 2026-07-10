@@ -113,6 +113,7 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     | 'emergency'
     | 'supply'
     | 'followup'
+    | 'rename'
     | 'deceased'
     | 'note'
     | 'other';
@@ -393,6 +394,7 @@ export type EventType =
   | 'emergency'
   | 'supply'
   | 'followup'
+  | 'rename'
   | 'deceased'
   | 'other';
 

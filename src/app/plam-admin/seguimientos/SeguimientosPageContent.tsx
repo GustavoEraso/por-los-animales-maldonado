@@ -35,6 +35,7 @@ type FilterSpecies = 'todos' | 'perro' | 'gato';
 
 type SortField =
   | 'animalName'
+  | 'newName'
   | 'contactName'
   | 'caseManager'
   | 'followUpManager'
@@ -102,6 +103,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
   const [showCol, setShowCol] = useState({
     id: true,
     adoptante: true,
+    newName: false,
     responsable: true,
     seguimiento: true,
     adopcion: true,
@@ -202,6 +204,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
       result = result.filter(
         (f) =>
           f.animalName.toLowerCase().includes(lower) ||
+          f.newName.toLowerCase().includes(lower) ||
           (f.contactName || '').toLowerCase().includes(lower) ||
           f.animalId.toLowerCase().includes(lower) ||
           (f.followUpManager || []).join(' ').toLowerCase().includes(lower)
@@ -218,6 +221,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
       switch (sortField) {
         case 'animalName':
           cmp = a.animalName.localeCompare(b.animalName);
+          break;
+        case 'newName':
+          cmp = (a.newName || '').localeCompare(b.newName || '');
           break;
         case 'contactName':
           cmp = (a.contactName || '').localeCompare(b.contactName || '');
@@ -532,6 +538,17 @@ export default function SeguimientosPageContent(): React.ReactElement {
             <label className="cursor-pointer">
               <input
                 type="checkbox"
+                checked={showCol.newName}
+                onChange={() => toggleCol('newName')}
+                className="mr-1 accent-green-700"
+              />
+              N. Adoptante
+            </label>
+          </li>
+          <li>
+            <label className="cursor-pointer">
+              <input
+                type="checkbox"
                 checked={showCol.responsable}
                 onChange={() => toggleCol('responsable')}
                 className="mr-1 accent-green-700"
@@ -624,6 +641,19 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       </span>
                     </button>
                   </th>
+                  {showCol.newName && (
+                    <th className="px-4 py-3 font-semibold hidden md:table-cell">
+                      <button
+                        onClick={() => handleSort('newName')}
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                      >
+                        N. Adoptante{' '}
+                        <span className="text-xs opacity-70">
+                          {sortArrow('newName', sortField, sortDirection)}
+                        </span>
+                      </button>
+                    </th>
+                  )}
                   {showCol.id && (
                     <th className="px-4 py-3 font-semibold hidden sm:table-cell">
                       <button
@@ -778,12 +808,28 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           )}
                           <div className="max-w-24 truncate">
                             <span className="font-semibold">{followup.animalName}</span>
+                            {followup.newName && (
+                              <span className="text-xs text-gray-500 block">
+                                &ldquo;{followup.newName}&rdquo;
+                              </span>
+                            )}
                             <span className="text-xs text-gray-400 block sm:hidden">
                               {followup.contactName || 'Sin contacto'}
                             </span>
                           </div>
                         </Link>
                       </td>
+
+                      {/* N. Adoptante */}
+                      {showCol.newName && (
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {followup.newName ? (
+                            <span className="font-medium text-gray-800">{followup.newName}</span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                      )}
 
                       {/* ID */}
                       {showCol.id && (

@@ -155,11 +155,14 @@ export default function AdoptionModal({
     const notePrefix = '[Nota de adopción] - ';
     const now = createTimestamp();
 
+    const newName = adoptionData.newName.trim();
+
     const updatedPrivateInfo: PrivateInfoType = {
       ...privateInfo,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
       notes: [...(privateInfo.notes || []), notePrefix + adoptionData.note],
+      ...(newName ? { newName } : { newName: '' }),
       ...(adoptionData.selectedFormId
         ? {
             adoptionFormId: adoptionData.selectedFormId,
@@ -214,6 +217,7 @@ export default function AdoptionModal({
           isVisible: animal.isVisible,
           contactName: privateInfo.contactName,
           contacts: privateInfo.contacts,
+          newName: privateInfo.newName,
         },
         after: {
           status: 'adoptado',
@@ -222,6 +226,7 @@ export default function AdoptionModal({
           contactName: adoptionData.contactName,
           contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
           notes: [notePrefix + adoptionData.note],
+          newName: newName || '',
         },
       },
       ...(adoptionData.selectedFormId
@@ -436,6 +441,23 @@ export default function AdoptionModal({
               onChange={(e) =>
                 setAdoptionData((prev) => ({ ...prev, contactName: e.target.value }))
               }
+            />
+          </div>
+
+          {/* New Name (adopter-given) */}
+          <div>
+            <label className="block text-green-dark font-semibold mb-2">
+              Nombre que le pondrá el adoptante (opcional)
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Si la familia ya decidió cómo llamará al animal, registralo acá.
+            </p>
+            <input
+              type="text"
+              className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+              placeholder={animal.name}
+              value={adoptionData.newName}
+              onChange={(e) => setAdoptionData((prev) => ({ ...prev, newName: e.target.value }))}
             />
           </div>
 

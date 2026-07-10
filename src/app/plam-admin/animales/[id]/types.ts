@@ -16,6 +16,8 @@ export interface AdoptionFormData {
   selectedFormName?: string;
   nextFollowUpDays: number;
   followUpManager: string;
+  /** Name given by the adopter, distinct from the original animal name. */
+  newName: string;
 }
 
 /** Form data for transit change modal */
@@ -30,6 +32,7 @@ export const DEFAULT_ADOPTION_DATA: AdoptionFormData = {
   contactName: '',
   contacts: [{ type: 'celular', value: '' }],
   note: '',
+  newName: '',
   newStatus: 'transitorio',
   nextFollowUpDays: 30,
   followUpManager: '',

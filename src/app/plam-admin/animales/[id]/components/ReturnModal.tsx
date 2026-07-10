@@ -185,15 +185,18 @@ export default function ReturnModal({
             lastFollowUpDate: 0,
             lastFollowUpNote: '',
             sterilizationDate: 0,
+            newName: '',
           }
         : {
             isAdopted: false,
             followUpStatus: 'active',
+            followUpManager: [],
             adoptionDate: 0,
             nextFollowUpDate: 0,
             lastFollowUpDate: 0,
             lastFollowUpNote: '',
             sterilizationDate: 0,
+            newName: '',
           }),
     };
 
@@ -229,6 +232,8 @@ export default function ReturnModal({
           contacts: privateInfo.contacts,
           adoptionFormId: privateInfo.adoptionFormId,
           adoptionFormName: privateInfo.adoptionFormName,
+          newName: privateInfo.newName,
+          followUpManager: privateInfo.followUpManager,
         },
         after: {
           status: newStatus,
@@ -239,6 +244,14 @@ export default function ReturnModal({
           notes: [notePrefix + adoptionData.note],
           adoptionFormId: isGoingToNewAdopter ? adoptionData.selectedFormId || '' : '',
           adoptionFormName: isGoingToNewAdopter ? adoptionData.selectedFormName || '' : '',
+          newName: '',
+          followUpManager: isGoingToNewAdopter
+            ? adoptionData.followUpManager
+              ? [adoptionData.followUpManager]
+              : auth.currentUser?.email
+                ? [auth.currentUser.email]
+                : []
+            : [],
         },
       },
       ...(isGoingToNewAdopter && adoptionData.selectedFormId

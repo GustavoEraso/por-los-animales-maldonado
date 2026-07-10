@@ -493,6 +493,9 @@ export default function AnimalPage(): React.ReactElement | null {
   const isCaseClosed = status === 'adoptado' || status === 'fallecido';
   const isAdopted = status === 'adoptado';
 
+  const heroTitle = privateInfo.newName ?? name;
+  const heroSubtitle = privateInfo.newName ? name : undefined;
+
   // --- Shared modal props ---
 
   const actionModalProps = {
@@ -506,10 +509,15 @@ export default function AnimalPage(): React.ReactElement | null {
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
-        <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} />
+        <Hero
+          imgURL={img[0].imgUrl}
+          title={heroTitle}
+          subtitle={heroSubtitle}
+          imgAlt={img[0].imgAlt}
+        />
 
         {/* Animal basic info + photos */}
-        <AnimalInfoSection animal={animal} images={img} />
+        <AnimalInfoSection animal={animal} images={img} newName={privateInfo.newName} />
 
         {/* Private info: case manager, medical, contacts, notes */}
         <AnimalPrivateInfoSection

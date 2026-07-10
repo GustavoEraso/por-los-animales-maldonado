@@ -92,6 +92,9 @@ export default function EventModal({
   const [eventModalOpen, setEventModalOpen] = useState<boolean>(false);
   const [eventData, setEventData] = useState<EventFormData>(DEFAULT_EVENT_DATA);
 
+  // --- Rename state ---
+  const [renameName, setRenameName] = useState<string>('');
+
   // --- Next follow-up date state (only when adopted + followup) ---
   const [nextFollowUpDateStr, setNextFollowUpDateStr] = useState<string>('');
   const [quickDayValue, setQuickDayValue] = useState<string>('');
@@ -145,7 +148,121 @@ export default function EventModal({
     }
   }, [isOpen, defaultEventType]);
 
+  /**
+   * Sync rename input when the rename event type is selected.
+   * Pre-fills with the current newName if it exists.
+   */
+  useEffect(() => {
+    if (eventData.eventType === 'rename') {
+      setRenameName(privateInfo.newName || '');
+    }
+  }, [eventData.eventType, privateInfo.newName]);
+
   const handleEvent = async (): Promise<void> => {
+    // --- Rename flow (early return — simpler than other events) ---
+    if (eventData.eventType === 'rename') {
+      const oldName = privateInfo.newName || '';
+      const newName = renameName.trim();
+
+      if (newName === oldName) {
+        handleToast({
+          type: 'warning',
+          title: 'Sin cambios',
+          text: 'El nombre no ha cambiado',
+        });
+        return;
+      }
+
+      setIsOpen(false);
+
+      const now = createTimestamp();
+      const renameNote =
+        newName && oldName
+          ? `[${eventLabels.rename}] - Renombró de "${oldName}" a "${newName}"`
+          : newName
+            ? `[${eventLabels.rename}] - Asignó nuevo nombre: "${newName}"`
+            : `[${eventLabels.rename}] - Eliminó el nombre "${oldName}"`;
+
+      const userNote = eventData.note.trim();
+      const renameNotes = userNote ? [renameNote, userNote] : [renameNote];
+
+      const updatedPrivateInfo: PrivateInfoType = {
+        ...privateInfo,
+        newName: newName || '',
+        notes: [...(privateInfo.notes || []), ...renameNotes],
+      };
+
+      const newTransactionData: AnimalTransactionType = {
+        id: privateInfo.id,
+        name: privateInfo.name || '',
+        img: animal.images[0],
+        transactionType: 'rename',
+        date: now,
+        modifiedBy: auth.currentUser?.email || 'system',
+        since: now,
+        changes: {
+          before: { newName: oldName || '' },
+          after: { newName: newName || '' },
+        },
+      };
+
+      // Optimistic UI
+      setPrivateInfo(updatedPrivateInfo);
+      setAllAnimalTransactions((prev) => [newTransactionData, ...prev]);
+
+      try {
+        await createAuditLog({
+          type: 'animal',
+          action: 'update',
+          entityId: privateInfo.id,
+          entityName: privateInfo.name || animal.name,
+          modifiedBy: auth.currentUser?.email || 'system',
+          changes: {
+            before: { newName: oldName || '(vacío)' },
+            after: { newName: newName || '(vacío)' },
+          },
+        });
+
+        await handlePromiseToast(
+          Promise.all([
+            postFirestoreData<PrivateInfoType>({
+              data: updatedPrivateInfo,
+              currentCollection: 'animalPrivateInfo',
+              id: privateInfo.id,
+            }),
+            postTransactionData({ data: newTransactionData }),
+          ]),
+          {
+            messages: {
+              pending: { title: 'Renombrando', text: 'Actualizando nombre...' },
+              success: {
+                title: 'Nombre actualizado',
+                text: newName
+                  ? `El animal ahora se llama "${newName}"`
+                  : 'Nombre eliminado correctamente',
+              },
+              error: { title: 'Error', text: 'No se pudo actualizar el nombre' },
+            },
+          }
+        );
+
+        setEventData(DEFAULT_EVENT_DATA);
+        setRenameName('');
+        onEventSaved?.();
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'RENAME_ERROR',
+          message: 'Error renaming animal:',
+          data: error,
+        });
+        setPrivateInfo(privateInfo);
+        setAllAnimalTransactions((prev) => prev.filter((t) => t.date !== newTransactionData.date));
+      }
+
+      return;
+    }
+
     setIsOpen(false);
 
     const notePrefix = `[${eventLabels[eventData.eventType]}] - `;
@@ -635,13 +752,48 @@ export default function EventModal({
                   {!isDeceased && <option value="medical">Médico</option>}
                   {!isDeceased && <option value="emergency">Emergencia</option>}
                   {!isDeceased && <option value="supply">Suministro alimento insumos etc</option>}
+                  {isAdopted && <option value="rename">Renombrar</option>}
                   {!isDeceased && <option value="deceased">Fallecimiento</option>}
                   <option value="other">Otro</option>
                 </select>
               </div>
 
+              {/* Rename UI — replaces the full form when rename event is selected */}
+              {eventData.eventType === 'rename' && isAdopted && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">Nuevo nombre</label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      {privateInfo.newName
+                        ? `Nombre actual del adoptante: "${privateInfo.newName}". Dejalo vacío para eliminar el nombre.`
+                        : `El animal se llama "${animal.name}". Asignale un nuevo nombre dado por el adoptante.`}
+                    </p>
+                    <input
+                      type="text"
+                      className="w-full p-2 border-2 border-green-dark bg-white rounded-lg"
+                      placeholder={animal.name}
+                      value={renameName}
+                      onChange={(e) => setRenameName(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Optional note */}
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Nota adicional (opcional)
+                    </label>
+                    <textarea
+                      className="w-full h-20 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                      placeholder="Comentario sobre el cambio de nombre..."
+                      value={eventData.note}
+                      onChange={(e) => setEventData((prev) => ({ ...prev, note: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Vaccination specific fields */}
-              {eventData.eventType === 'vaccination' && (
+              {eventData.eventType !== 'rename' && eventData.eventType === 'vaccination' && (
                 <>
                   <div>
                     <label className="block text-green-dark font-semibold mb-2">
@@ -673,212 +825,228 @@ export default function EventModal({
                 </>
               )}
 
-              {/* Note */}
-              <div>
-                <label className="block text-green-dark font-semibold mb-2">
-                  Descripción del Evento{' '}
-                  {eventData.eventType === 'vaccination' ? '(opcional)' : '*'}
-                </label>
-                <textarea
-                  className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
-                  placeholder="Escribe información sobre el evento..."
-                  value={eventData.note}
-                  onChange={(e) => setEventData((prev) => ({ ...prev, note: e.target.value }))}
-                />
-              </div>
-
-              {/* Event image upload */}
-              <div>
-                <label className="block text-green-dark font-semibold mb-2">
-                  Imagen (opcional)
-                </label>
-                {eventImage ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={eventImage.imgUrl}
-                      alt={eventImage.imgAlt}
-                      className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setEventImage(null)}
-                      className="text-red-600 hover:text-red-800 text-sm underline"
-                    >
-                      Quitar imagen
-                    </button>
-                  </div>
-                ) : (
-                  <UploadImages
-                    maxFiles={1}
-                    currentFolder="follow_up"
-                    onImagesAdd={(imgs) => {
-                      if (imgs[0]) {
-                        setEventImage({
-                          ...imgs[0],
-                          imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
-                        });
-                      }
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Next follow-up date (only for adopted animals + followup events) */}
-              {showFollowUpDate && (
-                <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
-                  <label className="block text-green-dark font-semibold mb-2">
-                    Próxima fecha de seguimiento (opcional)
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Programa la próxima fecha en la que se debe contactar al adoptante
-                  </p>
-
-                  {/* Close case checkbox — only shown when case is currently open */}
-                  {privateInfo.followUpStatus !== 'closed' && (
-                    <label className="flex items-center gap-2 mb-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={closeCase}
-                        onChange={(e) => {
-                          setCloseCase(e.target.checked);
-                          if (e.target.checked) {
-                            setNextFollowUpDateStr('');
-                            setQuickDayValue('');
-                          }
-                        }}
-                        className="w-4 h-4 accent-red-600"
-                      />
-                      <span className="text-sm text-red-700 font-medium">
-                        Cerrar caso — no se hará más seguimiento
-                      </span>
+              {/* Note, image, cost, follow-up — hidden when rename is selected */}
+              {eventData.eventType !== 'rename' && (
+                <>
+                  {/* Note */}
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Descripción del Evento{' '}
+                      {eventData.eventType === 'vaccination' ? '(opcional)' : '*'}
                     </label>
-                  )}
+                    <textarea
+                      className="w-full h-32 p-2 border-2 border-green-dark bg-white rounded-lg field-sizing-content"
+                      placeholder="Escribe información sobre el evento..."
+                      value={eventData.note}
+                      onChange={(e) => setEventData((prev) => ({ ...prev, note: e.target.value }))}
+                    />
+                  </div>
 
-                  {!closeCase && (
-                    <>
-                      {/* Quick action buttons */}
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {quickDateOptions().map((opt) => (
-                          <button
-                            key={opt.days}
-                            type="button"
-                            onClick={() => handleQuickDateForFollowUp(opt.days)}
-                            className="text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Custom date picker */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <input
-                          type="date"
-                          className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
-                          value={nextFollowUpDateStr}
-                          onChange={(e) => setNextFollowUpDateStr(e.target.value)}
-                        />
-                      </div>
-                      {/* Quick N days input */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          className="w-20 p-2 border border-gray-300 rounded-lg text-sm"
-                          placeholder="N días"
-                          value={quickDayValue}
-                          onChange={(e) => setQuickDayValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleQuickDaysForFollowUp();
-                          }}
+                  {/* Event image upload */}
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Imagen (opcional)
+                    </label>
+                    {eventImage ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={eventImage.imgUrl}
+                          alt={eventImage.imgAlt}
+                          className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
                         />
                         <button
                           type="button"
-                          onClick={handleQuickDaysForFollowUp}
-                          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                          onClick={() => setEventImage(null)}
+                          className="text-red-600 hover:text-red-800 text-sm underline"
                         >
-                          + días
+                          Quitar imagen
                         </button>
                       </div>
-                      {nextFollowUpDateStr && (
-                        <p className="text-xs text-green-700 mt-2 font-medium">
-                          Fecha seleccionada:{' '}
-                          {new Date(nextFollowUpDateStr + 'T00:00:00').toLocaleDateString('es-UY', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+                    ) : (
+                      <UploadImages
+                        maxFiles={1}
+                        currentFolder="follow_up"
+                        onImagesAdd={(imgs) => {
+                          if (imgs[0]) {
+                            setEventImage({
+                              ...imgs[0],
+                              imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
+                            });
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
 
-              {/* Cost */}
-              <div>
-                <label className="block text-green-dark font-semibold mb-2">Costo (opcional)</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-dark text-xl">$</span>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
-                    placeholder="0"
-                    value={eventData.cost}
-                    onChange={(e) => setEventData((prev) => ({ ...prev, cost: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Follow-up manager — only for adopted animals */}
-              {isAdopted && (
-                <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
-                  <label className="block text-green-dark font-semibold mb-2">
-                    Responsable del seguimiento
-                  </label>
-                  {currentManagers.length === 0 ? (
-                    <p className="text-sm text-gray-500 mb-2">
-                      Sin asignar — asigná un responsable
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-700 mb-1">
-                        {currentManagers.map((e) => getUserName(e)).join(', ')}
+                  {/* Next follow-up date (only for adopted animals + followup events) */}
+                  {showFollowUpDate && (
+                    <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                      <label className="block text-green-dark font-semibold mb-2">
+                        Próxima fecha de seguimiento (opcional)
+                      </label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Programa la próxima fecha en la que se debe contactar al adoptante
                       </p>
-                      {hasCustomManager && (
-                        <p className="text-xs text-amber-700 mb-2">
-                          Conviene seleccionar de la lista de usuarios
-                        </p>
+
+                      {/* Close case checkbox — only shown when case is currently open */}
+                      {privateInfo.followUpStatus !== 'closed' && (
+                        <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={closeCase}
+                            onChange={(e) => {
+                              setCloseCase(e.target.checked);
+                              if (e.target.checked) {
+                                setNextFollowUpDateStr('');
+                                setQuickDayValue('');
+                              }
+                            }}
+                            className="w-4 h-4 accent-red-600"
+                          />
+                          <span className="text-sm text-red-700 font-medium">
+                            Cerrar caso — no se hará más seguimiento
+                          </span>
+                        </label>
                       )}
-                    </>
+
+                      {!closeCase && (
+                        <>
+                          {/* Quick action buttons */}
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {quickDateOptions().map((opt) => (
+                              <button
+                                key={opt.days}
+                                type="button"
+                                onClick={() => handleQuickDateForFollowUp(opt.days)}
+                                className="text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Custom date picker */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <input
+                              type="date"
+                              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
+                              value={nextFollowUpDateStr}
+                              onChange={(e) => setNextFollowUpDateStr(e.target.value)}
+                            />
+                          </div>
+                          {/* Quick N days input */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              className="w-20 p-2 border border-gray-300 rounded-lg text-sm"
+                              placeholder="N días"
+                              value={quickDayValue}
+                              onChange={(e) => setQuickDayValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleQuickDaysForFollowUp();
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleQuickDaysForFollowUp}
+                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                            >
+                              + días
+                            </button>
+                          </div>
+                          {nextFollowUpDateStr && (
+                            <p className="text-xs text-green-700 mt-2 font-medium">
+                              Fecha seleccionada:{' '}
+                              {new Date(nextFollowUpDateStr + 'T00:00:00').toLocaleDateString(
+                                'es-UY',
+                                {
+                                  day: '2-digit',
+                                  month: 'long',
+                                  year: 'numeric',
+                                }
+                              )}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedFollowUpManagers([...currentManagers]);
-                      setShowManagerView(true);
-                    }}
-                    className="flex items-center gap-1 text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
-                  >
-                    <EditIcon size={14} />
-                    <span>{currentManagers.length === 0 ? 'Asignar' : 'Cambiar'}</span>
-                  </button>
-                </div>
+
+                  {/* Cost */}
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Costo (opcional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-dark text-xl">$</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="flex-1 p-2 border-2 border-green-dark bg-white rounded-lg"
+                        placeholder="0"
+                        value={eventData.cost}
+                        onChange={(e) =>
+                          setEventData((prev) => ({ ...prev, cost: e.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Follow-up manager — only for adopted animals */}
+                  {isAdopted && (
+                    <div className="border-2 border-green-dark rounded-lg p-4 bg-white">
+                      <label className="block text-green-dark font-semibold mb-2">
+                        Responsable del seguimiento
+                      </label>
+                      {currentManagers.length === 0 ? (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Sin asignar — asigná un responsable
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-sm text-gray-700 mb-1">
+                            {currentManagers.map((e) => getUserName(e)).join(', ')}
+                          </p>
+                          {hasCustomManager && (
+                            <p className="text-xs text-amber-700 mb-2">
+                              Conviene seleccionar de la lista de usuarios
+                            </p>
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFollowUpManagers([...currentManagers]);
+                          setShowManagerView(true);
+                        }}
+                        className="flex items-center gap-1 text-xs bg-green-dark text-white px-2 py-1 rounded hover:bg-green-700 transition-colors"
+                      >
+                        <EditIcon size={14} />
+                        <span>{currentManagers.length === 0 ? 'Asignar' : 'Cambiar'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* End of hidden sections for rename */}
+                </>
               )}
 
               <button
                 className="w-full bg-green-dark text-white text-xl px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={
-                  eventData.eventType === 'vaccination'
-                    ? !eventData.vaccineName?.trim()
-                    : !eventData.note.trim()
+                  eventData.eventType === 'rename'
+                    ? renameName.trim() === (privateInfo.newName || '')
+                    : eventData.eventType === 'vaccination'
+                      ? !eventData.vaccineName?.trim()
+                      : !eventData.note.trim()
                 }
                 onClick={(e) => {
                   e.preventDefault();
                   handleEvent();
                 }}
               >
-                Registrar Evento
+                {eventData.eventType === 'rename' ? 'Renombrar' : 'Registrar Evento'}
               </button>
             </div>
           </>

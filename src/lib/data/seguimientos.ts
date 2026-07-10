@@ -25,6 +25,8 @@ const SENTINEL_EMPTY_STRING = '';
 export interface AdoptedAnimalFollowup {
   animalId: string;
   animalName: string;
+  /** Name given by the adopter. Empty string if not renamed. */
+  newName: string;
   animalSpecies: 'perro' | 'gato' | 'otros';
   animalImageUrl: string;
   isSterilized: 'si' | 'no' | 'no_se';
@@ -55,6 +57,7 @@ export function mapToFollowup(pi: PrivateInfoType): AdoptedAnimalFollowup {
   return {
     animalId: pi.id,
     animalName: pi.name,
+    newName: pi.newName ?? SENTINEL_EMPTY_STRING,
     animalSpecies: pi.species ?? SENTINEL_SPECIES,
     animalImageUrl: pi.mainImageUrl ?? SENTINEL_IMAGE,
     isSterilized: pi.isSterilized ?? SENTINEL_STERILIZED,

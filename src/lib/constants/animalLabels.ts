@@ -42,6 +42,7 @@ export const eventLabels: Record<string, string> = {
   emergency: 'Emergencia',
   supply: 'Suministro',
   followup: 'Seguimiento',
+  rename: 'Renombrar',
   deceased: 'Fallecimiento',
   other: 'Otro',
 };
@@ -62,6 +63,7 @@ export const transactionLabels: Record<string, string> = {
   emergency: 'Emergencia',
   supply: 'Suministro',
   followup: 'Seguimiento',
+  rename: 'Renombrar',
   note: 'Nota',
   deceased: 'Fallecimiento',
   other: 'Otro',
