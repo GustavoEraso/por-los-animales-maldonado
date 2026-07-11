@@ -2,8 +2,13 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
+import { handlePromiseToast } from '@/lib/handleToast';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Loader from '@/components/Loader';
@@ -12,6 +17,8 @@ import {
   PetsIcon,
   PhoneIcon,
   EyeIcon,
+  LockClosedIcon,
+  LockOpenIcon,
   SterilizationIcon,
   VaccinationIcon,
 } from '@/components/Icons';
@@ -380,6 +387,79 @@ export default function SeguimientosPageContent(): React.ReactElement {
       });
     } finally {
       setEventModalLoading(false);
+    }
+  };
+
+  const toggleFollowUpStatus = async (
+    animalId: string,
+    currentStatus: 'active' | 'closed'
+  ): Promise<void> => {
+    const newStatus: 'active' | 'closed' = currentStatus === 'active' ? 'closed' : 'active';
+    const docRef = doc(db, 'animalPrivateInfo', animalId);
+    const now = createTimestamp();
+    const followup = data.find((f) => f.animalId === animalId);
+
+    const newTransaction: AnimalTransactionType = {
+      id: animalId,
+      name: followup?.animalName || '',
+      transactionType: 'update',
+      transactionNote:
+        newStatus === 'closed'
+          ? 'Cerrado desde botón rápido'
+          : 'Reabierto desde botón rápido',
+      date: now,
+      modifiedBy: auth.currentUser?.email || 'system',
+      since: now,
+      changes: {
+        before: { followUpStatus: currentStatus },
+        after: { followUpStatus: newStatus },
+      },
+    };
+
+    setData((prev) =>
+      prev.map((f) => (f.animalId === animalId ? { ...f, followUpStatus: newStatus } : f))
+    );
+
+    try {
+      await createAuditLog({
+        type: 'animal',
+        action: 'update',
+        entityId: animalId,
+        entityName: followup?.animalName,
+        modifiedBy: auth.currentUser?.email || 'system',
+        changes: {
+          before: { followUpStatus: currentStatus },
+          after: { followUpStatus: newStatus },
+        },
+      });
+      await handlePromiseToast(
+        Promise.all([
+          updateDoc(docRef, { followUpStatus: newStatus }),
+          postTransactionData({ data: newTransaction }),
+        ]),
+        {
+          messages: {
+            pending: { title: 'Actualizando', text: 'Cambiando estado de seguimiento...' },
+            success: {
+              title: 'Listo',
+              text: newStatus === 'closed' ? 'Seguimiento cerrado' : 'Seguimiento reabierto',
+            },
+            error: { title: 'Error', text: 'No se pudo cambiar el estado' },
+          },
+        }
+      );
+
+      await refreshTableData();
+    } catch (error) {
+      logger({
+        level: 'error',
+        code: 'TOGGLE_FOLLOWUP_STATUS',
+        message: 'Error toggling follow-up status:',
+        data: error,
+      });
+      setData((prev) =>
+        prev.map((f) => (f.animalId === animalId ? { ...f, followUpStatus: currentStatus } : f))
+      );
     }
   };
 
@@ -933,6 +1013,19 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           >
                             <EyeIcon size={16} />
                           </Link>
+                          <button
+                            onClick={() =>
+                              toggleFollowUpStatus(followup.animalId, followup.followUpStatus)
+                            }
+                            className={`p-1.5 rounded transition-colors ${
+                              isClosed
+                                ? 'hover:bg-green-600 hover:text-white text-green-600'
+                                : 'hover:bg-gray-600 hover:text-white text-gray-500'
+                            }`}
+                            title={isClosed ? 'Reabrir seguimiento' : 'Cerrar seguimiento'}
+                          >
+                            {isClosed ? <LockOpenIcon size={16} /> : <LockClosedIcon size={16} />}
+                          </button>
                         </div>
                       </td>
                     </tr>
