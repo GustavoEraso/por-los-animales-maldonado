@@ -1,6 +1,6 @@
 import { Img } from '@/types';
 import UploadImages from '@/elements/UploadImage';
-import { FIELD_ERROR_MESSAGES, LitterMember } from '../constants';
+import { FIELD_ERROR_MESSAGES, LitterMember } from '../crear/constants';
 
 interface LitterMembersSectionProps {
   litterName: string;

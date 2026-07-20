@@ -1,4 +1,4 @@
-import { CreationMode } from '../constants';
+import { CreationMode } from '../crear/constants';
 
 interface CreationModeSelectProps {
   creationMode: CreationMode;

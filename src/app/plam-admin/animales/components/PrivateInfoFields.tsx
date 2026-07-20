@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimalTransactionType, PrivateInfoType, UserType } from '@/types';
-import { FIELD_ERROR_MESSAGES, FormErrors } from '../constants';
+import { FIELD_ERROR_MESSAGES, FormErrors } from '../crear/constants';
 import { createTimestamp } from '@/lib/dateUtils';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { logger } from '@/lib/logger';
@@ -38,8 +38,7 @@ export default function PrivateInfoFields({
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
   const [showOtherCaseManager, setShowOtherCaseManager] = useState(
-    !!privateInfo.caseManager?.length &&
-      !privateInfo.caseManager[0].includes('@')
+    !!privateInfo.caseManager?.length && !privateInfo.caseManager[0].includes('@')
   );
 
   useEffect(() => {
@@ -51,7 +50,12 @@ export default function PrivateInfoFields({
         });
         setUsers(data as UserType[]);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_USERS_ERROR', message: 'Error fetching users for case manager:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_USERS_ERROR',
+          message: 'Error fetching users for case manager:',
+          data: error,
+        });
       } finally {
         setUsersLoading(false);
       }
@@ -75,8 +79,8 @@ export default function PrivateInfoFields({
             >
               <span>
                 {privateInfo.caseManager?.length
-                  ? users.find((u) => u.id === privateInfo.caseManager![0])?.name ??
-                    privateInfo.caseManager![0]
+                  ? (users.find((u) => u.id === privateInfo.caseManager![0])?.name ??
+                    privateInfo.caseManager![0])
                   : 'Seleccionar responsable'}
               </span>
               <span className="text-xs text-gray-400 ml-2">{usersOpen ? '▲' : '▼'}</span>
@@ -100,9 +104,7 @@ export default function PrivateInfoFields({
                           : 'border-transparent hover:bg-green-50'
                       }`}
                     >
-                      <span className="block text-sm font-medium text-gray-900">
-                        {user.name}
-                      </span>
+                      <span className="block text-sm font-medium text-gray-900">{user.name}</span>
                       <span className="block text-xs text-gray-500">{user.id}</span>
                     </button>
                   ))}
@@ -134,7 +136,10 @@ export default function PrivateInfoFields({
               placeholder="Nombre del responsable"
               value={privateInfo.caseManager?.[0] || ''}
               onChange={(e) =>
-                setPrivateInfo((prev) => ({ ...prev, caseManager: e.target.value ? [e.target.value] : [] }))
+                setPrivateInfo((prev) => ({
+                  ...prev,
+                  caseManager: e.target.value ? [e.target.value] : [],
+                }))
               }
               required
             />
