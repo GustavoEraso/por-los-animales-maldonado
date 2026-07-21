@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Animal } from '@/types';
+import { compareId } from '@/lib/compareId';
 import FloatButton from '@/elements/FloatButton';
 
 import {
@@ -189,6 +190,10 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
         } else if (typeof aVal === 'number' && typeof bVal === 'number') {
           return orden === 'asc' ? aVal - bVal : bVal - aVal;
         } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+          if (sortKey === 'id') {
+            const cmp = compareId(aVal, bVal);
+            return orden === 'asc' ? cmp : -cmp;
+          }
           return orden === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         }
         return 0;
@@ -219,6 +224,10 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
           const aVal = a[ref] as string;
           const bVal = b[ref] as string;
 
+          if (ref === 'id') {
+            const cmp = compareId(aVal, bVal);
+            return order === '<' ? cmp : -cmp;
+          }
           return order === '<' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         });
       }

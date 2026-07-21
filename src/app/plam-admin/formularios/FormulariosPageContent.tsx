@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap/dist/gsap';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
@@ -75,13 +74,6 @@ const defaultDateTo = (): string => {
 
 type FilterTab = GoogleFormStatus | 'all';
 
-interface UnreadChatItem {
-  formId: string;
-  formName: string;
-  commentCount: number;
-  lastCommentAt: string;
-}
-
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Pendiente' },
@@ -112,7 +104,6 @@ export default function FormulariosPageContent({
   const userIds = initialUsers.map((u) => u.id);
 
   const cardsRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [forms, setForms] = useState<GoogleFormEntry[]>([]);
@@ -122,7 +113,7 @@ export default function FormulariosPageContent({
   const [refresh, setRefresh] = useState<boolean>(false);
   const [dateFrom, setDateFrom] = useState(defaultDateFrom());
   const [dateTo, setDateTo] = useState(defaultDateTo());
-  const [unreadChats, setUnreadChats] = useState<UnreadChatItem[]>([]);
+  const [unreadFormIds, setUnreadFormIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -182,42 +173,37 @@ export default function FormulariosPageContent({
     }
   }, [forms, selected]);
 
-  // Real-time unread chat badge (independent of date filter)
+  // Targeted unread check — only reads comment docs for displayed forms
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || forms.length === 0) return;
 
-    const q = query(
-      collection(db, 'googleFormComments'),
-      where('unreadBy', 'array-contains', currentUser.id)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items: UnreadChatItem[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        items.push({
-          formId: docSnap.id,
-          formName: data.formName ?? 'Sin nombre',
-          commentCount: data.commentCount ?? 0,
-          lastCommentAt: data.lastCommentAt ?? '',
-        });
+    let cancelled = false;
+    const checkUnread = async () => {
+      const unreadIds = new Set<string>();
+      const checks = forms.map(async (form) => {
+        try {
+          const commentDoc = await getFirestoreDocById<{
+            unreadBy?: string[];
+          }>({
+            currentCollection: 'googleFormComments',
+            id: form.id,
+          });
+          if (commentDoc?.unreadBy?.includes(currentUser.id)) {
+            unreadIds.add(form.id);
+          }
+        } catch {
+          // comment doc might not exist — that's fine
+        }
       });
-      setUnreadChats(items);
-    });
+      await Promise.all(checks);
+      if (!cancelled) setUnreadFormIds(unreadIds);
+    };
+    checkUnread();
 
-    return () => unsubscribe();
-  }, [currentUser]);
-
-  // Panel entrance animation
-  useEffect(() => {
-    if (unreadChats.length > 0 && panelRef.current) {
-      gsap.fromTo(
-        panelRef.current,
-        { opacity: 0, y: -8 },
-        { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
-      );
-    }
-  }, [unreadChats.length]);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, forms]);
 
   // ---------------------------------------------------------------------------
   // Metrics
@@ -325,33 +311,6 @@ export default function FormulariosPageContent({
         {/* Header */}
         <h1 className="text-2xl font-bold text-green-dark">Formularios de adopción</h1>
 
-        {/* Unread messages panel */}
-        {unreadChats.length > 0 && (
-          <div
-            ref={panelRef}
-            className="border border-green-300 bg-green-50 rounded-xl p-4 flex flex-col gap-2"
-          >
-            <p className="text-sm font-semibold text-green-900">
-              Mensajes sin leer ({unreadChats.length})
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {unreadChats.map((chat) => (
-                <Link
-                  key={chat.formId}
-                  href={`/plam-admin/formularios/${chat.formId}`}
-                  className="flex items-center gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-green-200 hover:border-green-400 transition-colors"
-                >
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 shrink-0 animate-pulse" />
-                  <span className="font-medium text-gray-900 truncate">{chat.formName}</span>
-                  <span className="text-xs text-gray-400 shrink-0">
-                    {chat.commentCount} mensaje{chat.commentCount !== 1 ? 's' : ''}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Metrics */}
         <div ref={cardsRef} className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard
@@ -454,7 +413,11 @@ export default function FormulariosPageContent({
                     key={form.id}
                     onClick={() => {
                       setSelected(form);
-                      setUnreadChats((prev) => prev.filter((c) => c.formId !== form.id));
+                      setUnreadFormIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(form.id);
+                        return next;
+                      });
                     }}
                     className={`w-full text-left px-3 py-3 transition-colors ${
                       isActive
@@ -465,7 +428,7 @@ export default function FormulariosPageContent({
                     <p className="font-medium text-gray-900 truncate text-sm">
                       {form.fullName ?? '—'}
                     </p>
-                    {unreadChats.some((c) => c.formId === form.id) && (
+                    {unreadFormIds.has(form.id) && (
                       <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium mt-0.5">
                         <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         Mensajes sin leer
@@ -548,7 +511,7 @@ export default function FormulariosPageContent({
                 <p className="font-semibold text-gray-900 text-sm leading-tight truncate">
                   {form.fullName ?? '—'}
                 </p>
-                {unreadChats.some((c) => c.formId === form.id) && (
+                {unreadFormIds.has(form.id) && (
                   <p className="flex items-center gap-1.5 text-xs text-green-700 font-medium">
                     <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     Mensajes sin leer

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Loader from '@/components/Loader';
 import { Animal, AnimalTransactionType } from '@/types';
+import { compareId } from '@/lib/compareId';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
@@ -46,7 +47,12 @@ export default function AnimalsPage() {
           setAnimalsToShow(data as Animal[]);
         })
         .catch((error) => {
-          logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error fetching Animals:', data: error });
+          logger({
+            level: 'error',
+            code: 'FETCH_ANIMALS',
+            message: 'Error fetching Animals:',
+            data: error,
+          });
         });
     };
     fetchData().finally(() => {
@@ -93,6 +99,10 @@ export default function AnimalsPage() {
         const aVal = a[ref] as string;
         const bVal = b[ref] as string;
 
+        if (ref === 'id') {
+          const cmp = compareId(aVal, bVal);
+          return order === '<' ? cmp : -cmp;
+        }
         return order === '<' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       });
     } else {
@@ -169,7 +179,12 @@ export default function AnimalsPage() {
         setLoading(false);
       }
 
-      logger({ level: 'error', code: 'RESTORE_ANIMAL', message: 'Error restoring animal:', data: error });
+      logger({
+        level: 'error',
+        code: 'RESTORE_ANIMAL',
+        message: 'Error restoring animal:',
+        data: error,
+      });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -239,7 +254,12 @@ export default function AnimalsPage() {
       // Invalidate animals cache
       await revalidateCache('animals');
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_ANIMAL', message: 'Error to delete animal:', data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_ANIMAL',
+        message: 'Error to delete animal:',
+        data: error,
+      });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
@@ -262,7 +282,12 @@ export default function AnimalsPage() {
         handleHardDeleteSingleAnimal({ animal });
       }
     } catch (error) {
-      logger({ level: 'error', code: 'DELETE_ANIMALS', message: 'Error to delete animals:', data: error });
+      logger({
+        level: 'error',
+        code: 'DELETE_ANIMALS',
+        message: 'Error to delete animals:',
+        data: error,
+      });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;

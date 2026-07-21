@@ -149,10 +149,9 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       });
 
       if (!data) return;
-      const { name } = data;
       setPrivateInfo((prev) => ({
         ...prev,
-        caseManager: name ? [name] : [],
+        caseManager: email ? [email] : [],
       }));
     };
     getName();
