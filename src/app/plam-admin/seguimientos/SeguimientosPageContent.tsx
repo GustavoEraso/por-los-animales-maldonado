@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { compareId } from '@/lib/compareId';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
@@ -254,7 +255,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
             (b.nextFollowUpDate || Number.MAX_SAFE_INTEGER);
           break;
         case 'animalId':
-          cmp = a.animalId.localeCompare(b.animalId);
+          cmp = compareId(a.animalId, b.animalId);
           break;
       }
 
@@ -404,9 +405,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
       name: followup?.animalName || '',
       transactionType: 'update',
       transactionNote:
-        newStatus === 'closed'
-          ? 'Cerrado desde botón rápido'
-          : 'Reabierto desde botón rápido',
+        newStatus === 'closed' ? 'Cerrado desde botón rápido' : 'Reabierto desde botón rápido',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
       since: now,

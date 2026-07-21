@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
 import { Animal, AnimalTransactionType } from '@/types';
+import { compareId } from '@/lib/compareId';
 import FloatButton from '@/elements/FloatButton';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
@@ -62,7 +63,12 @@ export default function ClosedCasesPage() {
           setAnimalsToShow(data as Animal[]);
         })
         .catch((error) => {
-          logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error fetching Animals:', data: error });
+          logger({
+            level: 'error',
+            code: 'FETCH_ANIMALS',
+            message: 'Error fetching Animals:',
+            data: error,
+          });
         });
     };
     fetchData().finally(() => {
@@ -112,6 +118,10 @@ export default function ClosedCasesPage() {
         const aVal = a[ref] as string;
         const bVal = b[ref] as string;
 
+        if (ref === 'id') {
+          const cmp = compareId(aVal, bVal);
+          return order === '<' ? cmp : -cmp;
+        }
         return order === '<' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       });
     } else {
@@ -197,7 +207,12 @@ export default function ClosedCasesPage() {
 
       setRefresh(!refresh);
     } catch (error) {
-      logger({ level: 'error', code: 'CHANGE_STATUS', message: 'Error changing animal status:', data: error });
+      logger({
+        level: 'error',
+        code: 'CHANGE_STATUS',
+        message: 'Error changing animal status:',
+        data: error,
+      });
     } finally {
       const elapsed = Date.now() - start;
       const remaining = MIN_LOADING_TIME - elapsed;
