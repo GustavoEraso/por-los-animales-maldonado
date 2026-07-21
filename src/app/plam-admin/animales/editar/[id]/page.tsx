@@ -97,6 +97,7 @@ export default function EditAnimalForm() {
   const [transactionInfo, setTransactionInfo] =
     useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [motherId, setMotherId] = useState('');
   const [fatherId, setFatherId] = useState('');
 
@@ -169,6 +170,7 @@ export default function EditAnimalForm() {
         setTransactionInfo(currentTransactionInfo);
 
         setImages(fetchedAnimal.images || []);
+        setBannerImage(fetchedAnimal.bannerImage ?? null);
         setMotherId(fetchedAnimal.motherId || '');
         setFatherId(fetchedAnimal.fatherId || '');
       } catch (error) {
@@ -264,6 +266,7 @@ export default function EditAnimalForm() {
       const newAnimal: Animal = {
         ...animal,
         images: images,
+        bannerImage: bannerImage || null,
         ...(motherId ? { motherId } : {}),
         ...(fatherId ? { fatherId } : {}),
       };
@@ -450,6 +453,9 @@ export default function EditAnimalForm() {
     });
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
+    if (bannerImage === imgId) {
+      setBannerImage(null);
+    }
   };
 
   if (isLoading) {
@@ -540,6 +546,8 @@ export default function EditAnimalForm() {
             setImages={setImages}
             formErrors={formErrors}
             handleImageDelete={handleImageDelete}
+            bannerImage={bannerImage}
+            onBannerImageChange={setBannerImage}
           />
 
           <ParentSelectionSection

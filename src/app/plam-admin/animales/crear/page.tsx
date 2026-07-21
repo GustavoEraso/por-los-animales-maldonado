@@ -33,6 +33,8 @@ function CreateAnimalFormContent(): React.ReactElement {
     setTransaction,
     images,
     setImages,
+    bannerImage,
+    setBannerImage,
     contacts,
     setContacts,
     isAvailable,
@@ -153,6 +155,8 @@ function CreateAnimalFormContent(): React.ReactElement {
             formErrors={formErrors}
             handleImageDelete={handleImageDelete}
             isLitter={isLitter}
+            bannerImage={bannerImage}
+            onBannerImageChange={setBannerImage}
           />
 
           <ParentSelectionSection

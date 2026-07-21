@@ -37,6 +37,8 @@ interface UseCreateAnimalReturn {
   setTransaction: React.Dispatch<React.SetStateAction<AnimalTransactionType>>;
   images: Img[];
   setImages: React.Dispatch<React.SetStateAction<Img[]>>;
+  bannerImage?: string;
+  setBannerImage: React.Dispatch<React.SetStateAction<string | undefined>>;
   contacts: { type: 'celular' | 'email' | 'other'; value: string | number }[];
   setContacts: React.Dispatch<
     React.SetStateAction<{ type: 'celular' | 'email' | 'other'; value: string | number }[]>
@@ -89,6 +91,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
   const [privateInfo, setPrivateInfo] = useState<PrivateInfoType>(INITIAL_PRIVATE_INFO);
   const [transaction, setTransaction] = useState<AnimalTransactionType>(INITIAL_TRANSACTION);
   const [images, setImages] = useState<Img[]>([]);
+  const [bannerImage, setBannerImage] = useState<string | undefined>(undefined);
   const [contacts, setContacts] = useState<
     { type: 'celular' | 'email' | 'other'; value: string | number }[]
   >([{ type: 'celular', value: '' }]);
@@ -177,6 +180,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
     setPrivateInfo(INITIAL_PRIVATE_INFO);
     setTransaction(INITIAL_TRANSACTION);
     setImages([]);
+    setBannerImage(undefined);
     setContacts([{ type: 'celular', value: '' }]);
     setIsAvailable(true);
     setIsVisible(true);
@@ -395,6 +399,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       ...animal,
       id: id,
       images: images,
+      ...(bannerImage ? { bannerImage } : {}),
       isAvailable: isAvailable,
       isVisible: isVisible,
       ...(motherId ? { motherId } : {}),
@@ -644,6 +649,9 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
     });
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
+    if (bannerImage === imgId) {
+      setBannerImage(undefined);
+    }
   };
 
   return {
@@ -656,6 +664,8 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
     setTransaction,
     images,
     setImages,
+    bannerImage,
+    setBannerImage,
     contacts,
     setContacts,
     isAvailable,

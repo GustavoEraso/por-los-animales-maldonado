@@ -60,6 +60,10 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
       ? images
       : [{ imgUrl: '/logo300.webp', imgAlt: 'Imagen no disponible', imgId: 'default-image' }];
 
+  const bannerImg = animal.bannerImage
+    ? img.find((i) => i.imgId === animal.bannerImage) || img[0]
+    : img[0];
+
   const siblings = litterId ? await getLitterSiblings(litterId, id) : [];
   const parents = await getParents(motherId, fatherId);
   const offspring = await getOffspring(id);
@@ -73,7 +77,7 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
       <ViewTransition name={`animal-${id}`}>
-        <Hero imgURL={img[0].imgUrl} title={name} imgAlt={img[0].imgAlt} enableShare />
+        <Hero imgURL={bannerImg.imgUrl} title={name} imgAlt={bannerImg.imgAlt} enableShare />
       </ViewTransition>
 
       <section className="flex flex-col lg:flex-row gap-4 py-4 w-full justify-center items-center">

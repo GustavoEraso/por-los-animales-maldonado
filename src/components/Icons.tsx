@@ -204,6 +204,22 @@ function CaretUpIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
   );
 }
 
+function CropIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="M680-40v-160H280q-33 0-56.5-23.5T200-280v-400H40v-80h160v-160h80v640h640v80H760v160h-80Zm0-320v-320H360v-80h320q33 0 56.5 23.5T760-680v320h-80Z" />
+    </SvgBase>
+  );
+}
+
+function StarIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
+  return (
+    <SvgBase {...props} size={size} title={title}>
+      <path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z" />
+    </SvgBase>
+  );
+}
+
 function ChevronDownIcon({ size = DEFAULT_SIZE, title, ...props }: IconProps) {
   return (
     <SvgBase {...props} size={size} title={title} viewBox="0 0 24 24">
@@ -498,6 +514,8 @@ export {
   XCircleIcon,
   CaretDownIcon,
   CaretUpIcon,
+  CropIcon,
+  StarIcon,
   ChevronDownIcon,
   MenuIcon,
   XIcon,
