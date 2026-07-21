@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" style={{ colorScheme: 'light dark' }}>
       <body className={` antialiased  ${roboto.variable}`}>
         <AuthProvider>
           <UnauthorizedAlert />
