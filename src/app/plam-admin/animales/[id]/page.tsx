@@ -496,6 +496,10 @@ export default function AnimalPage(): React.ReactElement | null {
   const heroTitle = privateInfo.newName ?? name;
   const heroSubtitle = privateInfo.newName ? name : undefined;
 
+  const bannerImg = animal.bannerImage
+    ? img.find((i) => i.imgId === animal.bannerImage) || img[0]
+    : img[0];
+
   // --- Shared modal props ---
 
   const actionModalProps = {
@@ -510,10 +514,10 @@ export default function AnimalPage(): React.ReactElement | null {
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
         <Hero
-          imgURL={img[0].imgUrl}
+          imgURL={bannerImg.imgUrl}
           title={heroTitle}
           subtitle={heroSubtitle}
-          imgAlt={img[0].imgAlt}
+          imgAlt={bannerImg.imgAlt}
         />
 
         {/* Animal basic info + photos */}

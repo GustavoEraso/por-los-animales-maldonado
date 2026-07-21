@@ -19,6 +19,7 @@ export interface Animal {
   gender: 'macho' | 'hembra';
   species: 'perro' | 'gato' | 'otros';
   images: Img[];
+  bannerImage?: string | null;
   description: string;
   aproxBirthDate: number;
   lifeStage: 'cachorro' | 'joven' | 'adulto';

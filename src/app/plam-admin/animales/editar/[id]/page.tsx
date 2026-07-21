@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
-import UploadImages from '@/elements/UploadImage';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
@@ -14,6 +13,9 @@ import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ParentSelectionSection from '@/components/ParentSelectionSection';
+import ImagesSection from '../../components/ImagesSection';
+import CompatibilityFields from '../../components/CompatibilityFields';
+import BasicInfoFields from '../../components/BasicInfoFields';
 import generateId from '@/lib/generateId';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
@@ -95,6 +97,7 @@ export default function EditAnimalForm() {
   const [transactionInfo, setTransactionInfo] =
     useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [motherId, setMotherId] = useState('');
   const [fatherId, setFatherId] = useState('');
 
@@ -141,11 +144,19 @@ export default function EditAnimalForm() {
           filter: [['id', '==', currentId]],
         });
         if (!transactionsList) {
-          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transactions list not found' });
+          logger({
+            level: 'error',
+            code: 'FETCH_TRANSACTIONS',
+            message: 'Transactions list not found',
+          });
           throw new Error('Transactions list not found');
         }
         if (!transactionsList.length) {
-          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transaction info not found for this animal' });
+          logger({
+            level: 'error',
+            code: 'FETCH_TRANSACTIONS',
+            message: 'Transaction info not found for this animal',
+          });
           throw new Error('Transaction info not found for this animal');
         }
         const sortedTransactions = transactionsList.sort((a, b) => b.date - a.date);
@@ -159,10 +170,16 @@ export default function EditAnimalForm() {
         setTransactionInfo(currentTransactionInfo);
 
         setImages(fetchedAnimal.images || []);
+        setBannerImage(fetchedAnimal.bannerImage ?? null);
         setMotherId(fetchedAnimal.motherId || '');
         setFatherId(fetchedAnimal.fatherId || '');
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Error fetching animal data:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_ANIMAL',
+          message: 'Error fetching animal data:',
+          data: error,
+        });
         handleToast({
           type: 'error',
           title: 'Error',
@@ -249,6 +266,7 @@ export default function EditAnimalForm() {
       const newAnimal: Animal = {
         ...animal,
         images: images,
+        bannerImage: bannerImage || null,
         ...(motherId ? { motherId } : {}),
         ...(fatherId ? { fatherId } : {}),
       };
@@ -407,7 +425,12 @@ export default function EditAnimalForm() {
 
       router.replace('/plam-admin/animales');
     } catch (error) {
-      logger({ level: 'error', code: 'SAVE_ANIMAL', message: 'Error al guardar el animal:', data: error });
+      logger({
+        level: 'error',
+        code: 'SAVE_ANIMAL',
+        message: 'Error al guardar el animal:',
+        data: error,
+      });
     }
   };
 
@@ -430,6 +453,9 @@ export default function EditAnimalForm() {
     });
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
+    if (bannerImage === imgId) {
+      setBannerImage(null);
+    }
   };
 
   if (isLoading) {
@@ -449,150 +475,13 @@ export default function EditAnimalForm() {
           autoComplete="off"
           className="flex flex-col gap-4 max-w-xl w-full"
         >
-          <label className="flex flex-col font-bold gap-1">
-            Nombre:
-            {formErrors.name && (
-              <div className="bg-red-500 text-white text-sm rounded px-2">
-                {fieldErrorMessagesRecord.name}
-              </div>
-            )}
-            <input
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              type="text"
-              name="name"
-              value={animal.name}
-              onChange={handleChange}
-              required
-            />
-          </label>
+          <BasicInfoFields animal={animal} formErrors={formErrors} handleChange={handleChange} />
 
-          <label className="flex flex-col font-bold gap-1">
-            Descripción:
-            {formErrors.description && (
-              <div className="bg-red-500 text-white text-sm rounded px-2">
-                {fieldErrorMessagesRecord.description}
-              </div>
-            )}
-            <textarea
-              className="outline-2 bg-white outline-gray-200 rounded p-2 field-sizing-content"
-              name="description"
-              value={animal.description}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="flex flex-col font-bold">
-            Género:
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="gender"
-              value={animal.gender}
-              onChange={handleChange}
-            >
-              <option value="macho">Macho</option>
-              <option value="hembra">Hembra</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col font-bold">
-            Especie:
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="species"
-              value={animal.species}
-              onChange={handleChange}
-            >
-              <option value="perro">Perro</option>
-              <option value="gato">Gato</option>
-              <option value="otros">Otros</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col font-bold">
-            Etapa de vida:
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="lifeStage"
-              value={animal.lifeStage}
-              onChange={handleChange}
-            >
-              <option value="cachorro">Cachorro</option>
-              <option value="joven">Joven</option>
-              <option value="adulto">Adulto</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col font-bold">
-            Tamaño:
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="size"
-              value={animal.size}
-              onChange={handleChange}
-            >
-              <option value="pequeño">Pequeño</option>
-              <option value="mediano">Mediano</option>
-              <option value="grande">Grande</option>
-              <option value="no_se_sabe">No se sabe</option>
-            </select>
-          </label>
-          <div className="flex flex-col gap-4">
-            <h3 className="text-lg font-bold ">Compatibilidad:</h3>
-
-            <label className="flex gap-2 font-bold items-center ml-6">
-              <span>Perros:</span>
-              <select
-                className="outline-2 bg-white outline-gray-200 rounded p-2"
-                name="dogs"
-                value={animal.compatibility?.dogs || 'no_se'}
-                onChange={(e) => handleCompatibilityChange(e)}
-              >
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-            <label className="flex gap-2 font-bold items-center ml-6">
-              <span>Gatos:</span>
-              <select
-                className="outline-2 bg-white outline-gray-200 rounded p-2"
-                name="cats"
-                value={animal.compatibility?.cats || 'no_se'}
-                onChange={(e) => handleCompatibilityChange(e)}
-              >
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-            <label className="flex gap-2 font-bold items-center ml-6">
-              <span>Niños:</span>
-              <select
-                className="outline-2 bg-white outline-gray-200 rounded p-2"
-                name="kids"
-                value={animal.compatibility?.kids || 'no_se'}
-                onChange={(e) => handleCompatibilityChange(e)}
-              >
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="no_se">No sé</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="flex gap-2 font-bold items-center">
-            <span>¿Está esterilizado?</span>
-            <select
-              className="outline-2 bg-white outline-gray-200 rounded p-2"
-              name="isSterilized"
-              value={animal.isSterilized || 'no_se'}
-              onChange={(e) => handleChange(e)}
-            >
-              <option value="si">Sí</option>
-              <option value="no">No</option>
-              <option value="no_se">No sé</option>
-            </select>
-          </label>
+          <CompatibilityFields
+            animal={animal}
+            handleChange={handleChange}
+            handleCompatibilityChange={handleCompatibilityChange}
+          />
 
           <label className="flex flex-col font-bold">
             Fecha de nacimiento aproximada:
@@ -652,40 +541,14 @@ export default function EditAnimalForm() {
             </section>
           )}
 
-          <section className="flex flex-wrap gap-4 items-center justify-center">
-            {images.length > 0 &&
-              images.map((img) => (
-                <div key={img.imgId} className="relative flex flex-col items-center">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleImageDelete(img.imgId);
-                    }}
-                    className="bg-white rounded-full w-8 h-8 absolute top-1 right-1 shadow"
-                  >
-                    X
-                  </button>
-                  <img
-                    src={img.imgUrl}
-                    alt={img.imgAlt}
-                    className="w-40 h-40 object-cover rounded mb-2"
-                  />
-                  <span className="text-sm text-gray-500">{img.imgId}</span>
-                </div>
-              ))}
-          </section>
-          {formErrors.images && (
-            <div className="bg-red-500 text-white text-sm rounded px-2">
-              {fieldErrorMessagesRecord.images}
-            </div>
-          )}
-          {images.length < 5 && (
-            <UploadImages
-              onImagesAdd={(newImages) => {
-                setImages((prev) => [...prev, ...newImages]);
-              }}
-            />
-          )}
+          <ImagesSection
+            images={images}
+            setImages={setImages}
+            formErrors={formErrors}
+            handleImageDelete={handleImageDelete}
+            bannerImage={bannerImage}
+            onBannerImageChange={setBannerImage}
+          />
 
           <ParentSelectionSection
             motherId={motherId}

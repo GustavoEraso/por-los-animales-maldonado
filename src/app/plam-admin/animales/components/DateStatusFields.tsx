@@ -1,5 +1,5 @@
 import { Animal, PrivateInfoType } from '@/types';
-import { DATE_OPTIONS, FIELD_ERROR_MESSAGES, FormErrors } from '../constants';
+import { DATE_OPTIONS, FIELD_ERROR_MESSAGES, FormErrors } from '../crear/constants';
 
 interface DateStatusFieldsProps {
   animal: Animal;

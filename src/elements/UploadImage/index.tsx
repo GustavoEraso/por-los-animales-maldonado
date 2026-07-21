@@ -4,7 +4,7 @@ import React from 'react';
 import { CldUploadWidget } from 'next-cloudinary';
 import type { CloudinaryUploadWidgetResults, CloudinaryUploadWidgetInfo } from 'next-cloudinary';
 import { Img } from '@/types';
-import { UploadIcon } from '@/components/Icons';
+import { UploadIcon, CropIcon } from '@/components/Icons';
 
 /**
  * Props for the UploadImages component.
@@ -16,6 +16,8 @@ interface UploadImagesProps {
   maxFiles?: number;
   /** Current folder in Cloudinary to upload images to */
   currentFolder?: 'animals' | 'banners' | 'others' | 'sponsor' | 'follow_up';
+  /** Enable interactive cropping before upload (forces single-file mode) */
+  enableCropping?: boolean;
 }
 
 /**
@@ -91,16 +93,28 @@ export default function UploadImages({
   currentFolder = 'animals',
   onImagesAdd,
   maxFiles,
+  enableCropping = false,
 }: UploadImagesProps): React.ReactElement {
   const presetMap: { [key: string]: string } = {
     animals: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_ANIMALS || '',
+    animalsCrop: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_ANIMALES_CROP || '',
     banners: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_BANNERS || '',
     others: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_OTHERS || '',
     sponsor: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_SPONSOR || '',
     follow_up: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_PRESET_FOLLOW_UP || '',
   };
 
-  const uploadPreset = presetMap[currentFolder] || presetMap['others'];
+  const presetKey = enableCropping && currentFolder === 'animals' ? 'animalsCrop' : currentFolder;
+  const uploadPreset = presetMap[presetKey] || presetMap['others'];
+  const isSingleFile = enableCropping || maxFiles === 1;
+  const widgetOptions = {
+    multiple: !isSingleFile,
+    maxFiles: isSingleFile ? 1 : maxFiles || 5,
+    ...(enableCropping && {
+      cropping: true,
+      showSkipCropButton: false,
+    }),
+  };
 
   const handleUpload = (result: CloudinaryUploadWidgetResults) => {
     if (result.event === 'success' && typeof result.info !== 'string' && result.info) {
@@ -130,24 +144,26 @@ export default function UploadImages({
 
   return (
     <section className="flex flex-col gap-6 justify-center items-center w-full">
-      {maxFiles !== 1 && <span className="text-xl font-bold">máximo {maxFiles || 5} imágenes</span>}
-      <CldUploadWidget
-        uploadPreset={uploadPreset}
-        options={{ multiple: maxFiles !== 1, maxFiles: maxFiles || 5 }}
-        onSuccess={handleUpload}
-      >
+      {maxFiles !== 1 && !enableCropping && (
+        <span className="text-xl font-bold">máximo {maxFiles || 5} imágenes</span>
+      )}
+      <CldUploadWidget uploadPreset={uploadPreset} options={widgetOptions} onSuccess={handleUpload}>
         {({ open }) => (
           <button
             type="button"
             onClick={() => open?.()}
             className="bg-caramel-deep text-white px-4 py-2 rounded hover:bg-amber-sunset flex items-center gap-2"
           >
-            <UploadIcon
-              size={20}
-              title={maxFiles === 1 ? 'Subir imagen' : 'Subir imágenes'}
-              color="white"
-            />
-            {maxFiles === 1 ? 'Subir imagen' : 'Subir imágenes'}
+            {enableCropping ? (
+              <CropIcon size={20} title="Cortar y subir" color="white" />
+            ) : (
+              <UploadIcon
+                size={20}
+                title={isSingleFile ? 'Subir imagen' : 'Subir imágenes'}
+                color="white"
+              />
+            )}
+            {enableCropping ? 'Cortar y subir' : isSingleFile ? 'Subir imagen' : 'Subir imágenes'}
           </button>
         )}
       </CldUploadWidget>

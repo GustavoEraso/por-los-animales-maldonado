@@ -4,13 +4,13 @@ import Loader from '@/components/Loader';
 import { PlusIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useCreateAnimal } from './hooks/useCreateAnimal';
-import BasicInfoFields from './components/BasicInfoFields';
-import CompatibilityFields from './components/CompatibilityFields';
-import DateStatusFields from './components/DateStatusFields';
-import PrivateInfoFields from './components/PrivateInfoFields';
-import ImagesSection from './components/ImagesSection';
-import CreationModeSelect from './components/CreationModeSelect';
-import LitterMembersSection from './components/LitterMembersSection';
+import BasicInfoFields from '../components/BasicInfoFields';
+import CompatibilityFields from '../components/CompatibilityFields';
+import DateStatusFields from '../components/DateStatusFields';
+import PrivateInfoFields from '../components/PrivateInfoFields';
+import ImagesSection from '../components/ImagesSection';
+import CreationModeSelect from '../components/CreationModeSelect';
+import LitterMembersSection from '../components/LitterMembersSection';
 import ParentSelectionSection from '@/components/ParentSelectionSection';
 import { Suspense } from 'react';
 import { FIELD_ERROR_MESSAGES } from './constants';
@@ -33,6 +33,8 @@ function CreateAnimalFormContent(): React.ReactElement {
     setTransaction,
     images,
     setImages,
+    bannerImage,
+    setBannerImage,
     contacts,
     setContacts,
     isAvailable,
@@ -153,6 +155,8 @@ function CreateAnimalFormContent(): React.ReactElement {
             formErrors={formErrors}
             handleImageDelete={handleImageDelete}
             isLitter={isLitter}
+            bannerImage={bannerImage}
+            onBannerImageChange={setBannerImage}
           />
 
           <ParentSelectionSection

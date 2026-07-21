@@ -1,13 +1,14 @@
 import { Animal } from '@/types';
-import { FIELD_ERROR_MESSAGES, FormErrors } from '../constants';
 
 interface BasicInfoFieldsProps {
   animal: Animal;
-  formErrors: FormErrors;
+  formErrors: { name: boolean; description: boolean };
   handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => void;
   isLitter?: boolean;
+  nameErrorMessage?: string;
+  descriptionErrorMessage?: string;
 }
 
 /**
@@ -19,6 +20,8 @@ export default function BasicInfoFields({
   formErrors,
   handleChange,
   isLitter = false,
+  nameErrorMessage = 'Debes ingresar el nombre del animal.',
+  descriptionErrorMessage = 'Falta una descripción.',
 }: BasicInfoFieldsProps): React.ReactElement {
   return (
     <>
@@ -26,9 +29,7 @@ export default function BasicInfoFields({
         <label className="flex flex-col font-bold gap-1">
           Nombre:
           {formErrors.name && (
-            <div className="bg-red-500 text-white text-sm rounded px-2">
-              {FIELD_ERROR_MESSAGES.name}
-            </div>
+            <div className="bg-red-500 text-white text-sm rounded px-2">{nameErrorMessage}</div>
           )}
           <input
             className="outline-2 bg-white outline-gray-200 rounded p-2"
@@ -45,7 +46,7 @@ export default function BasicInfoFields({
         Descripción:
         {formErrors.description && (
           <div className="bg-red-500 text-white text-sm rounded px-2">
-            {FIELD_ERROR_MESSAGES.description}
+            {descriptionErrorMessage}
           </div>
         )}
         <textarea
