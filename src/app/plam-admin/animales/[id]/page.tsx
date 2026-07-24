@@ -468,7 +468,11 @@ export default function AnimalPage(): React.ReactElement | null {
 
   // --- Early returns ---
 
-  if (!animal?.id || !privateInfo?.id || !allAnimalTransactions.length) {
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (!animal?.id || !privateInfo?.id) {
     return (
       <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
         <Hero title="cargando" />
@@ -477,10 +481,6 @@ export default function AnimalPage(): React.ReactElement | null {
         </section>
       </div>
     );
-  }
-
-  if (isLoading) {
-    return <Loader />;
   }
 
   // --- Derived state ---
