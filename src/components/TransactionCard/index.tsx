@@ -1,9 +1,9 @@
-import { AnimalTransactionType, beforeAfterType } from '@/types';
+import { AnimalTransactionType, beforeAfterType, Img } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatedDateOnly } from '@/lib/dateUtils';
 import { getRescueReasonLabel, getTransactionLabel } from '@/lib/constants/animalLabels';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -41,6 +41,7 @@ export default function TransactionCard({
   showImg?: boolean;
 }): React.ReactElement {
   const cardRef = useRef<HTMLElement>(null);
+  const [fullscreenImg, setFullscreenImg] = useState<Img | null>(null);
 
   useGSAP(
     () => {
@@ -71,104 +72,167 @@ export default function TransactionCard({
   const oldMode =
     transaction.changes?.before === undefined && transaction.changes?.after === undefined;
   return (
-    <article
-      ref={cardRef}
-      className="relative flex flex-col border border-green-dark/15 rounded bg-white shadow-md p-4"
-    >
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
-        {showImg && (
-          <section className=" flex flex-col  w-48 h-48">
-            <Image
-              src={transaction.img?.imgUrl || '/logo300.webp'}
-              alt="animal image"
-              width={64}
-              height={64}
-              className="w-full aspect-square object-cover"
-              onError={(e) => {
-                const img = e.currentTarget as HTMLImageElement;
-                // Prevent infinite loop if fallback also fails
-                if (!img.dataset.fallback) {
-                  img.dataset.fallback = 'true';
-                  img.src = '/logo300.webp';
-                }
-              }}
-            />
-          </section>
-        )}
-        <ul className=" text-xl text-start font-semibold flex flex-col gap- p-2 bg-white ">
-          <li className="font-semibold">
-            {' '}
-            Fecha: <span className="font-normal">{formatedDate(transaction.date)} hs</span>
-          </li>
-          {transaction.modifiedBy !== undefined && (
+    <>
+      <article
+        ref={cardRef}
+        className="relative flex flex-col border border-green-dark/15 rounded bg-white shadow-md p-4"
+      >
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
+          {showImg && (
+            <section className=" flex flex-col  w-48 h-48">
+              <Image
+                src={transaction.img?.imgUrl || '/logo300.webp'}
+                alt="animal image"
+                width={64}
+                height={64}
+                className="w-full aspect-square object-cover"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  // Prevent infinite loop if fallback also fails
+                  if (!img.dataset.fallback) {
+                    img.dataset.fallback = 'true';
+                    img.src = '/logo300.webp';
+                  }
+                }}
+              />
+            </section>
+          )}
+          {transaction.eventImg && (
+            <button
+              type="button"
+              onClick={() => setFullscreenImg(transaction.eventImg!)}
+              className="flex flex-col w-24 h-24 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+              title="Ver imagen ampliada"
+            >
+              <Image
+                src={transaction.eventImg.imgUrl}
+                alt={transaction.eventImg.imgAlt || 'Imagen del evento'}
+                width={96}
+                height={96}
+                className="w-full aspect-square object-cover rounded-lg border border-gray-200"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  if (!img.dataset.fallback) {
+                    img.dataset.fallback = 'true';
+                    img.src = '/logo300.webp';
+                  }
+                }}
+              />
+            </button>
+          )}
+          <ul className=" text-xl text-start font-semibold flex flex-col gap- p-2 bg-white ">
             <li className="font-semibold">
               {' '}
-              Actualizado por: <span className="font-normal">{transaction.modifiedBy}</span>
+              Fecha: <span className="font-normal">{formatedDate(transaction.date)} hs</span>
             </li>
-          )}
-          {transaction.name !== undefined && (
-            <li className="font-semibold">
-              Nombre: <span className="font-normal">{transaction.name}</span>
-            </li>
-          )}
-          {transaction.cost !== undefined && (
-            <li className="font-semibold">
-              El evento tuvo un costo de:{' '}
-              <span className="font-semibold text-red-500">${transaction.cost}</span>
-            </li>
-          )}
-          {transaction.transactionType === 'adoption' &&
-            (transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId && (
+            {transaction.modifiedBy !== undefined && (
               <li className="font-semibold">
-                Formulario:{' '}
-                <Link
-                  href={`/plam-admin/formularios/${(transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId}`}
-                  className="text-green-600 hover:text-green-800 underline font-normal"
-                >
-                  {(transaction as AnimalTransactionType & { adoptionFormName?: string })
-                    .adoptionFormName ?? 'Ver formulario'}{' '}
-                  →
-                </Link>
+                {' '}
+                Actualizado por: <span className="font-normal">{transaction.modifiedBy}</span>
               </li>
             )}
-        </ul>
+            {transaction.name !== undefined && (
+              <li className="font-semibold">
+                Nombre: <span className="font-normal">{transaction.name}</span>
+              </li>
+            )}
+            {transaction.cost !== undefined && (
+              <li className="font-semibold">
+                El evento tuvo un costo de:{' '}
+                <span className="font-semibold text-red-500">${transaction.cost}</span>
+              </li>
+            )}
+            {transaction.transactionType === 'adoption' &&
+              (transaction as AnimalTransactionType & { adoptionFormId?: string })
+                .adoptionFormId && (
+                <li className="font-semibold">
+                  Formulario:{' '}
+                  <Link
+                    href={`/plam-admin/formularios/${(transaction as AnimalTransactionType & { adoptionFormId?: string }).adoptionFormId}`}
+                    className="text-green-600 hover:text-green-800 underline font-normal"
+                  >
+                    {(transaction as AnimalTransactionType & { adoptionFormName?: string })
+                      .adoptionFormName ?? 'Ver formulario'}{' '}
+                    →
+                  </Link>
+                </li>
+              )}
+          </ul>
 
-        {transaction.transactionType && (
-          <span className="absolute -top-3 -left-8 px-4 p-1 bg-amber-sunset text-white font-bold  rounded-full text-center w-fit shadow">
-            {getTransactionLabel(transaction.transactionType)}
-          </span>
-        )}
-        {!transaction.transactionType && (
-          <span className="absolute -top-3 -left-8 px-10 p-4 bg-amber-sunset text-white font-bold  rounded-full text-center w-fit shadow">
-            {'        '}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-col gap-2 w-full">
-        {transaction.changes?.before &&
-          (transaction.transactionType === 'note' ? (
-            <ChangeList
-              format="before"
-              list={transaction.changes.before}
-              title={transaction.changes.after ? 'Nota antes:' : 'Nota eliminada:'}
-            />
-          ) : (
-            <ChangeList format="before" list={transaction.changes.before} />
-          ))}
-        {transaction.changes?.after &&
-          (transaction.transactionType === 'note' ? (
-            <ChangeList
-              format="after"
-              list={transaction.changes.after}
-              title={transaction.changes.before ? 'Nota después:' : 'Nueva nota:'}
-            />
-          ) : (
-            <ChangeList format="after" list={transaction.changes.after} />
-          ))}
+          {transaction.transactionType && (
+            <span className="absolute -top-3 -left-8 px-4 p-1 bg-amber-sunset text-white font-bold  rounded-full text-center w-fit shadow">
+              {getTransactionLabel(transaction.transactionType)}
+            </span>
+          )}
+          {!transaction.transactionType && (
+            <span className="absolute -top-3 -left-8 px-10 p-4 bg-amber-sunset text-white font-bold  rounded-full text-center w-fit shadow">
+              {'        '}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          {transaction.changes?.before &&
+            (transaction.transactionType === 'note' ? (
+              <ChangeList
+                format="before"
+                list={transaction.changes.before}
+                title={transaction.changes.after ? 'Nota antes:' : 'Nota eliminada:'}
+              />
+            ) : (
+              <ChangeList format="before" list={transaction.changes.before} />
+            ))}
+          {transaction.changes?.after &&
+            (transaction.transactionType === 'note' ? (
+              <ChangeList
+                format="after"
+                list={transaction.changes.after}
+                title={transaction.changes.before ? 'Nota después:' : 'Nueva nota:'}
+              />
+            ) : (
+              <ChangeList format="after" list={transaction.changes.after} />
+            ))}
 
-        {oldMode && <ChangeList format="after" list={transaction} />}
-      </div>
-    </article>
+          {oldMode && <ChangeList format="after" list={transaction} />}
+        </div>
+      </article>
+      {fullscreenImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setFullscreenImg(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <Image
+              src={fullscreenImg.imgUrl}
+              alt={fullscreenImg.imgAlt || 'Imagen del evento'}
+              width={1200}
+              height={900}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={() => setFullscreenImg(null)}
+              className="absolute -top-3 -right-3 bg-white rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors"
+              title="Cerrar"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-gray-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, XCircleIcon } from '../Icons';
 
 /**
@@ -15,6 +15,8 @@ interface ItemsProps {
   imgAlt: string;
   /** Optional unique identifier for the image */
   imgId?: string;
+  /** Whether this image comes from a follow-up event */
+  isEventImage?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ interface ItemsProps {
  *
  * @param {Object} props - Component props
  * @param {ItemsProps[]} props.images - Array of image objects to display in the carousel
+ * @param {Img[]} [props.eventImages] - Optional event/follow-up images displayed with a badge
  * @returns {React.ReactElement} The rendered photo carousel component
  *
  * @example
@@ -39,24 +42,33 @@ interface ItemsProps {
  * <PhotoCarrousel images={images} />
  *
  * @example
- * // With animal photos
- * const animalPhotos = [
- *   { imgUrl: '/perro1.jpg', imgAlt: 'Perro jugando en el parque' },
- *   { imgUrl: '/gato1.jpg', imgAlt: 'Gato durmiendo' }
+ * // With event/follow-up images
+ * const eventImages = [
+ *   { imgUrl: '/event1.jpg', imgAlt: 'Vacunación' },
  * ];
- * <PhotoCarrousel images={animalPhotos} />
+ * <PhotoCarrousel images={animalImages} eventImages={eventImages} />
  */
-export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): React.ReactElement {
+export default function PhotoCarrousel({
+  images,
+  eventImages,
+}: {
+  images: ItemsProps[];
+  eventImages?: ItemsProps[];
+}): React.ReactElement {
+  const allImages: ItemsProps[] = useMemo(
+    () => [...images, ...(eventImages || []).map((ei) => ({ ...ei, isEventImage: true }))],
+    [images, eventImages]
+  );
   const [carrouselFullSize, setCarrouselFullSize] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [items, setItems] = useState<ItemsProps[]>(images);
+  const [items, setItems] = useState<ItemsProps[]>(allImages);
   const carrouselRef = useRef<HTMLDivElement>(null);
   const initialXRef = useRef<number | null>(null);
 
   // Update items when images prop changes
   useEffect(() => {
-    setItems(images);
-  }, [images]);
+    setItems(allImages);
+  }, [allImages]);
 
   // Handle image navigation (next/previous)
   const handleImg = useCallback(
@@ -131,14 +143,44 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
               currentIndex === index ? 'opacity-100 visible' : 'opacity-0 invisible'
             }`}
           >
-            <Image
-              width={700}
-              height={400}
-              onClick={() => setCarrouselFullSize(true)}
-              src={item.imgUrl}
-              alt={item.imgAlt}
-              className={` ${carrouselFullSize ? 'object-contain' : 'object-cover'} absolute w-full h-full  -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2`}
-            />
+            {carrouselFullSize ? (
+              <div className="w-full h-full flex items-center justify-center p-4">
+                <div
+                  className={`relative ${item.isEventImage ? 'outline-4 outline-dashed outline-green-600 -outline-offset-8' : ''}`}
+                  style={{ maxWidth: '90vw', maxHeight: '85vh' }}
+                >
+                  <Image
+                    width={1200}
+                    height={900}
+                    onClick={() => setCarrouselFullSize(true)}
+                    src={item.imgUrl}
+                    alt={item.imgAlt}
+                    className="object-contain max-w-full max-h-[85vh] w-auto h-auto block rounded-lg"
+                  />
+                  {item.isEventImage && (
+                    <span className="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
+                      Seguimiento (privada)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <Image
+                  width={700}
+                  height={400}
+                  onClick={() => setCarrouselFullSize(true)}
+                  src={item.imgUrl}
+                  alt={item.imgAlt}
+                  className={`object-cover absolute w-full h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 ${item.isEventImage ? 'outline-4 outline-dashed outline-green-600 -outline-offset-8' : ''}`}
+                />
+                {item.isEventImage && (
+                  <span className="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
+                    Seguimiento (privada)
+                  </span>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>

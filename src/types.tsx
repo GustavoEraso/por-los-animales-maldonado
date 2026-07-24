@@ -97,6 +97,8 @@ export interface PrivateInfoType {
   lastFollowUpNote?: string;
   /** Timestamp of the sterilization event. Sentinel: 0. */
   sterilizationDate?: number;
+  /** Images uploaded during follow-up events (sterilizations, vaccinations, etc.). */
+  eventImages?: Img[];
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
@@ -128,6 +130,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   since: number;
   cost?: number;
   img?: Img;
+  /** Image uploaded specifically for this event. */
+  eventImg?: Img;
   changes?: {
     before?: beforeAfterType;
     after?: beforeAfterType;

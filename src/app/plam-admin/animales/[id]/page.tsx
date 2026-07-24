@@ -521,7 +521,12 @@ export default function AnimalPage(): React.ReactElement | null {
         />
 
         {/* Animal basic info + photos */}
-        <AnimalInfoSection animal={animal} images={img} newName={privateInfo.newName} />
+        <AnimalInfoSection
+          animal={animal}
+          images={img}
+          newName={privateInfo.newName}
+          eventImages={privateInfo.eventImages}
+        />
 
         {/* Private info: case manager, medical, contacts, notes */}
         <AnimalPrivateInfoSection
