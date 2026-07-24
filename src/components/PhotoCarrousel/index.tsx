@@ -63,6 +63,7 @@ export default function PhotoCarrousel({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [items, setItems] = useState<ItemsProps[]>(allImages);
   const carrouselRef = useRef<HTMLDivElement>(null);
+  const indicatorsRef = useRef<HTMLDivElement>(null);
   const initialXRef = useRef<number | null>(null);
 
   // Update items when images prop changes
@@ -84,6 +85,25 @@ export default function PhotoCarrousel({
     },
     [items]
   );
+
+  // Auto-scroll active indicator into view
+  useEffect(() => {
+    const container = indicatorsRef.current;
+    if (!container) return;
+
+    const activeButton = container.children[currentIndex] as HTMLElement | undefined;
+    if (!activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+
+    const isVisible =
+      buttonRect.left >= containerRect.left && buttonRect.right <= containerRect.right;
+
+    if (!isVisible) {
+      activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentIndex]);
 
   // Setup touch gesture handlers for mobile swipe navigation
   useEffect(() => {
@@ -185,21 +205,30 @@ export default function PhotoCarrousel({
         ))}
       </div>
 
-      {/* Slider indicators */}
-      <div className="absolute flex space-x-3 -translate-x-1/2 bottom-1 sm:bottom-5 left-1/2 z-20">
-        {items.map((_, index) => (
-          <button
-            key={`indicator-${index}`}
-            type="button"
-            onClick={() => setCurrentIndex(index)}
-            style={{ backgroundImage: `url(${items[index].imgUrl})` }}
-            className={`w-8 h-8 sm:w-16 sm:h-16 cursor-pointer bg-center bg-no-repeat bg-cover rounded-2xl ${
-              currentIndex === index ? ' border-white border-2' : 'grayscale-100'
-            }`}
-            aria-current={currentIndex === index}
-            aria-label={`Slide ${index + 1}`}
-          />
-        ))}
+      {/* Slider indicators with horizontal scroll */}
+      <div className="absolute bottom-1 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-4rem)] max-w-lg">
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/20 to-transparent z-10 rounded-l-2xl" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-r from-transparent to-black/20 z-10 rounded-r-2xl" />
+        <div
+          ref={indicatorsRef}
+          className="flex gap-1.5 sm:gap-3 overflow-x-auto scrollbar-hide py-1 px-4 snap-x snap-mandatory scroll-smooth"
+        >
+          {items.map((_, index) => (
+            <button
+              key={`indicator-${index}`}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+              style={{ backgroundImage: `url(${items[index].imgUrl})` }}
+              className={`w-8 h-8 sm:w-14 sm:h-14 cursor-pointer bg-center bg-no-repeat bg-cover rounded-2xl flex-shrink-0 snap-center transition-all duration-300 hover:opacity-90 ${
+                currentIndex === index
+                  ? 'ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110'
+                  : 'grayscale-100'
+              }`}
+              aria-current={currentIndex === index}
+              aria-label={`Slide ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Slider controls */}
