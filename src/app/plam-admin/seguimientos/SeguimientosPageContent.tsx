@@ -31,7 +31,7 @@ import { logger } from '@/lib/logger';
 
 const MIN_LOADING_TIME = 600;
 
-type FilterStatus = 'pendiente' | 'al_dia' | 'sin_seguimiento' | 'cerrados' | 'todos';
+type FilterStatus = 'pendiente' | 'al_dia' | 'sin_seguimiento' | 'cerrados' | 'activos' | 'todos';
 type FilterSterilized = 'todos' | 'si' | 'no' | 'no_se';
 type FilterSpecies = 'todos' | 'perro' | 'gato';
 
@@ -59,8 +59,8 @@ function sortArrow(field: SortField, current: SortField, dir: 'asc' | 'desc'): s
 function buildFilter(
   status: FilterStatus,
   now: number
-): [string, '==' | '>' | '<=' | '<', string | number | boolean][] | null {
-  const base: [string, '==' | '>' | '<=' | '<', string | number | boolean][] = [
+): [string, '==' | '!=' | '>' | '<=' | '<', string | number | boolean][] | null {
+  const base: [string, '==' | '!=' | '>' | '<=' | '<', string | number | boolean][] = [
     ['isAdopted', '==', true],
   ];
 
@@ -80,6 +80,9 @@ function buildFilter(
       return base;
     case 'cerrados':
       base.push(['followUpStatus', '==', 'closed']);
+      return base;
+    case 'activos':
+      base.push(['followUpStatus', '!=', 'closed']);
       return base;
     case 'todos':
     default:
@@ -486,6 +489,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                 <option value="al_dia">Al día</option>
                 <option value="sin_seguimiento">Sin fecha</option>
                 <option value="cerrados">Cerrados</option>
+                <option value="activos">Activos</option>
                 <option value="todos">Todos</option>
               </select>
             </div>
