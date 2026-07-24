@@ -411,14 +411,14 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       name: animal.name,
       // ─── Seguimiento denormalized fields ───
       species: animal.species,
-      mainImageUrl: images[0]?.imgUrl ?? '',
+      mainImageUrl: images?.[0]?.imgUrl ?? '',
       isSterilized: animal.isSterilized,
     };
 
     const newTransaction: AnimalTransactionType = {
       id: id,
       name: animal.name,
-      img: images[0],
+      img: images?.[0],
       transactionType: 'create',
       date: createTimestamp(),
       modifiedBy: auth.currentUser?.email || '',
@@ -564,14 +564,14 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
         name: member.name,
         // ─── Seguimiento denormalized fields ───
         species: animal.species,
-        mainImageUrl: member.images[0]?.imgUrl ?? '',
+        mainImageUrl: member.images?.[0]?.imgUrl ?? '',
         isSterilized: animal.isSterilized,
       };
 
       const newTransaction: AnimalTransactionType = {
         id,
         name: member.name,
-        img: member.images[0],
+        img: member.images?.[0],
         transactionType: 'create',
         date: createTimestamp(),
         modifiedBy: auth.currentUser?.email || '',

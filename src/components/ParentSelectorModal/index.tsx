@@ -52,7 +52,12 @@ export default function ParentSelectorModal({
           setAnimals(result);
         }
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_PARENT_ANIMALS_ERROR', message: 'Error fetching animals for parent selector:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_PARENT_ANIMALS_ERROR',
+          message: 'Error fetching animals for parent selector:',
+          data: error,
+        });
       } finally {
         setLoading(false);
       }
@@ -115,7 +120,7 @@ export default function ParentSelectorModal({
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
               {filteredAnimals.map((animal) => {
-                const img = animal.images[0] ?? {
+                const img = animal.images?.[0] ?? {
                   imgUrl: '/logo300.webp',
                   imgAlt: 'Imagen no disponible',
                 };

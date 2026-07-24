@@ -60,7 +60,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const newTransaction: AnimalTransactionType = {
       id: animal.id,
       name: animal.name,
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -140,7 +140,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const newTransaction: AnimalTransactionType = {
       id: animal.id,
       name: animal.name,
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -218,7 +218,7 @@ export default function AnimalPage(): React.ReactElement | null {
       const newTransaction: AnimalTransactionType = {
         id,
         name: animal.name,
-        img: animal.images[0],
+        img: animal.images?.[0],
         transactionType: 'delete',
         since: now,
         date: now,
@@ -292,7 +292,7 @@ export default function AnimalPage(): React.ReactElement | null {
         modifiedBy: auth.currentUser?.email || '',
         id,
         name: animal.name,
-        img: animal.images[0],
+        img: animal.images?.[0],
         transactionType: 'update',
         since: now,
         changes: {
@@ -368,7 +368,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const start = createTimestamp();
     setIsLoading(true);
     try {
-      for (const image of animalToDelete.images) {
+      for (const image of animalToDelete.images ?? []) {
         if (image.imgId) {
           await handlePromiseToast(deleteImage(image.imgId), {
             messages: {
@@ -393,7 +393,7 @@ export default function AnimalPage(): React.ReactElement | null {
       const newTransaction: AnimalTransactionType = {
         id: animalToDelete.id,
         name: animalToDelete.name,
-        img: animalToDelete.images[0],
+        img: animalToDelete.images?.[0],
         transactionType: 'delete',
         date: now,
         since: now,

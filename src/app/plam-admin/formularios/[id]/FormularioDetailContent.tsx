@@ -545,8 +545,8 @@ export default function FormularioDetailContent({
                     >
                       {animal.images?.[0]?.imgUrl ? (
                         <img
-                          src={animal.images[0].imgUrl}
-                          alt={animal.images[0].imgAlt || animal.name}
+                          src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+                          alt={animal.images?.[0]?.imgAlt || animal.name}
                           className="w-8 h-8 rounded-full object-cover shrink-0"
                         />
                       ) : (

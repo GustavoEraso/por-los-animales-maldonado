@@ -23,7 +23,7 @@ export async function generateMetadata(
   }
   const { name, description, images } = animal;
 
-  const cover = images.length > 0 ? images[0].imgUrl : null;
+  const cover = images?.length ? images?.[0]?.imgUrl : null;
 
   return {
     title: `${name} - Por los Animales Maldonado`,

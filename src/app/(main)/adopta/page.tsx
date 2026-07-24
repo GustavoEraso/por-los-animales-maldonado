@@ -69,8 +69,8 @@ async function AdoptaContent({ searchParams }: AdoptaProps) {
   // Use first animal for cover image (deterministic, no Math.random during render)
   const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
   const currentRandomAnimal = animals[0];
-  const cover = currentRandomAnimal?.images.length
-    ? currentRandomAnimal.images[0].imgUrl
+  const cover = currentRandomAnimal?.images?.length
+    ? currentRandomAnimal.images?.[0]?.imgUrl
     : undefined;
 
   return (

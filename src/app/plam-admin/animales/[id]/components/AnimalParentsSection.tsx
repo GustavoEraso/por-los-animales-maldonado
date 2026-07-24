@@ -29,7 +29,12 @@ export default function AnimalParentsSection({
           const result = await fetchAnimals({ id: animal.motherId });
           if (Array.isArray(result) && result.length > 0) setMother(result[0]);
         } catch (err) {
-          logger({ level: 'error', code: 'FETCH_MOTHER', message: 'Error fetching mother:', data: err });
+          logger({
+            level: 'error',
+            code: 'FETCH_MOTHER',
+            message: 'Error fetching mother:',
+            data: err,
+          });
         }
       }
       if (animal.fatherId) {
@@ -37,7 +42,12 @@ export default function AnimalParentsSection({
           const result = await fetchAnimals({ id: animal.fatherId });
           if (Array.isArray(result) && result.length > 0) setFather(result[0]);
         } catch (err) {
-          logger({ level: 'error', code: 'FETCH_FATHER', message: 'Error fetching father:', data: err });
+          logger({
+            level: 'error',
+            code: 'FETCH_FATHER',
+            message: 'Error fetching father:',
+            data: err,
+          });
         }
       }
     };
@@ -75,7 +85,7 @@ function ParentCard({
     );
   }
 
-  const img = parent.images[0] ?? { imgUrl: '/logo300.webp', imgAlt: parent.name };
+  const img = parent.images?.[0] ?? { imgUrl: '/logo300.webp', imgAlt: parent.name };
 
   return (
     <Link

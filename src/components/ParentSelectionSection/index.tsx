@@ -48,7 +48,12 @@ export default function ParentSelectionSection({
           setMotherAnimal(result[0]);
         }
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_MOTHER_ANIMAL_ERROR', message: 'Error fetching mother animal:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_MOTHER_ANIMAL_ERROR',
+          message: 'Error fetching mother animal:',
+          data: error,
+        });
       }
     };
     load();
@@ -67,7 +72,12 @@ export default function ParentSelectionSection({
           setFatherAnimal(result[0]);
         }
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_FATHER_ANIMAL_ERROR', message: 'Error fetching father animal:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_FATHER_ANIMAL_ERROR',
+          message: 'Error fetching father animal:',
+          data: error,
+        });
       }
     };
     load();
@@ -83,8 +93,8 @@ export default function ParentSelectionSection({
           {motherAnimal ? (
             <div className="flex flex-col items-center gap-1 bg-white rounded-lg p-2 shadow w-full">
               <Image
-                src={motherAnimal.images[0]?.imgUrl || '/logo300.webp'}
-                alt={motherAnimal.images[0]?.imgAlt || motherAnimal.name}
+                src={motherAnimal.images?.[0]?.imgUrl || '/logo300.webp'}
+                alt={motherAnimal.images?.[0]?.imgAlt || motherAnimal.name}
                 width={80}
                 height={80}
                 className="w-20 h-20 object-cover rounded-lg"
@@ -126,8 +136,8 @@ export default function ParentSelectionSection({
           {fatherAnimal ? (
             <div className="flex flex-col items-center gap-1 bg-white rounded-lg p-2 shadow w-full">
               <Image
-                src={fatherAnimal.images[0]?.imgUrl || '/logo300.webp'}
-                alt={fatherAnimal.images[0]?.imgAlt || fatherAnimal.name}
+                src={fatherAnimal.images?.[0]?.imgUrl || '/logo300.webp'}
+                alt={fatherAnimal.images?.[0]?.imgAlt || fatherAnimal.name}
                 width={80}
                 height={80}
                 className="w-20 h-20 object-cover rounded-lg"
