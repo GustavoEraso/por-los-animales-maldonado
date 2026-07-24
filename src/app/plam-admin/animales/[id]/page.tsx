@@ -60,7 +60,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const newTransaction: AnimalTransactionType = {
       id: animal.id,
       name: animal.name,
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -140,7 +140,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const newTransaction: AnimalTransactionType = {
       id: animal.id,
       name: animal.name,
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -218,7 +218,7 @@ export default function AnimalPage(): React.ReactElement | null {
       const newTransaction: AnimalTransactionType = {
         id,
         name: animal.name,
-        img: animal.images[0],
+        img: animal.images?.[0],
         transactionType: 'delete',
         since: now,
         date: now,
@@ -292,7 +292,7 @@ export default function AnimalPage(): React.ReactElement | null {
         modifiedBy: auth.currentUser?.email || '',
         id,
         name: animal.name,
-        img: animal.images[0],
+        img: animal.images?.[0],
         transactionType: 'update',
         since: now,
         changes: {
@@ -368,7 +368,7 @@ export default function AnimalPage(): React.ReactElement | null {
     const start = createTimestamp();
     setIsLoading(true);
     try {
-      for (const image of animalToDelete.images) {
+      for (const image of animalToDelete.images ?? []) {
         if (image.imgId) {
           await handlePromiseToast(deleteImage(image.imgId), {
             messages: {
@@ -393,7 +393,7 @@ export default function AnimalPage(): React.ReactElement | null {
       const newTransaction: AnimalTransactionType = {
         id: animalToDelete.id,
         name: animalToDelete.name,
-        img: animalToDelete.images[0],
+        img: animalToDelete.images?.[0],
         transactionType: 'delete',
         date: now,
         since: now,
@@ -468,7 +468,11 @@ export default function AnimalPage(): React.ReactElement | null {
 
   // --- Early returns ---
 
-  if (!animal?.id || !privateInfo?.id || !allAnimalTransactions.length) {
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (!animal?.id || !privateInfo?.id) {
     return (
       <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
         <Hero title="cargando" />
@@ -477,10 +481,6 @@ export default function AnimalPage(): React.ReactElement | null {
         </section>
       </div>
     );
-  }
-
-  if (isLoading) {
-    return <Loader />;
   }
 
   // --- Derived state ---
@@ -521,7 +521,12 @@ export default function AnimalPage(): React.ReactElement | null {
         />
 
         {/* Animal basic info + photos */}
-        <AnimalInfoSection animal={animal} images={img} newName={privateInfo.newName} />
+        <AnimalInfoSection
+          animal={animal}
+          images={img}
+          newName={privateInfo.newName}
+          eventImages={privateInfo.eventImages}
+        />
 
         {/* Private info: case manager, medical, contacts, notes */}
         <AnimalPrivateInfoSection

@@ -1186,7 +1186,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                             >
                               {animal.images?.[0]?.imgUrl ? (
                                 <img
-                                  src={animal.images[0].imgUrl}
+                                  src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
                                   alt={animal.name}
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
@@ -1262,7 +1262,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                           >
                             {animal.images?.[0]?.imgUrl ? (
                               <img
-                                src={animal.images[0].imgUrl}
+                                src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
                                 alt={animal.name}
                                 className="w-12 h-12 rounded-full object-cover"
                               />
@@ -1320,7 +1320,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                     <div className="w-full max-w-2xl flex items-center gap-3 bg-green-50 border border-green-300 rounded-lg p-3">
                       {selectedAnimal.images?.[0]?.imgUrl ? (
                         <img
-                          src={selectedAnimal.images[0].imgUrl}
+                          src={selectedAnimal.images?.[0]?.imgUrl ?? '/logo300.webp'}
                           alt={selectedAnimal.name}
                           className="w-14 h-14 rounded-full object-cover"
                         />

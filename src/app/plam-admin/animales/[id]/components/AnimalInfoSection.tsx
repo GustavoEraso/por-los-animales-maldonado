@@ -9,6 +9,8 @@ interface AnimalInfoSectionProps {
   images: Img[];
   /** Name given by the adopter, distinct from the original animal name. */
   newName?: string;
+  /** Follow-up event images (sterilizations, vaccinations, etc.) */
+  eventImages?: Img[];
 }
 
 /**
@@ -19,6 +21,7 @@ export default function AnimalInfoSection({
   animal,
   images,
   newName,
+  eventImages,
 }: AnimalInfoSectionProps): React.ReactElement {
   const {
     description,
@@ -110,7 +113,7 @@ export default function AnimalInfoSection({
           </ul>
         </div>
         <div className="w-full md:w-1/2 h-auto max-h-[650px] rounded-lg bg-amber-sunset shrink-0">
-          <PhotoCarrousel images={images} />
+          <PhotoCarrousel images={images} eventImages={eventImages} />
         </div>
       </div>
     </section>

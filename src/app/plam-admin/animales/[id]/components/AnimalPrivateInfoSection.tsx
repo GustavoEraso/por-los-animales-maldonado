@@ -130,7 +130,7 @@ export default function AnimalPrivateInfoSection({
     const tx: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -193,7 +193,7 @@ export default function AnimalPrivateInfoSection({
     const tx: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'update',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -270,7 +270,7 @@ export default function AnimalPrivateInfoSection({
         id: privateInfo.id,
         name: privateInfo.name || '',
         transactionType: 'note',
-        img: animal.images[0],
+        img: animal.images?.[0],
         date: now,
         modifiedBy: auth.currentUser?.email || 'system',
         since: now,
@@ -359,7 +359,7 @@ export default function AnimalPrivateInfoSection({
     const newTransactionData: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'note',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -422,7 +422,7 @@ export default function AnimalPrivateInfoSection({
     const newTransactionData: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'note',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',

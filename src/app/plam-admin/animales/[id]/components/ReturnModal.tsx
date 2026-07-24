@@ -237,7 +237,7 @@ export default function ReturnModal({
     } = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: isGoingToNewAdopter ? 'adoption' : 'return',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',

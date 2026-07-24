@@ -42,7 +42,7 @@ async function postNewAnimalNote({ note, animalId }: NoteData): Promise<[void, s
   const newTransactionData: AnimalTransactionType = {
     id: prePrivateInfo.id,
     name: prePrivateInfo.name || '',
-    img: animal.images[0],
+    img: animal.images?.[0],
     transactionType: 'note',
     date: Date.now(),
     modifiedBy: auth.currentUser?.email || 'system',

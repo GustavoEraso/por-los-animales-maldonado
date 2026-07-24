@@ -224,7 +224,7 @@ export default function AdoptionModal({
     } = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'adoption',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',

@@ -198,7 +198,7 @@ export default function EventModal({
       const newTransactionData: AnimalTransactionType = {
         id: privateInfo.id,
         name: privateInfo.name || '',
-        img: animal.images[0],
+        img: animal.images?.[0],
         transactionType: 'rename',
         date: now,
         modifiedBy: auth.currentUser?.email || 'system',
@@ -332,6 +332,9 @@ export default function EventModal({
         followUpStatus: 'closed' as const,
         nextFollowUpDate: 0,
       }),
+      ...(eventImage && {
+        eventImages: [...(privateInfo.eventImages || []), eventImage],
+      }),
     };
 
     const updatedAnimal = {
@@ -347,7 +350,8 @@ export default function EventModal({
     const newTransactionData: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: eventImage || animal.images[0],
+      img: animal.images?.[0],
+      eventImg: eventImage || undefined,
       transactionType: eventData.eventType,
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',

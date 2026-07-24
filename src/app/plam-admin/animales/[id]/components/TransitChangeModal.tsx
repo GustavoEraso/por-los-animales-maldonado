@@ -42,7 +42,7 @@ export default function TransitChangeModal({
     const newTransactionData: AnimalTransactionType = {
       id: privateInfo.id,
       name: privateInfo.name || '',
-      img: animal.images[0],
+      img: animal.images?.[0],
       transactionType: 'transit_change',
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, XCircleIcon } from '../Icons';
 
 /**
@@ -15,6 +15,8 @@ interface ItemsProps {
   imgAlt: string;
   /** Optional unique identifier for the image */
   imgId?: string;
+  /** Whether this image comes from a follow-up event */
+  isEventImage?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ interface ItemsProps {
  *
  * @param {Object} props - Component props
  * @param {ItemsProps[]} props.images - Array of image objects to display in the carousel
+ * @param {Img[]} [props.eventImages] - Optional event/follow-up images displayed with a badge
  * @returns {React.ReactElement} The rendered photo carousel component
  *
  * @example
@@ -39,24 +42,34 @@ interface ItemsProps {
  * <PhotoCarrousel images={images} />
  *
  * @example
- * // With animal photos
- * const animalPhotos = [
- *   { imgUrl: '/perro1.jpg', imgAlt: 'Perro jugando en el parque' },
- *   { imgUrl: '/gato1.jpg', imgAlt: 'Gato durmiendo' }
+ * // With event/follow-up images
+ * const eventImages = [
+ *   { imgUrl: '/event1.jpg', imgAlt: 'Vacunación' },
  * ];
- * <PhotoCarrousel images={animalPhotos} />
+ * <PhotoCarrousel images={animalImages} eventImages={eventImages} />
  */
-export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): React.ReactElement {
+export default function PhotoCarrousel({
+  images,
+  eventImages,
+}: {
+  images: ItemsProps[];
+  eventImages?: ItemsProps[];
+}): React.ReactElement {
+  const allImages: ItemsProps[] = useMemo(
+    () => [...images, ...(eventImages || []).map((ei) => ({ ...ei, isEventImage: true }))],
+    [images, eventImages]
+  );
   const [carrouselFullSize, setCarrouselFullSize] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [items, setItems] = useState<ItemsProps[]>(images);
+  const [items, setItems] = useState<ItemsProps[]>(allImages);
   const carrouselRef = useRef<HTMLDivElement>(null);
+  const indicatorsRef = useRef<HTMLDivElement>(null);
   const initialXRef = useRef<number | null>(null);
 
   // Update items when images prop changes
   useEffect(() => {
-    setItems(images);
-  }, [images]);
+    setItems(allImages);
+  }, [allImages]);
 
   // Handle image navigation (next/previous)
   const handleImg = useCallback(
@@ -72,6 +85,25 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
     },
     [items]
   );
+
+  // Auto-scroll active indicator into view
+  useEffect(() => {
+    const container = indicatorsRef.current;
+    if (!container) return;
+
+    const activeButton = container.children[currentIndex] as HTMLElement | undefined;
+    if (!activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+
+    const isVisible =
+      buttonRect.left >= containerRect.left && buttonRect.right <= containerRect.right;
+
+    if (!isVisible) {
+      activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentIndex]);
 
   // Setup touch gesture handlers for mobile swipe navigation
   useEffect(() => {
@@ -131,33 +163,72 @@ export default function PhotoCarrousel({ images }: { images: ItemsProps[] }): Re
               currentIndex === index ? 'opacity-100 visible' : 'opacity-0 invisible'
             }`}
           >
-            <Image
-              width={700}
-              height={400}
-              onClick={() => setCarrouselFullSize(true)}
-              src={item.imgUrl}
-              alt={item.imgAlt}
-              className={` ${carrouselFullSize ? 'object-contain' : 'object-cover'} absolute w-full h-full  -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2`}
-            />
+            {carrouselFullSize ? (
+              <div className="w-full h-full flex items-center justify-center p-4">
+                <div
+                  className={`relative ${item.isEventImage ? 'outline-4 outline-dashed outline-green-600 -outline-offset-8' : ''}`}
+                  style={{ maxWidth: '90vw', maxHeight: '85vh' }}
+                >
+                  <Image
+                    width={1200}
+                    height={900}
+                    onClick={() => setCarrouselFullSize(true)}
+                    src={item.imgUrl}
+                    alt={item.imgAlt}
+                    className="object-contain max-w-full max-h-[85vh] w-auto h-auto block rounded-lg"
+                  />
+                  {item.isEventImage && (
+                    <span className="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
+                      Seguimiento (privada)
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <Image
+                  width={700}
+                  height={400}
+                  onClick={() => setCarrouselFullSize(true)}
+                  src={item.imgUrl}
+                  alt={item.imgAlt}
+                  className={`object-cover absolute w-full h-full -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 ${item.isEventImage ? 'outline-4 outline-dashed outline-green-600 -outline-offset-8' : ''}`}
+                />
+                {item.isEventImage && (
+                  <span className="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
+                    Seguimiento (privada)
+                  </span>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Slider indicators */}
-      <div className="absolute flex space-x-3 -translate-x-1/2 bottom-1 sm:bottom-5 left-1/2 z-20">
-        {items.map((_, index) => (
-          <button
-            key={`indicator-${index}`}
-            type="button"
-            onClick={() => setCurrentIndex(index)}
-            style={{ backgroundImage: `url(${items[index].imgUrl})` }}
-            className={`w-8 h-8 sm:w-16 sm:h-16 cursor-pointer bg-center bg-no-repeat bg-cover rounded-2xl ${
-              currentIndex === index ? ' border-white border-2' : 'grayscale-100'
-            }`}
-            aria-current={currentIndex === index}
-            aria-label={`Slide ${index + 1}`}
-          />
-        ))}
+      {/* Slider indicators with horizontal scroll */}
+      <div className="absolute bottom-1 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-4rem)] max-w-lg">
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/20 to-transparent z-10 rounded-l-2xl" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-r from-transparent to-black/20 z-10 rounded-r-2xl" />
+        <div
+          ref={indicatorsRef}
+          className="flex gap-1.5 sm:gap-3 overflow-x-auto scrollbar-hide py-1 px-4 snap-x snap-mandatory scroll-smooth"
+        >
+          {items.map((_, index) => (
+            <button
+              key={`indicator-${index}`}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+              style={{ backgroundImage: `url(${items[index].imgUrl})` }}
+              className={`w-8 h-8 sm:w-14 sm:h-14 cursor-pointer bg-center bg-no-repeat bg-cover rounded-2xl flex-shrink-0 snap-center transition-all duration-300 hover:opacity-90 ${
+                currentIndex === index
+                  ? 'ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110'
+                  : 'grayscale-100'
+              }`}
+              aria-current={currentIndex === index}
+              aria-label={`Slide ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Slider controls */}

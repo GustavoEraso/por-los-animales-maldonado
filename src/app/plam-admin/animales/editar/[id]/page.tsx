@@ -212,7 +212,7 @@ export default function EditAnimalForm() {
     setPrivateInfo((prev) => ({
       ...prev,
       species: animal.species,
-      mainImageUrl: images[0]?.imgUrl ?? prev.mainImageUrl ?? '',
+      mainImageUrl: images?.[0]?.imgUrl ?? prev.mainImageUrl ?? '',
       isSterilized: animal.isSterilized ?? 'no',
     }));
   }, [animal.species, animal.isSterilized, images]);
@@ -291,7 +291,7 @@ export default function EditAnimalForm() {
         id: animal.id,
         name: animal.name,
         since: transactionInfo.since,
-        img: images[0] || undefined,
+        img: images?.[0] || undefined,
         date: Date.now(),
         modifiedBy: auth.currentUser?.email || '',
         changes: mergedChanges,

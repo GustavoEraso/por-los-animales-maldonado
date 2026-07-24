@@ -38,7 +38,7 @@ export default function Card({
   adminView?: boolean;
 }): React.ReactElement {
   const { id, name, gender, lifeStage, images, status } = animal;
-  const img = images[0] ?? {
+  const img = images?.[0] ?? {
     imgUrl: '/logo300.webp',
     imgAlt: 'Imagen no disponible',
   };
