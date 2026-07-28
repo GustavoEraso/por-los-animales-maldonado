@@ -63,7 +63,12 @@ export default function LineaTiempoPage() {
         });
         setransactions(data);
       } catch (error) {
-        logger({ level: 'error', code: 'LOAD_TRANSACTIONS', message: 'Error loading transactions:', data: error });
+        logger({
+          level: 'error',
+          code: 'LOAD_TRANSACTIONS',
+          message: 'Error loading transactions:',
+          data: error,
+        });
       } finally {
         const elapsed = Date.now() - start;
         const remaining = MIN_LOADING_TIME - elapsed;
@@ -239,7 +244,7 @@ export default function LineaTiempoPage() {
       <ul className="flex flex-col max-w-3xl  ">
         {transactions.map((transaction, index) => (
           <li className="  border-l-2 relative pt-6 pl-2 " key={transaction.id + index}>
-            <TransactionCard transaction={transaction} showImg />
+            <TransactionCard transaction={transaction} showImg showAnimalLink />
           </li>
         ))}
       </ul>

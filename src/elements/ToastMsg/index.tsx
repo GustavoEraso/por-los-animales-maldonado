@@ -1,5 +1,19 @@
 import { ToastContentProps } from 'react-toastify';
 
+interface ToastButton {
+  text: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+  className?: string;
+}
+
+const BUTTON_VARIANTS: Record<string, string> = {
+  primary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-6 py-1.5 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0',
+  secondary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border-2 border-amber-sunset bg-cream-light px-6 py-1.5 text-sm font-semibold text-caramel-deep shadow-sm transition-all duration-300 hover:bg-white hover:scale-[1.02]',
+};
+
 /**
  * Props interface for ToastMsg component extending react-toastify's ToastContentProps.
  */
@@ -15,6 +29,8 @@ interface MsgProps extends Partial<ToastContentProps> {
     text: string;
     /** Type of toast: 'success', 'error', 'warning', 'info' */
     type: 'success' | 'error' | 'warning' | 'info';
+    /** Action buttons rendered below the text */
+    buttons?: ToastButton[];
   };
 }
 
@@ -82,6 +98,7 @@ interface MsgProps extends Partial<ToastContentProps> {
   const title = data?.title ?? '';
   const text = data?.text ?? '';
   const type = data?.type ?? '';
+  const buttons = data?.buttons;
   return (
     <div className="msg-container flex flex-col items-center justify-center gap-2 p-4">
       <div className="flex items-center justify-center gap-1">
@@ -100,6 +117,22 @@ interface MsgProps extends Partial<ToastContentProps> {
         <h4 className="text-3xl font-bold text-center text-balance break-keep">{title}</h4>
       </div>
       <p className="animate-pulse">{text}</p>
+      {buttons && buttons.length > 0 && (
+        <div className="flex gap-2 mt-1">
+          {buttons.map((btn, i) => (
+            <button
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                btn.onClick();
+              }}
+              className={`${btn.className || BUTTON_VARIANTS[btn.variant || 'primary']}`}
+            >
+              {btn.text}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

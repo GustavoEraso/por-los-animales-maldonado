@@ -131,7 +131,12 @@ export async function fetchAnimals(filters: Filters = {}): Promise<Animal[] | Pa
   });
 
   if (!res.ok) {
-    logger({ level: 'error', code: 'FETCH_ANIMALS', message: 'Error al obtener animales:', data: res.statusText });
+    logger({
+      level: 'error',
+      code: 'FETCH_ANIMALS',
+      message: 'Error al obtener animales:',
+      data: res.statusText,
+    });
     return [];
   }
 

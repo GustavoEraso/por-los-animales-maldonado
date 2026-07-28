@@ -36,9 +36,11 @@ const formatedDate = (date: number) =>
 export default function TransactionCard({
   transaction,
   showImg = false,
+  showAnimalLink = false,
 }: {
   transaction: AnimalTransactionType;
   showImg?: boolean;
+  showAnimalLink?: boolean;
 }): React.ReactElement {
   const cardRef = useRef<HTMLElement>(null);
   const [fullscreenImg, setFullscreenImg] = useState<Img | null>(null);
@@ -157,6 +159,18 @@ export default function TransactionCard({
                   </Link>
                 </li>
               )}
+            {showAnimalLink && (
+              <li className="font-semibold">
+                {' '}
+                Ficha:{' '}
+                <Link
+                  href={`/plam-admin/animales/${transaction.id}`}
+                  className="text-green-600 hover:text-green-800 underline font-normal"
+                >
+                  Ver animal →
+                </Link>
+              </li>
+            )}
           </ul>
 
           {transaction.transactionType && (
@@ -236,6 +250,73 @@ export default function TransactionCard({
   );
 }
 
+const HANDLED_KEYS = new Set([
+  'caseManager',
+  'followUpManager',
+  'rescueReason',
+  'name',
+  'newName',
+  'description',
+  'species',
+  'gender',
+  'aproxBirthDate',
+  'isSterilized',
+  'lifeStage',
+  'size',
+  'isAvalible',
+  'isAvailable',
+  'isVisible',
+  'isDeleted',
+  'status',
+  'followUpStatus',
+  'waitingSince',
+  'medicalConditions',
+  'vaccinations',
+  'notes',
+  'contactName',
+  'contacts',
+  'totalCost',
+  'images',
+  'mainImageUrl',
+  'bannerImage',
+  'compatibility',
+  'litterId',
+  'litterName',
+  'adoptionFormId',
+  'adoptionFormName',
+]);
+
+function formatValue(value: unknown): string {
+  if (value === null) return '(vacío)';
+  if (value === undefined) return '';
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+/**
+ * Renders any fields in the list that are not explicitly handled above.
+ * Acts as a safety net so new or obscure fields always show up in the timeline.
+ */
+function FallbackKeys({ list }: { list: beforeAfterType }): React.ReactElement {
+  const unhandled = (Object.keys(list) as (keyof beforeAfterType)[]).filter(
+    (k) => !HANDLED_KEYS.has(k) && list[k] !== undefined
+  );
+
+  if (unhandled.length === 0) return <></>;
+
+  return (
+    <>
+      {unhandled.map((key) => (
+        <li key={String(key)} className="font-semibold">
+          {' '}
+          {String(key)}: <span className="font-normal">{formatValue(list[key])}</span>
+        </li>
+      ))}
+    </>
+  );
+}
+
 /**
  * ChangeList component displays a list of changes in a transaction
  * Shows different styling for before/after states
@@ -265,7 +346,23 @@ function ChangeList({
       {list.caseManager !== undefined && (
         <li className="font-semibold">
           {' '}
-          Responsable del caso: <span className="font-normal">{list.caseManager}</span>
+          Responsable del caso:{' '}
+          <span className="font-normal">
+            {Array.isArray(list.caseManager)
+              ? list.caseManager.join(', ')
+              : String(list.caseManager)}
+          </span>
+        </li>
+      )}
+      {list.followUpManager !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Resp. seguimiento:{' '}
+          <span className="font-normal">
+            {Array.isArray(list.followUpManager)
+              ? list.followUpManager.join(', ')
+              : String(list.followUpManager)}
+          </span>
         </li>
       )}
       {list.rescueReason !== undefined && (
@@ -278,6 +375,24 @@ function ChangeList({
       {list.name !== undefined && (
         <li className="font-semibold">
           Nombre: <span className="font-normal">{list.name}</span>
+        </li>
+      )}
+      {list.newName !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Nombre adoptante: <span className="font-normal">{list.newName || '(vacío)'}</span>
+        </li>
+      )}
+      {list.litterId !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          ID camada: <span className="font-normal">{list.litterId}</span>
+        </li>
+      )}
+      {list.litterName !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Camada: <span className="font-normal">{list.litterName}</span>
         </li>
       )}
       {list.description !== undefined && (
@@ -296,6 +411,12 @@ function ChangeList({
         <li className="font-semibold">
           {' '}
           Especie: <span className="font-normal">{list.species}</span>
+        </li>
+      )}
+      {list.compatibility !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Compatibilidad: <span className="font-normal">{formatValue(list.compatibility)}</span>
         </li>
       )}
       {list.gender !== undefined && (
@@ -354,6 +475,15 @@ function ChangeList({
           Situación actual: <span className="font-normal">{list.status}</span>
         </li>
       )}
+      {list.followUpStatus !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Estado seguimiento:{' '}
+          <span className="font-normal">
+            {list.followUpStatus === 'active' ? 'Activo' : 'Cerrado'}
+          </span>
+        </li>
+      )}
       {list.waitingSince !== undefined && (
         <li className="font-semibold">
           {' '}
@@ -410,6 +540,22 @@ function ChangeList({
             <span className="font-normal">{contact.value}</span>
           </li>
         ))}
+      {list.adoptionFormName !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Formulario adopción:{' '}
+          {list.adoptionFormId ? (
+            <Link
+              href={`/plam-admin/formularios/${list.adoptionFormId}`}
+              className="text-green-600 hover:text-green-800 underline font-normal"
+            >
+              {list.adoptionFormName || 'Ver formulario'} →
+            </Link>
+          ) : (
+            <span className="font-normal">{list.adoptionFormName}</span>
+          )}
+        </li>
+      )}
       {list.totalCost !== undefined && (
         <li className="font-semibold">
           {' '}
@@ -417,8 +563,33 @@ function ChangeList({
           <span className="font-semibold text-red-500">${list.totalCost}</span>
         </li>
       )}
-      <picture>
-        {list.images && list.images.length > 0 && (
+      {list.mainImageUrl !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Imagen principal:{' '}
+          <img
+            src={list.mainImageUrl}
+            alt="Imagen principal"
+            className="w-16 h-16 object-cover rounded border"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement;
+              if (!img.dataset.fallback) {
+                img.dataset.fallback = 'true';
+                img.src = '/logo300.webp';
+              }
+            }}
+          />
+        </li>
+      )}
+      {list.bannerImage !== undefined && (
+        <li className="font-semibold">
+          {' '}
+          Banner: <span className="font-normal">{formatValue(list.bannerImage)}</span>
+        </li>
+      )}
+      {list.images && list.images.length > 0 && (
+        <li className="font-semibold flex flex-col gap-1">
+          <span>Imágenes:</span>
           <div className="flex gap-1">
             {list.images.map((image) => (
               <Image
@@ -427,10 +598,9 @@ function ChangeList({
                 alt={image.imgAlt}
                 width={64}
                 height={64}
-                className="w-16 h-16 object-cover"
+                className="w-16 h-16 object-cover rounded border"
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement;
-                  // Prevent infinite loop if fallback also fails
                   if (!img.dataset.fallback) {
                     img.dataset.fallback = 'true';
                     img.src = '/logo300.webp';
@@ -439,8 +609,9 @@ function ChangeList({
               />
             ))}
           </div>
-        )}
-      </picture>
+        </li>
+      )}
+      <FallbackKeys list={list} />
     </ul>
   );
 }
