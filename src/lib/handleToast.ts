@@ -1,7 +1,24 @@
+import React from 'react';
 import { toast, ToastOptions } from 'react-toastify';
 import ToastMsg from '@/elements/ToastMsg';
 
 type TypeProps = 'info' | 'success' | 'error' | 'warning';
+
+interface ToastButton {
+  text: string;
+  onClick: () => void;
+  /** Variant: 'primary' (default, orange filled) or 'secondary' (orange outlined) */
+  variant?: 'primary' | 'secondary';
+  /** Custom className overrides variant */
+  className?: string;
+}
+
+const BUTTON_VARIANTS: Record<string, string> = {
+  primary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border border-amber-sunset bg-gradient-to-b from-amber-sunset to-caramel-deep px-6 py-1.5 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0',
+  secondary:
+    'w-fit inline-flex items-center justify-center text-center rounded-full border-2 border-amber-sunset bg-cream-light px-6 py-1.5 text-sm font-semibold text-caramel-deep shadow-sm transition-all duration-300 hover:bg-white hover:scale-[1.02]',
+};
 
 /**
  * Configuration object for basic toast notifications.
@@ -19,6 +36,11 @@ interface Props {
    * @default false
    */
   simple?: boolean;
+  /**
+   * Action buttons rendered inside the toast. Requires `simple: true`.
+   * When provided, closeOnClick is forced to false and pauseOnHover to true.
+   */
+  buttons?: ToastButton[];
   /**
    * Toast position on screen
    * @default 'bottom-right'
@@ -208,6 +230,7 @@ export function handleToast({
   title,
   text,
   simple = false,
+  buttons,
   position = 'bottom-right',
   autoClose = 5000,
   hideProgressBar = false,
@@ -215,42 +238,68 @@ export function handleToast({
   pauseOnHover = true,
   draggable = true,
   theme,
-}: Props): void {
+}: Props): string | number {
   if (simple) {
     const simpleOptions: ToastOptions = {
       position,
       autoClose,
       hideProgressBar,
-      closeOnClick,
-      pauseOnHover,
+      closeOnClick: buttons ? false : closeOnClick,
+      pauseOnHover: buttons ? true : pauseOnHover,
       draggable,
       ...(theme && { theme }),
     };
+
+    const content: React.ReactNode = buttons
+      ? React.createElement(
+          'div',
+          null,
+          React.createElement('p', { className: 'text-sm' }, title),
+          React.createElement(
+            'div',
+            { className: 'flex gap-2 mt-1.5' },
+            ...buttons.map((btn, i) =>
+              React.createElement(
+                'button',
+                {
+                  key: i,
+                  onClick: (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    btn.onClick();
+                  },
+                  className: btn.className || BUTTON_VARIANTS[btn.variant || 'primary'],
+                },
+                btn.text
+              )
+            )
+          )
+        )
+      : title;
+
     switch (type) {
       case 'info':
-        toast.info(title, simpleOptions);
-        break;
+        return toast.info(content, simpleOptions);
       case 'success':
-        toast.success(title, simpleOptions);
-        break;
+        return toast.success(content, simpleOptions);
       case 'error':
-        toast.error(title, simpleOptions);
-        break;
+        return toast.error(content, simpleOptions);
       case 'warning':
-        toast.warn(title, simpleOptions);
-        break;
+        return toast.warn(content, simpleOptions);
+      default:
+        return '';
     }
-    return;
   }
 
-  const baseOptions: ToastOptions & { data: { title: string; text: string; type: TypeProps } } = {
+  const baseOptions: ToastOptions & {
+    data: { title: string; text: string; type: TypeProps; buttons?: ToastButton[] };
+  } = {
     draggable,
     position,
     autoClose,
     hideProgressBar,
-    closeOnClick,
-    pauseOnHover,
-    data: { title: title, text: text, type: type },
+    closeOnClick: buttons ? false : closeOnClick,
+    pauseOnHover: buttons ? true : pauseOnHover,
+    data: { title, text, type, ...(buttons ? { buttons } : {}) },
   };
 
   // Apply theme if provided, otherwise use type-specific defaults
@@ -258,20 +307,15 @@ export function handleToast({
 
   switch (type) {
     case 'info':
-      toast.info(ToastMsg, { ...finalOptions, theme: theme || 'light', icon: false });
-      break;
+      return toast.info(ToastMsg, { ...finalOptions, theme: theme || 'light', icon: false });
     case 'success':
-      toast.success(ToastMsg, finalOptions);
-      break;
+      return toast.success(ToastMsg, finalOptions);
     case 'error':
-      toast.error(ToastMsg, finalOptions);
-      break;
+      return toast.error(ToastMsg, finalOptions);
     case 'warning':
-      toast.warn(ToastMsg, finalOptions);
-      break;
-
+      return toast.warn(ToastMsg, finalOptions);
     default:
-      break;
+      return '';
   }
 }
 
