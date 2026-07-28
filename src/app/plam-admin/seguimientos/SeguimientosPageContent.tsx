@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
@@ -31,6 +31,25 @@ import { logger } from '@/lib/logger';
 
 const MIN_LOADING_TIME = 600;
 const MAX_IN_VALUES = 30;
+const MIN_COL_WIDTH = 60;
+
+/** Column key mapped to its width in pixels. */
+type ColKey = keyof typeof DEFAULT_COL_WIDTHS;
+
+const DEFAULT_COL_WIDTHS = {
+  animalName: 200,
+  camada: 110,
+  newName: 110,
+  id: 140,
+  adoptante: 140,
+  responsable: 130,
+  seguimiento: 130,
+  adopcion: 100,
+  castrado: 90,
+  vacunas: 90,
+  proxSeguimiento: 150,
+  acciones: 120,
+};
 
 /**
  * Merges litterName and litterId from the animals collection into followup records.
@@ -151,6 +170,56 @@ export default function SeguimientosPageContent(): React.ReactElement {
     camada: false,
   });
   const toggleCol = (k: keyof typeof showCol): void => setShowCol((p) => ({ ...p, [k]: !p[k] }));
+
+  // --- Column resize ---
+  const [colWidths, setColWidths] = useState<Record<ColKey, number>>(DEFAULT_COL_WIDTHS);
+  const colgroupRef = useRef<HTMLTableColElement>(null);
+  const resizingRef = useRef<{ col: ColKey; startX: number; startWidth: number } | null>(null);
+
+  const handleResizeStart = useCallback(
+    (col: ColKey, e: React.MouseEvent): void => {
+      e.preventDefault();
+      resizingRef.current = { col, startX: e.clientX, startWidth: colWidths[col] };
+    },
+    [colWidths]
+  );
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!resizingRef.current || !colgroupRef.current) return;
+      const { col, startX, startWidth } = resizingRef.current;
+      const delta = e.clientX - startX;
+      const newWidth = Math.max(MIN_COL_WIDTH, startWidth + delta);
+      const colEl = colgroupRef.current.querySelector<HTMLTableColElement>(
+        `col[data-col="${col}"]`
+      );
+      if (colEl) {
+        colEl.style.width = `${newWidth}px`;
+      }
+    };
+
+    const handleMouseUp = (): void => {
+      if (!resizingRef.current || !colgroupRef.current) return;
+      const { col } = resizingRef.current;
+      const colEl = colgroupRef.current.querySelector<HTMLTableColElement>(
+        `col[data-col="${col}"]`
+      );
+      if (colEl) {
+        const parsed = parseInt(colEl.style.width, 10);
+        if (parsed > 0) {
+          setColWidths((prev) => ({ ...prev, [col]: parsed }));
+        }
+      }
+      resizingRef.current = null;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   // --- EventModal state ---
   const [eventModalAnimal, setEventModalAnimal] = useState<Animal | null>(null);
@@ -713,151 +782,227 @@ export default function SeguimientosPageContent(): React.ReactElement {
               <p className="text-sm mt-2">Prueba ajustando los filtros</p>
             </div>
           ) : (
-            <table className="w-full text-sm text-left">
+            <table className="w-full table-fixed text-sm text-left">
+              <colgroup ref={colgroupRef}>
+                <col data-col="animalName" style={{ width: colWidths.animalName }} />
+                {showCol.camada && <col data-col="camada" style={{ width: colWidths.camada }} />}
+                {showCol.newName && <col data-col="newName" style={{ width: colWidths.newName }} />}
+                {showCol.id && <col data-col="id" style={{ width: colWidths.id }} />}
+                {showCol.adoptante && (
+                  <col data-col="adoptante" style={{ width: colWidths.adoptante }} />
+                )}
+                {showCol.responsable && (
+                  <col data-col="responsable" style={{ width: colWidths.responsable }} />
+                )}
+                {showCol.seguimiento && (
+                  <col data-col="seguimiento" style={{ width: colWidths.seguimiento }} />
+                )}
+                {showCol.adopcion && (
+                  <col data-col="adopcion" style={{ width: colWidths.adopcion }} />
+                )}
+                {showCol.castrado && (
+                  <col data-col="castrado" style={{ width: colWidths.castrado }} />
+                )}
+                {showCol.vacunas && <col data-col="vacunas" style={{ width: colWidths.vacunas }} />}
+                {showCol.proxSeguimiento && (
+                  <col data-col="proxSeguimiento" style={{ width: colWidths.proxSeguimiento }} />
+                )}
+                <col data-col="acciones" style={{ width: colWidths.acciones }} />
+              </colgroup>
               <thead className="bg-green-forest text-white">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">
+                  <th className="px-4 py-3 font-semibold relative">
                     <button
                       onClick={() => handleSort('animalName')}
-                      className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                      className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                     >
-                      Mascota{' '}
-                      <span className="text-xs opacity-70">
+                      <span className="truncate">Mascota </span>
+                      <span className="text-xs opacity-70 shrink-0">
                         {sortArrow('animalName', sortField, sortDirection)}
                       </span>
                     </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                      onMouseDown={(e) => handleResizeStart('animalName', e)}
+                    />
                   </th>
                   {showCol.camada && (
-                    <th className="px-4 py-3 font-semibold hidden sm:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden sm:table-cell relative">
                       <button
                         onClick={() => handleSort('litterName')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Camada{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Camada </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('litterName', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('camada', e)}
+                      />
                     </th>
                   )}
                   {showCol.newName && (
-                    <th className="px-4 py-3 font-semibold hidden md:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden md:table-cell relative">
                       <button
                         onClick={() => handleSort('newName')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        N. Adoptante{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">N. Adoptante </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('newName', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('newName', e)}
+                      />
                     </th>
                   )}
                   {showCol.id && (
-                    <th className="px-4 py-3 font-semibold hidden sm:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden sm:table-cell relative">
                       <button
                         onClick={() => handleSort('animalId')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        ID{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">ID </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('animalId', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('id', e)}
+                      />
                     </th>
                   )}
                   {showCol.adoptante && (
-                    <th className="px-4 py-3 font-semibold hidden md:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden md:table-cell relative">
                       <button
                         onClick={() => handleSort('contactName')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Adoptante{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Adoptante </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('contactName', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('adoptante', e)}
+                      />
                     </th>
                   )}
                   {showCol.responsable && (
-                    <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden lg:table-cell relative">
                       <button
                         onClick={() => handleSort('caseManager')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Responsable{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Responsable </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('caseManager', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('responsable', e)}
+                      />
                     </th>
                   )}
                   {showCol.seguimiento && (
-                    <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden lg:table-cell relative">
                       <button
                         onClick={() => handleSort('followUpManager')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Resp. Seguimiento{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Resp. Seguimiento </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('followUpManager', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('seguimiento', e)}
+                      />
                     </th>
                   )}
                   {showCol.adopcion && (
-                    <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    <th className="px-4 py-3 font-semibold hidden lg:table-cell relative">
                       <button
                         onClick={() => handleSort('adoptionDate')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Adopción{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Adopción </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('adoptionDate', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('adopcion', e)}
+                      />
                     </th>
                   )}
                   {showCol.castrado && (
-                    <th className="px-4 py-3 font-semibold text-center">
+                    <th className="px-4 py-3 font-semibold text-center relative">
                       <button
                         onClick={() => handleSort('isSterilized')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full justify-center"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full justify-center min-w-0"
                       >
-                        Castrado{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Castrado </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('isSterilized', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('castrado', e)}
+                      />
                     </th>
                   )}
                   {showCol.vacunas && (
-                    <th className="px-4 py-3 font-semibold text-center hidden sm:table-cell">
+                    <th className="px-4 py-3 font-semibold text-center hidden sm:table-cell relative">
                       <button
                         onClick={() => handleSort('vaccinations')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full justify-center"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full justify-center min-w-0"
                       >
-                        Vacunas{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Vacunas </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('vaccinations', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('vacunas', e)}
+                      />
                     </th>
                   )}
                   {showCol.proxSeguimiento && (
-                    <th className="px-4 py-3 font-semibold">
+                    <th className="px-4 py-3 font-semibold relative">
                       <button
                         onClick={() => handleSort('nextFollowUpDate')}
-                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left min-w-0"
                       >
-                        Próx. Seguimiento{' '}
-                        <span className="text-xs opacity-70">
+                        <span className="truncate">Próx. Seguimiento </span>
+                        <span className="text-xs opacity-70 shrink-0">
                           {sortArrow('nextFollowUpDate', sortField, sortDirection)}
                         </span>
                       </button>
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                        onMouseDown={(e) => handleResizeStart('proxSeguimiento', e)}
+                      />
                     </th>
                   )}
-                  <th className="px-4 py-3 font-semibold text-center">Acciones</th>
+                  <th className="px-4 py-3 font-semibold text-center relative">
+                    <span className="truncate">Acciones</span>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-amber-sunset/40 z-10"
+                      onMouseDown={(e) => handleResizeStart('acciones', e)}
+                    />
+                  </th>
                 </tr>
               </thead>
               <tbody>
