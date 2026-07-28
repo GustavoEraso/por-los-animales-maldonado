@@ -30,6 +30,38 @@ import { Animal, AnimalTransactionType, PrivateInfoType, UserType, EventType } f
 import { logger } from '@/lib/logger';
 
 const MIN_LOADING_TIME = 600;
+const MAX_IN_VALUES = 30;
+
+/**
+ * Merges litterName and litterId from the animals collection into followup records.
+ * Batch-fetches animals by IDs in chunks of 30 (Firestore in-query limit).
+ */
+async function mergeLitterData(
+  followups: AdoptedAnimalFollowup[]
+): Promise<AdoptedAnimalFollowup[]> {
+  if (followups.length === 0) return followups;
+
+  const ids = followups.map((f) => f.animalId);
+
+  const animalMap = new Map<string, Animal>();
+
+  for (let i = 0; i < ids.length; i += MAX_IN_VALUES) {
+    const chunk = ids.slice(i, i + MAX_IN_VALUES);
+    const docs = await getFirestoreData({
+      currentCollection: 'animals',
+      filter: [['id', 'in', chunk]],
+    });
+    for (const doc of docs as Animal[]) {
+      animalMap.set(doc.id, doc);
+    }
+  }
+
+  return followups.map((f) => ({
+    ...f,
+    litterName: animalMap.get(f.animalId)?.litterName ?? '',
+    litterId: animalMap.get(f.animalId)?.litterId ?? '',
+  }));
+}
 
 type FilterStatus = 'pendiente' | 'al_dia' | 'sin_seguimiento' | 'cerrados' | 'activos' | 'todos';
 type FilterSterilized = 'todos' | 'si' | 'no' | 'no_se';
@@ -45,7 +77,8 @@ type SortField =
   | 'isSterilized'
   | 'vaccinations'
   | 'nextFollowUpDate'
-  | 'animalId';
+  | 'animalId'
+  | 'litterName';
 
 function sortArrow(field: SortField, current: SortField, dir: 'asc' | 'desc'): string {
   if (field !== current) return '↕';
@@ -115,6 +148,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
     castrado: true,
     vacunas: true,
     proxSeguimiento: true,
+    camada: false,
   });
   const toggleCol = (k: keyof typeof showCol): void => setShowCol((p) => ({ ...p, [k]: !p[k] }));
 
@@ -168,7 +202,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
               filter: [['isAdopted', '==', true]],
             });
 
-        setData(adoptedPrivateInfo.map((doc) => mapToFollowup(doc as PrivateInfoType)));
+        const followups = adoptedPrivateInfo.map((doc) => mapToFollowup(doc as PrivateInfoType));
+        const enriched = await mergeLitterData(followups);
+        setData(enriched);
       } catch (error) {
         logger({
           level: 'error',
@@ -212,6 +248,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
           f.newName.toLowerCase().includes(lower) ||
           (f.contactName || '').toLowerCase().includes(lower) ||
           f.animalId.toLowerCase().includes(lower) ||
+          f.litterName.toLowerCase().includes(lower) ||
           (f.followUpManager || []).join(' ').toLowerCase().includes(lower)
       );
     }
@@ -229,6 +266,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
           break;
         case 'newName':
           cmp = (a.newName || '').localeCompare(b.newName || '');
+          break;
+        case 'litterName':
+          cmp = (a.litterName || '').localeCompare(b.litterName || '');
           break;
         case 'contactName':
           cmp = (a.contactName || '').localeCompare(b.contactName || '');
@@ -339,7 +379,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
             filter: [['isAdopted', '==', true]],
           });
 
-      setData(adoptedPrivateInfo.map((doc) => mapToFollowup(doc as PrivateInfoType)));
+      const followups = adoptedPrivateInfo.map((doc) => mapToFollowup(doc as PrivateInfoType));
+      const enriched = await mergeLitterData(followups);
+      setData(enriched);
     } catch (error) {
       logger({
         level: 'error',
@@ -549,6 +591,28 @@ export default function SeguimientosPageContent(): React.ReactElement {
             <label className="cursor-pointer">
               <input
                 type="checkbox"
+                checked={showCol.camada}
+                onChange={() => toggleCol('camada')}
+                className="mr-1 accent-green-700"
+              />
+              Camada
+            </label>
+          </li>
+          <li>
+            <label className="cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCol.newName}
+                onChange={() => toggleCol('newName')}
+                className="mr-1 accent-green-700"
+              />
+              N. Adoptante
+            </label>
+          </li>
+          <li>
+            <label className="cursor-pointer">
+              <input
+                type="checkbox"
                 checked={showCol.id}
                 onChange={() => toggleCol('id')}
                 className="mr-1 accent-green-700"
@@ -565,17 +629,6 @@ export default function SeguimientosPageContent(): React.ReactElement {
                 className="mr-1 accent-green-700"
               />
               Adoptante
-            </label>
-          </li>
-          <li>
-            <label className="cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showCol.newName}
-                onChange={() => toggleCol('newName')}
-                className="mr-1 accent-green-700"
-              />
-              N. Adoptante
             </label>
           </li>
           <li>
@@ -674,6 +727,19 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       </span>
                     </button>
                   </th>
+                  {showCol.camada && (
+                    <th className="px-4 py-3 font-semibold hidden sm:table-cell">
+                      <button
+                        onClick={() => handleSort('litterName')}
+                        className="flex items-center gap-1 hover:text-amber-sunset transition-colors cursor-pointer w-full text-left"
+                      >
+                        Camada{' '}
+                        <span className="text-xs opacity-70">
+                          {sortArrow('litterName', sortField, sortDirection)}
+                        </span>
+                      </button>
+                    </th>
+                  )}
                   {showCol.newName && (
                     <th className="px-4 py-3 font-semibold hidden md:table-cell">
                       <button
@@ -852,6 +918,22 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           </div>
                         </Link>
                       </td>
+
+                      {/* Camada */}
+                      {showCol.camada && (
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          {followup.litterName ? (
+                            <Link
+                              href={`/plam-admin/animales/${followup.animalId}`}
+                              className="text-sm text-gray-600 hover:text-green-700 hover:underline"
+                            >
+                              {followup.litterName}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400 text-sm">—</span>
+                          )}
+                        </td>
+                      )}
 
                       {/* N. Adoptante */}
                       {showCol.newName && (

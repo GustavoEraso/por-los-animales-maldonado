@@ -47,6 +47,10 @@ export interface AdoptedAnimalFollowup {
   /** 0 means not sterilized or unknown. */
   sterilizationDate: number;
   followUpStatus: 'active' | 'closed';
+  /** Litter name (from animals collection), empty string if not in a litter. */
+  litterName: string;
+  /** Litter identifier (from animals collection), empty string if not in a litter. */
+  litterId: string;
 }
 
 /**
@@ -74,5 +78,7 @@ export function mapToFollowup(pi: PrivateInfoType): AdoptedAnimalFollowup {
     lastFollowUpDate: pi.lastFollowUpDate ?? SENTINEL_ZERO,
     sterilizationDate: pi.sterilizationDate ?? SENTINEL_ZERO,
     followUpStatus: pi.followUpStatus ?? SENTINEL_FOLLOWUP_STATUS,
+    litterName: SENTINEL_EMPTY_STRING,
+    litterId: SENTINEL_EMPTY_STRING,
   };
 }
