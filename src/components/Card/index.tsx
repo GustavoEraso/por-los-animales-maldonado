@@ -44,6 +44,7 @@ export default function Card({
   };
 
   const isDeceased = status.toLowerCase() === 'fallecido';
+  const isAdopted = status === 'adoptado';
 
   return (
     <article
@@ -74,31 +75,34 @@ export default function Card({
           )}
           {status != 'fallecido' && <p className="text-center">{`${gender} | ${lifeStage} `}</p>}
         </div>
-        {(adminView || animal.litterId) && (
-          <div className="flex flex-col gap-1 absolute top-2 left-2">
-            {animal.litterId && (
-              <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-lg">
-                🐾 {animal.litterName ?? 'Camada'}
-              </span>
-            )}
-            {adminView && !animal.isVisible && (
-              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
-                No se esta mostrando
-              </span>
-            )}
-            {adminView && !animal.isAvailable && (
-              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
-                No esta disponible
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex flex-col gap-1 absolute top-2 left-2">
+          {animal.litterId && (
+            <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-lg">
+              🐾 {animal.litterName ?? 'Camada'}
+            </span>
+          )}
+          {adminView && status === 'fallecido' && (
+            <span className="text-center bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
+              Fallecido
+            </span>
+          )}
+          {adminView && status === 'adoptado' && (
+            <span className="text-center bg-green-600 text-white text-xs px-2 py-1 rounded-lg">
+              Adoptado
+            </span>
+          )}
+          {adminView && !isDeceased && !isAdopted && !animal.isVisible && (
+            <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
+              No se esta mostrando
+            </span>
+          )}
+          {adminView && !isDeceased && !isAdopted && !animal.isAvailable && (
+            <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-lg">
+              No esta disponible
+            </span>
+          )}
+        </div>
       </Link>
-      {status === 'fallecido' && (
-        <p className=" absolute top-2 left-2 text-center bg-red-600 text-white px-2 py-1 rounded-lg">
-          Fallecido{' '}
-        </p>
-      )}
     </article>
   );
 }
