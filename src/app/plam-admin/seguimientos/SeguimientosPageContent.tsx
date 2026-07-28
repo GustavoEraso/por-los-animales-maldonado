@@ -7,7 +7,7 @@ import { db, auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { compareId } from '@/lib/compareId';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
-import { handlePromiseToast } from '@/lib/handleToast';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 
@@ -17,11 +17,14 @@ import {
   CalendarIcon,
   PetsIcon,
   PhoneIcon,
+  MailIcon,
   EyeIcon,
   LockClosedIcon,
   LockOpenIcon,
   SterilizationIcon,
   VaccinationIcon,
+  CopyIcon,
+  CheckIcon,
 } from '@/components/Icons';
 import EventModal from '@/components/EventModal';
 import { mapToFollowup, AdoptedAnimalFollowup, normalizeManager } from '@/lib/data/seguimientos';
@@ -48,7 +51,7 @@ const DEFAULT_COL_WIDTHS = {
   castrado: 90,
   vacunas: 90,
   proxSeguimiento: 150,
-  acciones: 120,
+  acciones: 170,
 };
 
 /**
@@ -234,6 +237,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
   );
   const [users, setUsers] = useState<UserType[]>([]);
 
+  // --- Copy feedback ---
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -387,11 +393,6 @@ export default function SeguimientosPageContent(): React.ReactElement {
     },
     [now, SEVEN_DAYS_MS]
   );
-
-  const formatContactPhone = useCallback((followup: AdoptedAnimalFollowup): string => {
-    const phoneContact = followup.contacts?.find((c) => c.type === 'celular');
-    return phoneContact ? String(phoneContact.value) : '';
-  }, []);
 
   /** Resolves manager emails to names and formats for table display */
   const getManagerDisplay = useCallback(
@@ -1103,22 +1104,85 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       {/* Adoptante */}
                       {showCol.adoptante && (
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-1">
                             <span className="font-medium text-gray-800">
                               {followup.contactName || '—'}
                             </span>
-                            {formatContactPhone(followup) && (
-                              <a
-                                href={`https://wa.me/${formatContactPhone(followup).replace(/[^0-9]/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-green-600 hover:underline flex items-center gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <PhoneIcon size={12} />
-                                {formatContactPhone(followup)}
-                              </a>
-                            )}
+                            {followup.contacts && followup.contacts.length > 0
+                              ? followup.contacts.map((c, i) => {
+                                  const value = String(c.value);
+                                  const isPhone = c.type === 'celular';
+                                  const isEmail = c.type === 'email';
+                                  const cleanValue = isPhone
+                                    ? value.replace(/[^0-9+]/g, '')
+                                    : value;
+                                  const href = isPhone
+                                    ? `https://wa.me/${cleanValue}`
+                                    : isEmail
+                                      ? `mailto:${value}`
+                                      : null;
+
+                                  return (
+                                    <div key={i} className="flex items-center gap-1">
+                                      <span className="text-[10px] text-gray-400 shrink-0 w-8">
+                                        {c.label || (isPhone ? 'Cel.' : isEmail ? 'Email' : 'Otro')}
+                                      </span>
+                                      {href ? (
+                                        <a
+                                          href={href}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`text-xs hover:underline flex items-center gap-1 ${isPhone ? 'text-green-600' : 'text-blue-600'}`}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {isPhone && <PhoneIcon size={10} />}
+                                          {isEmail && <MailIcon size={10} />}
+                                          <span className="truncate max-w-[120px]">{value}</span>
+                                        </a>
+                                      ) : (
+                                        <span className="text-xs text-gray-600 truncate max-w-[120px]">
+                                          {value}
+                                        </span>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(
+                                            isPhone ? cleanValue : value
+                                          );
+                                          setCopiedId(`${followup.animalId}-${i}`);
+                                          setTimeout(() => setCopiedId(null), 2000);
+                                          handleToast({
+                                            type: 'success',
+                                            title: isPhone
+                                              ? 'Número copiado al portapapeles'
+                                              : 'Copiado al portapapeles',
+                                            text: '',
+                                            simple: true,
+                                            autoClose: 1500,
+                                            hideProgressBar: true,
+                                            position: 'bottom-center',
+                                          });
+                                        }}
+                                        className={`shrink-0 transition-colors ${
+                                          copiedId === `${followup.animalId}-${i}`
+                                            ? 'text-green-600'
+                                            : 'text-gray-400 hover:text-green-600'
+                                        }`}
+                                        title="Copiar"
+                                      >
+                                        {copiedId === `${followup.animalId}-${i}` ? (
+                                          <CheckIcon size={12} />
+                                        ) : (
+                                          <CopyIcon size={12} />
+                                        )}
+                                      </button>
+                                    </div>
+                                  );
+                                })
+                              : followup.contacts?.length !== 0 && (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
                           </div>
                         </td>
                       )}
@@ -1211,11 +1275,11 @@ export default function SeguimientosPageContent(): React.ReactElement {
 
                       {/* Acciones */}
                       <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex flex-wrap items-center justify-center gap-1">
                           <button
                             onClick={() => openEventModalForAnimal(followup, 'sterilization')}
                             disabled={eventModalLoading}
-                            className="p-1.5 rounded hover:bg-pink-600 hover:text-white transition-colors text-pink-600"
+                            className="p-1 rounded hover:bg-pink-600 hover:text-white transition-colors text-pink-600"
                             title="Registrar esterilización"
                           >
                             <SterilizationIcon size={16} />
@@ -1223,7 +1287,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           <button
                             onClick={() => openEventModalForAnimal(followup, 'vaccination')}
                             disabled={eventModalLoading}
-                            className="p-1.5 rounded hover:bg-purple-600 hover:text-white transition-colors text-purple-600"
+                            className="p-1 rounded hover:bg-purple-600 hover:text-white transition-colors text-purple-600"
                             title="Registrar vacunación"
                           >
                             <VaccinationIcon size={16} />
@@ -1231,14 +1295,14 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           <button
                             onClick={() => openEventModalForAnimal(followup, 'followup')}
                             disabled={eventModalLoading}
-                            className="p-1.5 rounded hover:bg-blue-600 hover:text-white transition-colors text-blue-600"
+                            className="p-1 rounded hover:bg-blue-600 hover:text-white transition-colors text-blue-600"
                             title="Registrar evento de seguimiento"
                           >
                             <CalendarIcon size={16} />
                           </button>
                           <Link
                             href={`/plam-admin/animales/${followup.animalId}`}
-                            className="p-1.5 rounded hover:bg-green-forest hover:text-white transition-colors"
+                            className="p-1 rounded hover:bg-green-forest hover:text-white transition-colors"
                             title="Ver ficha completa"
                           >
                             <EyeIcon size={16} />
@@ -1247,7 +1311,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                             onClick={() =>
                               toggleFollowUpStatus(followup.animalId, followup.followUpStatus)
                             }
-                            className={`p-1.5 rounded transition-colors ${
+                            className={`p-1 rounded transition-colors ${
                               isClosed
                                 ? 'hover:bg-green-600 hover:text-white text-green-600'
                                 : 'hover:bg-gray-600 hover:text-white text-gray-500'

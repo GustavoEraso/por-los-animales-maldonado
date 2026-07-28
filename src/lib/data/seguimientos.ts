@@ -33,7 +33,7 @@ export interface AdoptedAnimalFollowup {
   caseManager: string[];
   followUpManager: string[];
   contactName: string;
-  contacts: { type: 'celular' | 'email' | 'other'; value: string | number }[];
+  contacts: { type: 'celular' | 'email' | 'other'; value: string | number; label?: string }[];
   address: string;
   notes: string[];
   vaccinations: { date: number; vaccine: string }[];
