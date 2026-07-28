@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Animal, AnimalTransactionType } from '@/types';
-import { fetchAnimals } from '@/lib/fetchAnimal';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
@@ -13,6 +12,7 @@ import Card from '@/components/Card';
 import ParentSelectorModal from '@/components/ParentSelectorModal';
 import generateId from '@/lib/generateId';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { logger } from '@/lib/logger';
 
 interface AnimalFamilySectionProps {
@@ -44,8 +44,11 @@ export default function AnimalFamilySection({
     const loadParents = async (): Promise<void> => {
       if (animal.motherId) {
         try {
-          const result = await fetchAnimals({ id: animal.motherId });
-          if (Array.isArray(result) && result.length > 0) setMother(result[0]);
+          const result = await getFirestoreDocById<Animal>({
+            currentCollection: 'animals',
+            id: animal.motherId,
+          });
+          if (result) setMother(result);
         } catch (err) {
           logger({
             level: 'error',
@@ -59,8 +62,11 @@ export default function AnimalFamilySection({
       }
       if (animal.fatherId) {
         try {
-          const result = await fetchAnimals({ id: animal.fatherId });
-          if (Array.isArray(result) && result.length > 0) setFather(result[0]);
+          const result = await getFirestoreDocById<Animal>({
+            currentCollection: 'animals',
+            id: animal.fatherId,
+          });
+          if (result) setFather(result);
         } catch (err) {
           logger({
             level: 'error',
@@ -84,10 +90,11 @@ export default function AnimalFamilySection({
         return;
       }
       try {
-        const result = await fetchAnimals({ litterId: animal.litterId });
-        if (Array.isArray(result)) {
-          setSiblings(result.filter((s) => s.id !== animal.id));
-        }
+        const result = await getFirestoreData({
+          currentCollection: 'animals',
+          filter: [['litterId', '==', animal.litterId]],
+        });
+        setSiblings((result as Animal[]).filter((s) => s.id !== animal.id));
       } catch (err) {
         logger({
           level: 'error',
@@ -105,12 +112,10 @@ export default function AnimalFamilySection({
     const loadOffspring = async (): Promise<void> => {
       try {
         const [byMother, byFather] = await Promise.all([
-          fetchAnimals({ id: animal.id }).then(() =>
-            getFirestoreData({
-              currentCollection: 'animals',
-              filter: [['motherId', '==', animal.id]],
-            })
-          ),
+          getFirestoreData({
+            currentCollection: 'animals',
+            filter: [['motherId', '==', animal.id]],
+          }),
           getFirestoreData({
             currentCollection: 'animals',
             filter: [['fatherId', '==', animal.id]],
