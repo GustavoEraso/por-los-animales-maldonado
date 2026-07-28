@@ -14,6 +14,12 @@ interface Props {
   /** Descriptive message text shown below the title */
   text: string;
   /**
+   * When true, uses the native react-toastify toast without the custom ToastMsg component.
+   * Ideal for simple one-line confirmations. The `title` is used as the toast content.
+   * @default false
+   */
+  simple?: boolean;
+  /**
    * Toast position on screen
    * @default 'bottom-right'
    */
@@ -201,6 +207,7 @@ export function handleToast({
   type,
   title,
   text,
+  simple = false,
   position = 'bottom-right',
   autoClose = 5000,
   hideProgressBar = false,
@@ -209,6 +216,33 @@ export function handleToast({
   draggable = true,
   theme,
 }: Props): void {
+  if (simple) {
+    const simpleOptions: ToastOptions = {
+      position,
+      autoClose,
+      hideProgressBar,
+      closeOnClick,
+      pauseOnHover,
+      draggable,
+      ...(theme && { theme }),
+    };
+    switch (type) {
+      case 'info':
+        toast.info(title, simpleOptions);
+        break;
+      case 'success':
+        toast.success(title, simpleOptions);
+        break;
+      case 'error':
+        toast.error(title, simpleOptions);
+        break;
+      case 'warning':
+        toast.warn(title, simpleOptions);
+        break;
+    }
+    return;
+  }
+
   const baseOptions: ToastOptions & { data: { title: string; text: string; type: TypeProps } } = {
     draggable,
     position,
