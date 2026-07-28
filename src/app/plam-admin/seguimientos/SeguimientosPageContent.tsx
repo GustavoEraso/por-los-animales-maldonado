@@ -7,7 +7,8 @@ import { db, auth } from '@/firebase';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { compareId } from '@/lib/compareId';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
-import { handlePromiseToast, handleToast } from '@/lib/handleToast';
+import { handleToast } from '@/lib/handleToast';
+import { toast } from 'react-toastify';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 
@@ -239,6 +240,9 @@ export default function SeguimientosPageContent(): React.ReactElement {
 
   // --- Copy feedback ---
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // --- Undo toast tracking ---
+  const undoTimerRef = useRef<string | number | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -534,6 +538,25 @@ export default function SeguimientosPageContent(): React.ReactElement {
       prev.map((f) => (f.animalId === animalId ? { ...f, followUpStatus: newStatus } : f))
     );
 
+    if (undoTimerRef.current) {
+      toast.dismiss(undoTimerRef.current);
+    }
+    undoTimerRef.current = handleToast({
+      type: newStatus === 'closed' ? 'warning' : 'success',
+      title: newStatus === 'closed' ? 'Caso cerrado' : 'Caso reabierto',
+      text: '',
+      autoClose: 5000,
+      position: 'bottom-right',
+      closeOnClick: false,
+      pauseOnHover: true,
+      buttons: [
+        {
+          text: 'Deshacer',
+          onClick: () => toggleFollowUpStatus(animalId, newStatus),
+        },
+      ],
+    });
+
     try {
       await createAuditLog({
         type: 'animal',
@@ -546,22 +569,10 @@ export default function SeguimientosPageContent(): React.ReactElement {
           after: { followUpStatus: newStatus },
         },
       });
-      await handlePromiseToast(
-        Promise.all([
-          updateDoc(docRef, { followUpStatus: newStatus }),
-          postTransactionData({ data: newTransaction }),
-        ]),
-        {
-          messages: {
-            pending: { title: 'Actualizando', text: 'Cambiando estado de seguimiento...' },
-            success: {
-              title: 'Listo',
-              text: newStatus === 'closed' ? 'Seguimiento cerrado' : 'Seguimiento reabierto',
-            },
-            error: { title: 'Error', text: 'No se pudo cambiar el estado' },
-          },
-        }
-      );
+      await Promise.all([
+        updateDoc(docRef, { followUpStatus: newStatus }),
+        postTransactionData({ data: newTransaction }),
+      ]);
 
       await refreshTableData();
     } catch (error) {
