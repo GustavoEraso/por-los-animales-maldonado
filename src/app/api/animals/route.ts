@@ -307,7 +307,12 @@ export async function POST(req: NextRequest): Promise<
     // Return all results if no pagination params (backward compatibility)
     return NextResponse.json(finalResults);
   } catch (err) {
-    logger({ level: 'error', code: 'FILTER_ANIMALS', message: 'Error filtering animals:', data: err });
+    logger({
+      level: 'error',
+      code: 'FILTER_ANIMALS',
+      message: 'Error filtering animals:',
+      data: err,
+    });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
