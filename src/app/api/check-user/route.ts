@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserRole } from '@/types';
 import { logger } from '@/lib/logger';
-
-/**
- * User data structure from authorized emails collection.
- */
-interface AuthorizedUserData {
-  email: string;
-  name?: string;
-  role?: UserRole;
-}
+import { getUsersData } from '@/lib/data/users';
 
 /**
  * Response types for check-user endpoint
@@ -67,16 +59,11 @@ type CheckUserResponse =
  * };
  * ```
  *
- * @note Uses internal /api/authorized-emails endpoint to fetch current user list.
+ * @note Reads the authorized user list through the cached server data layer.
  * Returns role "user" as default if no specific role is assigned.
  * This endpoint does not require authentication as it only returns authorization status.
  */
 export async function POST(request: NextRequest): Promise<NextResponse<CheckUserResponse>> {
-  const baseUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://www.porlosanimalesmaldonado.org';
-
   const { email } = await request.json();
 
   if (!email) {
@@ -84,19 +71,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<CheckUser
   }
 
   try {
-    const response = await fetch(`${baseUrl}/api/authorized-emails`, {
-      headers: {
-        'x-internal-token': process.env.INTERNAL_API_SECRET!,
-      },
-    });
+    const authorizedUsers = await getUsersData();
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch authorized emails');
-    }
-
-    const authorizedUsers: AuthorizedUserData[] = await response.json();
-
-    const authorizedUser = authorizedUsers.find((userData) => userData.email === email);
+    const authorizedUser = authorizedUsers.find((userData) => userData.id === email);
 
     if (!authorizedUser) {
       return NextResponse.json({ authorized: false });
