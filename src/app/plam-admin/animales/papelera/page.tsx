@@ -388,6 +388,7 @@ export default function AnimalsPage() {
                     <td className="px-2 py-4 text-right">
                       <Link
                         href={`/plam-admin/animales/${animal.id}`}
+                        prefetch={false}
                         className="font-medium text-green-600 hover:underline flex items-center justify-end gap-1"
                       >
                         <EyeIcon size={16} title="Ver detalles" />

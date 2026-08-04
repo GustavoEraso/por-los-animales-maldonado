@@ -384,6 +384,7 @@ export default function DashboardContent({
                         <p className="text-sm text-gray-600 text-center">{date} hs</p>
                         <SmartLink
                           href={`/plam-admin/animales/${tx.id}#linea-del-tiempo`}
+                          prefetch={false}
                           variant="primary"
                         >
                           Ver Detalles

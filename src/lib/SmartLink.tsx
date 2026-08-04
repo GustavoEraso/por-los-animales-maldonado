@@ -23,6 +23,8 @@ type SmartLinkProps = Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
     href: string;
     /** Content to render inside the link */
     children: React.ReactNode;
+    /** Controls Next.js prefetching for internal links */
+    prefetch?: boolean;
   };
 
 /**
@@ -64,6 +66,7 @@ export default function SmartLink({
   children,
   variant,
   className,
+  prefetch,
   ...props
 }: SmartLinkProps): React.ReactElement {
   const resolvedClassName = variant ? variantStyles[variant] : className;
@@ -91,7 +94,7 @@ export default function SmartLink({
 
   // Internal link - use Next.js Link
   return (
-    <Link href={href} className={resolvedClassName} {...props}>
+    <Link href={href} prefetch={prefetch} className={resolvedClassName} {...props}>
       {children}
     </Link>
   );

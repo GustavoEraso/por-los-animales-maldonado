@@ -671,6 +671,7 @@ export default function AnimalPage(): React.ReactElement | null {
 
                 <Link
                   href={`/plam-admin/animales/editar/${animal.id}`}
+                  prefetch={false}
                   className="bg-caramel-deep text-white text-3xl px-4 py-2 rounded hover:bg-amber-sunset transition duration-300 flex items-center gap-2"
                 >
                   <EditIcon size={24} />

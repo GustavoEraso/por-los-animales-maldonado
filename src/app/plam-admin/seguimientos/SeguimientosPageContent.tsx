@@ -1049,6 +1049,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                       <td className="px-4 py-3">
                         <Link
                           href={`/plam-admin/animales/${followup.animalId}`}
+                          prefetch={false}
                           className="flex items-center gap-2 hover:text-green-700 transition-colors font-medium text-green-dark"
                         >
                           {followup.animalImageUrl ? (
@@ -1082,6 +1083,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           {followup.litterName ? (
                             <Link
                               href={`/plam-admin/animales/${followup.animalId}`}
+                              prefetch={false}
                               className="text-sm text-gray-600 hover:text-green-700 hover:underline"
                             >
                               {followup.litterName}
@@ -1313,6 +1315,7 @@ export default function SeguimientosPageContent(): React.ReactElement {
                           </button>
                           <Link
                             href={`/plam-admin/animales/${followup.animalId}`}
+                            prefetch={false}
                             className="p-1 rounded hover:bg-green-forest hover:text-white transition-colors"
                             title="Ver ficha completa"
                           >

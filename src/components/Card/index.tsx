@@ -52,6 +52,7 @@ export default function Card({
     >
       <Link
         href={href || `/adopta/${id}`}
+        prefetch={false}
         className={` ${isDeceased ? 'grayscale' : ''} block w-full h-full`}
       >
         <div className="aspect-square">

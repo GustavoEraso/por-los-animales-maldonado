@@ -91,6 +91,7 @@ export default function Pagination({ currentPage, totalPages, total, limit }: Pa
         {/* Previous button */}
         <Link
           href={getPageUrl(currentPage - 1)}
+          prefetch={false}
           onClick={(e) => {
             if (currentPage === 1) e.preventDefault();
           }}
@@ -120,6 +121,7 @@ export default function Pagination({ currentPage, totalPages, total, limit }: Pa
               <Link
                 key={page}
                 href={getPageUrl(page)}
+                prefetch={false}
                 onClick={(e) => {
                   if (isActive) e.preventDefault();
                 }}
@@ -140,6 +142,7 @@ export default function Pagination({ currentPage, totalPages, total, limit }: Pa
         {/* Next button */}
         <Link
           href={getPageUrl(currentPage + 1)}
+          prefetch={false}
           onClick={(e) => {
             if (currentPage === totalPages) e.preventDefault();
           }}

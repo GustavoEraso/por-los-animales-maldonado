@@ -177,6 +177,7 @@ export default function TransactionCard({
                 Ficha:{' '}
                 <Link
                   href={`/plam-admin/animales/${transaction.id}`}
+                  prefetch={false}
                   className="text-green-600 hover:text-green-800 underline font-normal"
                 >
                   Ver animal →
