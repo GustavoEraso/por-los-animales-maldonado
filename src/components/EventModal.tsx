@@ -13,7 +13,7 @@ import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { CalendarIcon, LockClosedIcon, EditIcon } from '@/components/Icons';
@@ -458,7 +458,7 @@ export default function EventModal({
       });
 
       if (isDeceasedEvent || isSterilization) {
-        await revalidateCache('animals');
+        await revalidateAnimalCache(animal.id);
       }
 
       setEventData(DEFAULT_EVENT_DATA);

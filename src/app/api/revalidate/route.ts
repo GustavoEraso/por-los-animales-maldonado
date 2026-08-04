@@ -3,19 +3,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
 /**
- * GET /api/revalidate?tag=animals
+ * GET /api/revalidate?tags=animals:list,animals:active
  *
  * Revalidates a cache tag. Useful for on-demand cache invalidation.
  *
  * @example
- * // Revalidate all animals
- * fetch('/api/revalidate?tag=animals')
+ * // Revalidate multiple animal caches
+ * fetch('/api/revalidate?tags=animals:list,animals:active')
  *
  * // Revalidate a specific animal
- * fetch('/api/revalidate?tag=animal-abc123')
+ * fetch('/api/revalidate?tags=animal:abc123')
  *
  * // Revalidate everything
- * fetch('/api/revalidate?tag=revalidate_all')
+ * fetch('/api/revalidate?tags=revalidate_all')
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = request.headers.get('x-internal-token');
@@ -24,24 +24,35 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const tag = request.nextUrl.searchParams.get('tag');
+  const tagsParam = request.nextUrl.searchParams.get('tags');
+  const legacyTag = request.nextUrl.searchParams.get('tag');
+  const tags = (tagsParam ?? legacyTag ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
-  if (!tag) {
-    return NextResponse.json({ error: 'Missing "tag" query parameter' }, { status: 400 });
+  if (tags.length === 0) {
+    return NextResponse.json({ error: 'Missing "tags" query parameter' }, { status: 400 });
   }
 
   try {
     // 'max' uses stale-while-revalidate semantics (recommended)
-    // Use { expire: 0 } for immediate expiration
-    revalidateTag(tag, 'max');
+    for (const tag of tags) {
+      revalidateTag(tag, 'max');
+    }
 
     return NextResponse.json({
       revalidated: true,
-      tag,
+      tags,
       timestamp: new Date().toLocaleString(),
     });
   } catch (error) {
-    logger({ level: 'error', code: 'REVALIDATE_TAG', message: 'Error revalidating tag:', data: error });
+    logger({
+      level: 'error',
+      code: 'REVALIDATE_TAG',
+      message: 'Error revalidating tag:',
+      data: error,
+    });
     return NextResponse.json({ error: 'Failed to revalidate tag' }, { status: 500 });
   }
 }

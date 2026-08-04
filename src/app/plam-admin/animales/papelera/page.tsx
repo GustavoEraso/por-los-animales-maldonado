@@ -18,7 +18,7 @@ import { deleteImage } from '@/lib/deleteIgame';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { TrashIcon, EyeIcon, ArrowLeftIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
 
 export default function AnimalsPage() {
@@ -165,7 +165,7 @@ export default function AnimalsPage() {
       });
 
       // Invalidate animals cache
-      await revalidateCache('animals');
+      await revalidateAnimalCache(currentId);
 
       setRefresh(!refresh);
     } catch (error) {
@@ -252,7 +252,7 @@ export default function AnimalsPage() {
       });
 
       // Invalidate animals cache
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animal.id);
     } catch (error) {
       logger({
         level: 'error',

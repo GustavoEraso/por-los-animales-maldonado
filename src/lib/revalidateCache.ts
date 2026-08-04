@@ -9,17 +9,18 @@
  *
  * @example
  * // Revalidate a single tag
- * await revalidateCache('animals');
+ * await revalidateCache('animals:list');
  *
  * @example
- * // Revalidate multiple tags
- * await revalidateCache(['animals', 'banners']);
+ * // Revalidate multiple tags in one request
+ * await revalidateCache(['animals:list', 'animals:active']);
  *
  * @example
  * // Revalidate a specific animal
- * await revalidateCache(`animal-${animalId}`);
+ * await revalidateCache(`animal:${animalId}`);
  */
 import { logger } from '@/lib/logger';
+import { getAnimalCacheTags } from '@/lib/cacheTags';
 
 export async function revalidateCache(tags: string | string[]): Promise<void> {
   const baseUrl =
@@ -30,27 +31,37 @@ export async function revalidateCache(tags: string | string[]): Promise<void> {
         : 'https://www.porlosanimalesmaldonado.org';
 
   const tagsArray = Array.isArray(tags) ? tags : [tags];
+  if (tagsArray.length === 0) return;
 
-  const results = await Promise.allSettled(
-    tagsArray.map(async (tag) => {
-      const res = await fetch(`${baseUrl}/api/revalidate?tag=${encodeURIComponent(tag)}`, {
-        headers: {
-          'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET || '',
-        },
-      });
+  try {
+    const encodedTags = tagsArray.map((tag) => encodeURIComponent(tag)).join(',');
+    const res = await fetch(`${baseUrl}/api/revalidate?tags=${encodedTags}`, {
+      headers: {
+        'x-internal-token': process.env.NEXT_PUBLIC_INTERNAL_API_SECRET || '',
+      },
+    });
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(`Failed to revalidate tag "${tag}": ${error.error}`);
-      }
-
-      return res.json();
-    })
-  );
-
-  // Log any failures but don't throw (cache revalidation is not critical)
-  const failures = results.filter((r) => r.status === 'rejected');
-  if (failures.length > 0) {
-    logger({ level: 'error', code: 'REVALIDATE_CACHE', message: 'Some cache revalidations failed:', data: failures });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(`Failed to revalidate tags "${tagsArray.join(', ')}": ${error.error}`);
+    }
+  } catch (error) {
+    // Log failures but do not block the completed data mutation.
+    logger({
+      level: 'error',
+      code: 'REVALIDATE_CACHE',
+      message: 'Cache revalidation failed:',
+      data: error,
+    });
   }
+}
+
+/**
+ * Invalidates the animal list caches and, when provided, one individual animal cache.
+ *
+ * @param animalId - Optional Firestore document ID
+ * @returns Promise that resolves after the invalidation request completes
+ */
+export async function revalidateAnimalCache(animalId?: string): Promise<void> {
+  await revalidateCache(getAnimalCacheTags(animalId));
 }

@@ -6,7 +6,7 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
 import { HeartIcon } from '@/components/Icons';
@@ -303,7 +303,7 @@ export default function AdoptionModal({
         }
       );
 
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animal.id);
 
       setAdoptionData({ ...DEFAULT_ADOPTION_DATA, newStatus: undefined });
     } catch (error) {
