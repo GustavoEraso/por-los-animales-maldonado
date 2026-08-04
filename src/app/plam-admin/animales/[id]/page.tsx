@@ -14,7 +14,7 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { EditIcon, TrashIcon, EyeIcon, CheckIcon } from '@/components/Icons';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
@@ -109,7 +109,7 @@ export default function AnimalPage(): React.ReactElement | null {
           },
         }
       );
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animal.id);
     } catch (error) {
       logger({
         level: 'error',
@@ -189,7 +189,7 @@ export default function AnimalPage(): React.ReactElement | null {
           },
         }
       );
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animal.id);
     } catch (error) {
       logger({
         level: 'error',
@@ -268,7 +268,7 @@ export default function AnimalPage(): React.ReactElement | null {
           },
         }
       );
-      await revalidateCache('animals');
+      await revalidateAnimalCache(id);
       router.push('/plam-admin/animales');
     } catch (error) {
       logger({
@@ -340,7 +340,7 @@ export default function AnimalPage(): React.ReactElement | null {
           },
         }
       );
-      await revalidateCache('animals');
+      await revalidateAnimalCache(id);
       router.push('/plam-admin/animales');
     } catch (error) {
       logger({
@@ -446,7 +446,7 @@ export default function AnimalPage(): React.ReactElement | null {
           },
         }
       );
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animalToDelete.id);
       router.push('/plam-admin/animales');
     } catch (error) {
       logger({

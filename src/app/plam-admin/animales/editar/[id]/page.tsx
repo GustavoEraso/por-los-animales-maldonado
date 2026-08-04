@@ -17,7 +17,7 @@ import ImagesSection from '../../components/ImagesSection';
 import CompatibilityFields from '../../components/CompatibilityFields';
 import BasicInfoFields from '../../components/BasicInfoFields';
 import generateId from '@/lib/generateId';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
 
 const initialAnimal: Animal = {
@@ -420,7 +420,7 @@ export default function EditAnimalForm() {
 
       // Invalidate animals cache if animal data was modified
       if (Object.keys(animalChanges).length > 0 || animal.litterId) {
-        await revalidateCache('animals');
+        await revalidateAnimalCache(animal.id);
       }
 
       router.replace('/plam-admin/animales');

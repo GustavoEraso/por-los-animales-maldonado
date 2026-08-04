@@ -6,7 +6,7 @@ import { Animal, AnimalTransactionType } from '@/types';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { auth } from '@/firebase';
 import Card from '@/components/Card';
 import ParentSelectorModal from '@/components/ParentSelectorModal';
@@ -244,7 +244,7 @@ export default function AnimalFamilySection({
         }
       }
 
-      await revalidateCache('animals');
+      await revalidateAnimalCache(animal.id);
     } catch {
       // Revert optimistic update
       setAnimal(previousAnimal);
@@ -316,7 +316,7 @@ export default function AnimalFamilySection({
         }
       );
 
-      await revalidateCache('animals');
+      await revalidateAnimalCache(siblingId);
     } catch {
       // Revert optimistic update
       setSiblings(previousSiblings);

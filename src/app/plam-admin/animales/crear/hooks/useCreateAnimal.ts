@@ -10,7 +10,7 @@ import { generateAnimalId, generateAnimalIds } from '@/lib/generateAnimalId';
 import { generateLitterId } from '@/lib/generateLitterId';
 import { auth } from '@/firebase';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
-import { revalidateCache } from '@/lib/revalidateCache';
+import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { createTimestamp } from '@/lib/dateUtils';
 import { logger } from '@/lib/logger';
@@ -480,7 +480,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       },
     });
 
-    await revalidateCache('animals');
+    await revalidateAnimalCache(id);
     resetForm();
     router.replace('/plam-admin/animales');
   };
@@ -635,7 +635,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       },
     });
 
-    await revalidateCache('animals');
+    await revalidateAnimalCache();
     resetForm();
     router.replace('/plam-admin/animales');
   };
