@@ -90,6 +90,7 @@ function ParentCard({
   return (
     <Link
       href={`/plam-admin/animales/${parentId}`}
+      prefetch={false}
       className="flex flex-col items-center gap-1 bg-cream-light rounded-lg p-3 shadow hover:shadow-md transition w-36"
     >
       <span className="text-xs font-semibold text-gray-600">{role}</span>

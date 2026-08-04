@@ -1060,6 +1060,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                           </div>
                           <Link
                             href={`/plam-admin/animales/${(entry as ConfirmedEntry).migratedTo}`}
+                            prefetch={false}
                             target="_blank"
                             className="p-1 rounded hover:bg-blue-100 transition-colors text-blue-500 hover:text-blue-700 shrink-0 flex items-center gap-0.5"
                             title="Ver ficha completa"
@@ -1200,6 +1201,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                                   <p className="font-semibold text-sm truncate">{animal.name}</p>
                                   <Link
                                     href={`/plam-admin/animales/${animal.id}`}
+                                    prefetch={false}
                                     target="_blank"
                                     className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-400 hover:text-green-dark shrink-0 flex items-center gap-0.5"
                                     title="Ver ficha completa"
@@ -1276,6 +1278,7 @@ export default function ConfirmarMatchesContent(): React.ReactElement {
                                 <p className="font-semibold text-sm truncate">{animal.name}</p>
                                 <Link
                                   href={`/plam-admin/animales/${animal.id}`}
+                                  prefetch={false}
                                   target="_blank"
                                   className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-400 hover:text-green-dark shrink-0 flex items-center gap-0.5"
                                   title="Ver ficha completa"

@@ -70,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 text-xl  hover:bg-cream-light hover:text-green-dark "
                 href={'/plam-admin/'}
+                prefetch={false}
               >
                 <span className="hidden md:block">MENU</span>
                 <HomeIcon size={32} className="w-8 h-8 mb-2" title="Inicio" />
@@ -80,6 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className="flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/animales'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Animales</span>
                       <PetsIcon size={32} className="w-8 h-8 mb-2" title="Animales" />
@@ -92,18 +94,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className="flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/seguimientos'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Seguimientos</span>
                       <FollowUpIcon size={32} className="w-8 h-8 mb-2" title="Seguimientos" />
                     </Link>
                   </li>
-                  {(
-                    (process.env.NEXT_PUBLIC_SEGUIMIENTO_ADMIN_EMAILS || '').split(',').filter(Boolean).includes(firebaseUser?.email || '')
-                  ) && (
+                  {(process.env.NEXT_PUBLIC_SEGUIMIENTO_ADMIN_EMAILS || '')
+                    .split(',')
+                    .filter(Boolean)
+                    .includes(firebaseUser?.email || '') && (
                     <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                       <Link
                         className="flex gap-1 items-center justify-between w-full px-2 py-1"
                         href={'/plam-admin/seguimientos/confirmar'}
+                        prefetch={false}
                       >
                         <span className="hidden md:block">Confirmar</span>
                         <CheckIcon size={32} className="w-8 h-8 mb-2" title="Confirmar Matches" />
@@ -117,6 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className="  flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/usuarios'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Usuarios</span>
                       <UserIcon size={32} className="w-8 h-8 mb-2" title="Usuarios" />
@@ -129,6 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/contactos'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Contactos</span>
                       <WhatsAppIcon size={28} className="w-8 h-8 mb-2" title="Contactos" />
@@ -141,6 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/formularios'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Formularios</span>
                       <FormIcon size={28} className="w-8 h-8 mb-2" title="Formularios" />
@@ -153,6 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/banners'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">banners</span>
                       <ImageIcon size={32} className="w-8 h-8 mb-2" title="banners" />
@@ -165,6 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className=" rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/sponsors'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Sponsors</span>
                       <SponsorIcon size={32} className="w-8 h-8 mb-2" title="Sponsors" />
@@ -177,6 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1"
                       href={'/plam-admin/logs'}
+                      prefetch={false}
                     >
                       <span className="hidden md:block">Auditoría</span>
                       <EyeIcon size={32} className="w-8 h-8 mb-2" title="Auditoría" />
