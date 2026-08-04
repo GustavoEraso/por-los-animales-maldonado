@@ -130,8 +130,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   since: number;
   cost?: number;
   img?: Img;
-  /** Image uploaded specifically for this event. */
-  eventImg?: Img;
+  /** Image(s) uploaded specifically for this event. Supports legacy single image for backward compatibility. */
+  eventImg?: Img | Img[];
   changes?: {
     before?: beforeAfterType;
     after?: beforeAfterType;

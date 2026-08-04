@@ -99,7 +99,7 @@ export default function EventModal({
   const [nextFollowUpDateStr, setNextFollowUpDateStr] = useState<string>('');
   const [quickDayValue, setQuickDayValue] = useState<string>('');
   const [closeCase, setCloseCase] = useState<boolean>(false);
-  const [eventImage, setEventImage] = useState<Img | null>(null);
+  const [eventImages, setEventImages] = useState<Img[]>([]);
 
   // --- Follow-up manager view state ---
   const [showManagerView, setShowManagerView] = useState<boolean>(false);
@@ -332,8 +332,8 @@ export default function EventModal({
         followUpStatus: 'closed' as const,
         nextFollowUpDate: 0,
       }),
-      ...(eventImage && {
-        eventImages: [...(privateInfo.eventImages || []), eventImage],
+      ...(eventImages.length > 0 && {
+        eventImages: [...(privateInfo.eventImages || []), ...eventImages],
       }),
     };
 
@@ -351,7 +351,7 @@ export default function EventModal({
       id: privateInfo.id,
       name: privateInfo.name || '',
       img: animal.images?.[0],
-      eventImg: eventImage || undefined,
+      eventImg: eventImages.length > 0 ? eventImages : undefined,
       transactionType: eventData.eventType,
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -465,7 +465,7 @@ export default function EventModal({
       setNextFollowUpDateStr('');
       setQuickDayValue('');
       setCloseCase(false);
-      setEventImage(null);
+      setEventImages([]);
       onEventSaved?.();
     } catch (error) {
       logger({
@@ -852,36 +852,59 @@ export default function EventModal({
                   {/* Event image upload */}
                   <div>
                     <label className="block text-green-dark font-semibold mb-2">
-                      Imagen (opcional)
+                      Imágenes (opcional, máx. 5)
                     </label>
-                    {eventImage ? (
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={eventImage.imgUrl}
-                          alt={eventImage.imgAlt}
-                          className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setEventImage(null)}
-                          className="text-red-600 hover:text-red-800 text-sm underline"
-                        >
-                          Quitar imagen
-                        </button>
+                    {eventImages.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {eventImages.map((img, idx) => (
+                          <div key={img.imgId || idx} className="relative">
+                            <img
+                              src={img.imgUrl}
+                              alt={img.imgAlt}
+                              className="w-20 h-20 object-cover rounded-lg border-2 border-green-dark"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEventImages((prev) => prev.filter((_, i) => i !== idx))
+                              }
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <UploadImages
-                        maxFiles={1}
-                        currentFolder="follow_up"
-                        onImagesAdd={(imgs) => {
-                          if (imgs[0]) {
-                            setEventImage({
-                              ...imgs[0],
-                              imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
+                    )}
+                    {eventImages.length < 5 && (
+                      <div className="flex flex-col gap-2">
+                        <UploadImages
+                          maxFiles={5 - eventImages.length}
+                          currentFolder="follow_up"
+                          onImagesAdd={(imgs) => {
+                            setEventImages((prev) => {
+                              const newImages = imgs.map((img) => ({
+                                ...img,
+                                imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
+                              }));
+                              return [...prev, ...newImages].slice(0, 5);
                             });
-                          }
-                        }}
-                      />
+                          }}
+                        />
+                        <UploadImages
+                          enableCropping
+                          currentFolder="follow_up"
+                          onImagesAdd={(imgs) => {
+                            setEventImages((prev) => {
+                              const newImages = imgs.map((img) => ({
+                                ...img,
+                                imgAlt: `Evento ${eventLabels[eventData.eventType]} - ${animal.name}`,
+                              }));
+                              return [...prev, ...newImages].slice(0, 5);
+                            });
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
 

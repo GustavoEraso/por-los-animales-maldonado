@@ -45,6 +45,13 @@ export default function TransactionCard({
   const cardRef = useRef<HTMLElement>(null);
   const [fullscreenImg, setFullscreenImg] = useState<Img | null>(null);
 
+  /** Normalize eventImg to Img[] for backward compatibility with legacy single-image transactions */
+  const normalizedEventImages: Img[] = transaction.eventImg
+    ? Array.isArray(transaction.eventImg)
+      ? transaction.eventImg
+      : [transaction.eventImg]
+    : [];
+
   useGSAP(
     () => {
       if (!cardRef.current) return;
@@ -99,28 +106,33 @@ export default function TransactionCard({
               />
             </section>
           )}
-          {transaction.eventImg && (
-            <button
-              type="button"
-              onClick={() => setFullscreenImg(transaction.eventImg!)}
-              className="flex flex-col w-24 h-24 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-              title="Ver imagen ampliada"
-            >
-              <Image
-                src={transaction.eventImg.imgUrl}
-                alt={transaction.eventImg.imgAlt || 'Imagen del evento'}
-                width={96}
-                height={96}
-                className="w-full aspect-square object-cover rounded-lg border border-gray-200"
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement;
-                  if (!img.dataset.fallback) {
-                    img.dataset.fallback = 'true';
-                    img.src = '/logo300.webp';
-                  }
-                }}
-              />
-            </button>
+          {normalizedEventImages.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {normalizedEventImages.map((img) => (
+                <button
+                  key={img.imgId}
+                  type="button"
+                  onClick={() => setFullscreenImg(img)}
+                  className="flex flex-col w-24 h-24 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Ver imagen ampliada"
+                >
+                  <Image
+                    src={img.imgUrl}
+                    alt={img.imgAlt || 'Imagen del evento'}
+                    width={96}
+                    height={96}
+                    className="w-full aspect-square object-cover rounded-lg border border-gray-200"
+                    onError={(e) => {
+                      const imgEl = e.currentTarget as HTMLImageElement;
+                      if (!imgEl.dataset.fallback) {
+                        imgEl.dataset.fallback = 'true';
+                        imgEl.src = '/logo300.webp';
+                      }
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           )}
           <ul className=" text-xl text-start font-semibold flex flex-col gap- p-2 bg-white ">
             <li className="font-semibold">
