@@ -1,10 +1,11 @@
 import Hero from '@/components/Hero';
 import CardContainer from '@/containers/CardContainer';
-import { fetchAnimals } from '@/lib/fetchAnimal';
 import SearchBox from '@/components/SearchBox';
 import Pagination from '@/components/Pagination';
 import { buildFiltersFromSearchParams } from '@/lib/searchParamsUtils';
-import { Animal, SponsorType } from '@/types';
+import { getAnimalsData } from '@/lib/data/animals';
+import { filterAndPaginateAnimals } from '@/lib/filterAndPaginateAnimals';
+import { SponsorType } from '@/types';
 import { Metadata } from 'next';
 import LogoCarousel from '@/components/LogoCarousel';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
@@ -56,15 +57,15 @@ export default function AdoptaPage({ searchParams }: AdoptaProps) {
 async function AdoptaContent({ searchParams }: AdoptaProps) {
   const params = await searchParams;
   const filters = buildFiltersFromSearchParams(params);
-  const [result, sponsors, carousels] = await Promise.all([
-    fetchAnimals(filters),
+  const [animalsData, sponsors, carousels] = await Promise.all([
+    getAnimalsData(),
     getSponsorsData(),
     getCarouselsForPlace('adopta'),
   ]);
 
-  // Handle both paginated and non-paginated responses
-  const animals: Animal[] = Array.isArray(result) ? result : result.data;
-  const pagination = Array.isArray(result) ? null : result.pagination;
+  const result = filterAndPaginateAnimals(animalsData, filters);
+  const animals = result.data;
+  const pagination = result.pagination;
 
   // Use first animal for cover image (deterministic, no Math.random during render)
   const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));

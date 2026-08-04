@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
-import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
+import { postTransactionData, postTransactionsData } from '@/lib/firebase/dashboardAnalytics';
 import { generateAnimalId, generateAnimalIds } from '@/lib/generateAnimalId';
 import { generateLitterId } from '@/lib/generateLitterId';
 import { auth } from '@/firebase';
@@ -539,6 +539,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
 
     // Build all Firebase operations for the litter
     const allPromises: Promise<unknown>[] = [];
+    const litterTransactions: AnimalTransactionType[] = [];
 
     for (let i = 0; i < litterMembers.length; i++) {
       const member = litterMembers[i];
@@ -610,10 +611,12 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
           data: newPrivateInfo,
           currentCollection: 'animalPrivateInfo',
           id,
-        }),
-        postTransactionData({ data: newTransaction })
+        })
       );
+      litterTransactions.push(newTransaction);
     }
+
+    allPromises.push(postTransactionsData({ data: litterTransactions }));
 
     await handlePromiseToast(Promise.all(allPromises), {
       messages: {

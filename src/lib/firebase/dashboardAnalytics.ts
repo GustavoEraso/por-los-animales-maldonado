@@ -83,65 +83,70 @@ async function writeSummary(data: DashboardAnalyticsData): Promise<void> {
 }
 
 /**
- * Updates the dashboard analytics summary with a new transaction.
- * Called automatically by postTransactionData after every transaction write.
+ * Applies a set of transactions to the dashboard analytics summary.
+ * Called automatically after transaction writes complete.
  *
  * - Prepends the lean transaction to recentTransactions (capped at 30)
  * - Updates monthly aggregates (counts, adopted IDs, user stats)
- * - Triggers cache revalidation for the dashboard
+ * - Triggers one cache revalidation for the dashboard
  *
- * @param tx - The full transaction that was just written
- * @param transactionId - The unique ID assigned to this transaction
+ * @param transactions - The full transactions that were just written
  */
-async function updateDashboardAnalytics(
-  tx: AnimalTransactionType,
-  transactionId: string
-): Promise<void> {
+async function updateDashboardAnalytics(transactions: AnimalTransactionType[]): Promise<void> {
+  if (transactions.length === 0) return;
+
   try {
     const summary = await readSummary();
 
-    // 1. Prepend lean transaction to recent list, trim to max
-    const lean = toLeanTransaction(tx, transactionId);
-    summary.recentTransactions = [lean, ...summary.recentTransactions].slice(
-      0,
-      MAX_RECENT_TRANSACTIONS
-    );
+    for (const transaction of transactions) {
+      const transactionId = transaction.transactionId ?? generateId();
+      const lean = toLeanTransaction(transaction, transactionId);
+      summary.recentTransactions = [lean, ...summary.recentTransactions].slice(
+        0,
+        MAX_RECENT_TRANSACTIONS
+      );
 
-    // 2. Update monthly aggregates
-    const monthKey = getMonthKey(tx.date);
-    const existing: MonthlyAggregate = summary.monthly[monthKey] ?? {
-      transactionCount: 0,
-      adoptionCount: 0,
-      adoptedAnimalIds: [],
-      animalIdsWithTx: [],
-      byUser: {},
-    };
+      const monthKey = getMonthKey(transaction.date);
+      const existing: MonthlyAggregate = summary.monthly[monthKey] ?? {
+        transactionCount: 0,
+        adoptionCount: 0,
+        adoptedAnimalIds: [],
+        animalIdsWithTx: [],
+        byUser: {},
+      };
 
-    existing.transactionCount += 1;
+      existing.transactionCount += 1;
 
-    if (tx.status === 'adoptado') {
-      existing.adoptionCount += 1;
-      if (!existing.adoptedAnimalIds.includes(tx.id)) {
-        existing.adoptedAnimalIds = [...existing.adoptedAnimalIds, tx.id];
+      if (transaction.status === 'adoptado') {
+        existing.adoptionCount += 1;
+        if (!existing.adoptedAnimalIds.includes(transaction.id)) {
+          existing.adoptedAnimalIds = [...existing.adoptedAnimalIds, transaction.id];
+        }
       }
+
+      if (!existing.animalIdsWithTx.includes(transaction.id)) {
+        existing.animalIdsWithTx = [...existing.animalIdsWithTx, transaction.id];
+      }
+
+      const userEmail = transaction.modifiedBy;
+      existing.byUser[userEmail] = (existing.byUser[userEmail] ?? 0) + 1;
+
+      summary.monthly[monthKey] = existing;
     }
 
-    if (!existing.animalIdsWithTx.includes(tx.id)) {
-      existing.animalIdsWithTx = [...existing.animalIdsWithTx, tx.id];
-    }
-
-    const userEmail = tx.modifiedBy;
-    existing.byUser[userEmail] = (existing.byUser[userEmail] ?? 0) + 1;
-
-    summary.monthly[monthKey] = existing;
     summary.updatedAt = Date.now();
 
-    // 3. Write summary and revalidate cache
+    // Write the summary and revalidate the cache once for the whole batch.
     await writeSummary(summary);
     await revalidateCache('dashboard-transactions');
   } catch (error) {
     // Analytics update failure should not block the main transaction
-    logger({ level: 'error', code: 'UPDATE_DASHBOARD_ANALYTICS', message: '[dashboardAnalytics] Error updating summary:', data: error });
+    logger({
+      level: 'error',
+      code: 'UPDATE_DASHBOARD_ANALYTICS',
+      message: '[dashboardAnalytics] Error updating summary:',
+      data: error,
+    });
   }
 }
 
@@ -186,9 +191,42 @@ export async function postTransactionData({
   });
 
   // Update analytics (fire-and-forget — errors logged but not thrown)
-  await updateDashboardAnalytics(txWithId, transactionId);
+  await updateDashboardAnalytics([txWithId]);
 
   return transactionId;
+}
+
+/**
+ * Writes multiple transaction documents and updates dashboard analytics once.
+ *
+ * @param params.data - The transaction data to write
+ * @returns The generated or existing transaction IDs
+ */
+export async function postTransactionsData({
+  data,
+}: {
+  data: AnimalTransactionType[];
+}): Promise<string[]> {
+  const transactionsWithIds = data.map((transaction) => {
+    const transactionId = transaction.transactionId ?? generateId();
+    return {
+      transaction: { ...transaction, transactionId },
+      transactionId,
+    };
+  });
+
+  await Promise.all(
+    transactionsWithIds.map(({ transaction }) =>
+      postFirestoreData<AnimalTransactionType>({
+        data: transaction,
+        currentCollection: 'animalTransactions',
+      })
+    )
+  );
+
+  await updateDashboardAnalytics(transactionsWithIds.map(({ transaction }) => transaction));
+
+  return transactionsWithIds.map(({ transactionId }) => transactionId);
 }
 
 /**
@@ -212,7 +250,12 @@ export async function getFullTransaction(
 
     return null;
   } catch (error) {
-    logger({ level: 'error', code: 'FETCH_FULL_TRANSACTION', message: '[dashboardAnalytics] Error fetching full transaction:', data: error });
+    logger({
+      level: 'error',
+      code: 'FETCH_FULL_TRANSACTION',
+      message: '[dashboardAnalytics] Error fetching full transaction:',
+      data: error,
+    });
     return null;
   }
 }
