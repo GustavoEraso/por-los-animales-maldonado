@@ -6,10 +6,12 @@ import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
+import { getBannersData } from '@/lib/data/banners';
 import { SponsorType } from '@/types';
 
 export default async function Home() {
-  const [sponsors, carousels] = await Promise.all([
+  const [banners, sponsors, carousels] = await Promise.all([
+    getBannersData(),
     getSponsorsData(),
     getCarouselsForPlace('home'),
   ]);
@@ -18,7 +20,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col items-center min-h-screen overflow-x-hidden">
-      <HeroCarrousel />
+      <HeroCarrousel items={banners} replaceDefault />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">
         <section className="flex flex-col items-center justify-center w-full bg-white px-6">
