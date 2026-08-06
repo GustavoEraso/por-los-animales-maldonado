@@ -1,5 +1,3 @@
-import { Analytics } from '@vercel/analytics/react';
-
 import { Roboto } from 'next/font/google';
 import './globals.css';
 
@@ -30,7 +28,6 @@ export default function RootLayout({
           <UnauthorizedAlert />
           <Header />
           {children}
-          <Analytics />
           <Footer />
           <ToastContainer position="bottom-right" theme="colored" />
         </AuthProvider>
