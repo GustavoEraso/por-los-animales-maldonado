@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Animal, AnimalTransactionType, PrivateInfoType } from '@/types';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
@@ -23,11 +22,10 @@ interface UseAnimalDetailReturn {
  * Custom hook that fetches and manages the state for an animal detail page.
  * Loads animal data, private info, and transactions from Firestore.
  *
+ * @param currentId - Resolved animal route parameter
  * @returns Object with animal data, private info, transactions, and loading state
  */
-export function useAnimalDetail(): UseAnimalDetailReturn {
-  const { id: currentId } = useParams<{ id: string }>();
-
+export function useAnimalDetail(currentId: string): UseAnimalDetailReturn {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [animal, setAnimal] = useState<Animal | null>(null);
   const [privateInfo, setPrivateInfo] = useState<PrivateInfoType | null>(null);
@@ -38,20 +36,10 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
       try {
         if (!currentId) return;
 
-        const directAnimalData = await getFirestoreDocById<Animal>({
+        const animalData = await getFirestoreDocById<Animal>({
           currentCollection: 'animals',
           id: currentId,
         });
-
-        const animalData =
-          directAnimalData ??
-          (
-            await getFirestoreData({
-              currentCollection: 'animals',
-              filter: [['id', '==', currentId]],
-              includeDeleted: true,
-            })
-          )[0];
 
         if (!animalData) {
           logger({
