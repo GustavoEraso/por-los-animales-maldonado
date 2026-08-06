@@ -57,7 +57,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
           logger({
             level: 'error',
             code: 'FETCH_ANIMAL',
-            message: 'Animal not found',
+            message: `Animal not found for id "${currentId}"`,
             data: { id: currentId },
           });
           throw new Error('Animal not found');
@@ -96,7 +96,7 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
         logger({
           level: 'error',
           code: 'FETCH_ANIMAL',
-          message: 'Error fetching animal data:',
+          message: `Error fetching animal data for id "${currentId}":`,
           data: { id: currentId, error },
         });
         handleToast({
