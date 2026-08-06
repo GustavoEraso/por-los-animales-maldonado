@@ -29,7 +29,6 @@ export default function Footer(): React.ReactElement {
               alt="Logo de Por los Animales Maldonado"
               width={256}
               height={256}
-              priority
               className="w-64 h-64 object-contain"
             />
           </Link>
