@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { ArrowLeftIcon } from '@/components/Icons';
@@ -60,6 +60,7 @@ const resolvedStatus = (entry: GoogleFormEntry): GoogleFormStatus => entry.statu
 // ---------------------------------------------------------------------------
 
 interface FormularioDetailContentProps {
+  formId: string;
   initialAnimals: Animal[];
   initialUsers: UserType[];
 }
@@ -72,16 +73,16 @@ interface FormularioDetailContentProps {
  * // Accessed via /plam-admin/formularios/[id]
  */
 export default function FormularioDetailContent({
+  formId,
   initialAnimals,
   initialUsers,
 }: FormularioDetailContentProps) {
-  const params = useParams();
   const router = useRouter();
   const { currentUser } = useAuth();
 
   const userIds = initialUsers.map((u) => u.id);
 
-  const id = typeof params.id === 'string' ? params.id : '';
+  const id = formId;
 
   const [loading, setLoading] = useState<boolean>(true);
   const [form, setForm] = useState<GoogleFormEntry | null>(null);
