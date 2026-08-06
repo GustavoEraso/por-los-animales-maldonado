@@ -26,8 +26,7 @@ interface UseAnimalDetailReturn {
  * @returns Object with animal data, private info, transactions, and loading state
  */
 export function useAnimalDetail(): UseAnimalDetailReturn {
-  const params = useParams();
-  const currentId = params.id as string;
+  const { id: currentId } = useParams<{ id: string }>();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [animal, setAnimal] = useState<Animal | null>(null);
@@ -39,12 +38,28 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
       try {
         if (!currentId) return;
 
-        const animalData = await getFirestoreDocById<Animal>({
+        const directAnimalData = await getFirestoreDocById<Animal>({
           currentCollection: 'animals',
           id: currentId,
         });
+
+        const animalData =
+          directAnimalData ??
+          (
+            await getFirestoreData({
+              currentCollection: 'animals',
+              filter: [['id', '==', currentId]],
+              includeDeleted: true,
+            })
+          )[0];
+
         if (!animalData) {
-          logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Animal not found' });
+          logger({
+            level: 'error',
+            code: 'FETCH_ANIMAL',
+            message: 'Animal not found',
+            data: { id: currentId },
+          });
           throw new Error('Animal not found');
         }
 
@@ -62,7 +77,11 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
           filter: [['id', '==', currentId]],
         });
         if (!currentTransactions) {
-          logger({ level: 'error', code: 'FETCH_TRANSACTIONS', message: 'Transaction info not found for this animal' });
+          logger({
+            level: 'error',
+            code: 'FETCH_TRANSACTIONS',
+            message: 'Transaction info not found for this animal',
+          });
           throw new Error('Transaction info not found for this animal');
         }
 
@@ -74,7 +93,12 @@ export function useAnimalDetail(): UseAnimalDetailReturn {
         setAnimal(animalData);
         setPrivateInfo(currentPrivateInfo);
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_ANIMAL', message: 'Error fetching animal data:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_ANIMAL',
+          message: 'Error fetching animal data:',
+          data: { id: currentId, error },
+        });
         handleToast({
           type: 'error',
           title: 'Error',
