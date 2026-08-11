@@ -355,7 +355,7 @@ export default function PlamAdminUsers() {
       <FloatButton
         buttonStyle="add"
         action={() => {
-          router.replace('/plam-admin/usuarios/crear');
+          router.push('/plam-admin/usuarios/crear');
         }}
       />
 
