@@ -176,7 +176,7 @@ export default function PlamAdminBanners() {
         <FloatButton
           buttonStyle="add"
           action={() => {
-            router.replace('/plam-admin/banners/crear');
+            router.push('/plam-admin/banners/crear');
           }}
         />
       </main>

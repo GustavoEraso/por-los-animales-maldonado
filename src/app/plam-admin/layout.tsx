@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <RoleGuard requiredRole="rescatista">
                   <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
-                      className="flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/animales'}
                       prefetch={false}
                     >
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <RoleGuard requiredRole="rescatista">
                   <li className=" rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
-                      className="flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/seguimientos'}
                       prefetch={false}
                     >
@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     .includes(firebaseUser?.email || '') && (
                     <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                       <Link
-                        className="flex gap-1 items-center justify-between w-full px-2 py-1"
+                        className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1"
                         href={'/plam-admin/seguimientos/confirmar'}
                         prefetch={false}
                       >
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <RoleGuard requiredRole="admin">
                   <li className="rounded-2xl flex hover:bg-cream-light hover:text-green-dark">
                     <Link
-                      className="  flex gap-1 items-center justify-between w-full px-2 py-1 "
+                      className="rounded-2xl flex gap-1 items-center justify-between w-full px-2 py-1 "
                       href={'/plam-admin/usuarios'}
                       prefetch={false}
                     >

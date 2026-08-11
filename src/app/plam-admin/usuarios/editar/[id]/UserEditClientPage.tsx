@@ -12,6 +12,7 @@ import Loader from '@/components/Loader';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { logger } from '@/lib/logger';
+import ReturnButton from '@/components/ReturnButton';
 
 /**
  * Page to edit an existing authorized user.
@@ -259,7 +260,7 @@ export default function UserEditClientPage({
   if (loading) {
     return (
       <ProtectedRoute requiredRole="admin">
-        <div className="w-full max-w-4xl mx-auto p-6">
+        <div className="mx-auto w-full min-w-0 max-w-3xl px-3 py-5 sm:px-6 sm:py-8">
           <Loader />
         </div>
       </ProtectedRoute>
@@ -268,14 +269,17 @@ export default function UserEditClientPage({
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="w-full max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-3xl font-bold text-green-forest mb-6">Editar Usuario</h1>
+      <div className="mx-auto w-full min-w-0 max-w-3xl px-3 py-5 pb-24 sm:px-6 sm:py-8">
+        <ReturnButton />
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-md sm:p-6 md:p-8">
+          <h1 className="mb-6 text-2xl font-bold leading-tight text-green-forest sm:text-3xl">
+            Editar Usuario
+          </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             {/* Email (read-only) */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
@@ -284,14 +288,14 @@ export default function UserEditClientPage({
                 name="email"
                 value={formData.id}
                 disabled
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                className="min-h-11 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2.5 text-base cursor-not-allowed sm:px-4"
               />
-              <p className="mt-1 text-sm text-gray-500">El email no se puede modificar</p>
+              <p className="mt-2 text-sm leading-5 text-gray-500">El email no se puede modificar</p>
             </div>
 
             {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
                 Nombre Completo *
               </label>
               <input
@@ -302,14 +306,14 @@ export default function UserEditClientPage({
                 onChange={handleInputChange}
                 required
                 disabled={saving}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-forest focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base focus:border-transparent focus:ring-2 focus:ring-green-forest disabled:cursor-not-allowed disabled:bg-gray-100 sm:px-4"
                 placeholder="Juan Pérez"
               />
             </div>
 
             {/* Role */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="role" className="mb-2 block text-sm font-medium text-gray-700">
                 Rol *
               </label>
               <select
@@ -319,7 +323,7 @@ export default function UserEditClientPage({
                 onChange={handleInputChange}
                 required
                 disabled={saving}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-forest focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base focus:border-transparent focus:ring-2 focus:ring-green-forest disabled:cursor-not-allowed disabled:bg-gray-100 sm:px-4"
               >
                 {availableRoles.map((role) => (
                   <option key={role} value={role}>
@@ -327,25 +331,28 @@ export default function UserEditClientPage({
                   </option>
                 ))}
               </select>
-              <div className="mt-2 text-sm text-gray-600 space-y-1">
-                <p>
-                  <strong>Rescatista:</strong> Puede gestionar animales y adopciones
+              <div className="mt-3 grid gap-2 text-sm leading-5 text-gray-600 sm:grid-cols-3">
+                <p className="rounded-lg bg-gray-50 p-3">
+                  <strong className="mb-1 block text-gray-800">Rescatista</strong>
+                  Puede gestionar animales y adopciones
                 </p>
-                <p>
-                  <strong>Admin:</strong> Puede gestionar rescatistas y todo el contenido
+                <p className="rounded-lg bg-gray-50 p-3">
+                  <strong className="mb-1 block text-gray-800">Admin</strong>
+                  Puede gestionar rescatistas y todo el contenido
                 </p>
-                <p>
-                  <strong>Superadmin:</strong> Acceso completo al sistema
+                <p className="rounded-lg bg-gray-50 p-3">
+                  <strong className="mb-1 block text-gray-800">Superadmin</strong>
+                  Acceso completo al sistema
                 </p>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-4">
               <button
                 type="submit"
                 disabled={saving || !hasChanges()}
-                className="flex-1 bg-green-forest text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-dark transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="min-h-11 w-full rounded-lg bg-green-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-green-dark disabled:cursor-not-allowed disabled:bg-gray-400 sm:flex-1"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
               </button>
@@ -353,7 +360,7 @@ export default function UserEditClientPage({
                 type="button"
                 onClick={handleCancel}
                 disabled={saving}
-                className="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-colors disabled:cursor-not-allowed"
+                className="min-h-11 w-full rounded-lg bg-gray-200 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed sm:flex-1"
               >
                 Cancelar
               </button>
@@ -361,9 +368,17 @@ export default function UserEditClientPage({
           </form>
 
           {/* Information Box */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Información Importante</h3>
-            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 sm:p-5">
+            <h3 className="mb-2 flex items-start gap-2 font-semibold text-blue-900">
+              <span
+                aria-hidden="true"
+                className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-200 text-xs font-bold"
+              >
+                i
+              </span>
+              <span>Información Importante</span>
+            </h3>
+            <ul className="list-disc space-y-1 pl-5 text-sm leading-5 text-blue-800">
               <li>El email no se puede modificar</li>
               <li>Los cambios en el rol afectarán los permisos del usuario</li>
               <li>Los cambios tardan 10 minutos en reflejarse en el sistema</li>

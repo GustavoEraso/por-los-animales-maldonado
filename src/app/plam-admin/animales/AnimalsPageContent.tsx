@@ -477,7 +477,7 @@ export default function AnimalsPageContent({ initialAnimals }: AnimalsPageConten
         <FloatButton
           buttonStyle="add"
           action={() => {
-            router.replace('/plam-admin/animales/crear');
+            router.push('/plam-admin/animales/crear');
           }}
         />
       </section>
