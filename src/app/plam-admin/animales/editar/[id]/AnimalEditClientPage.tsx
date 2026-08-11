@@ -222,11 +222,12 @@ export default function AnimalEditClientPage({
   useEffect(() => {
     setPrivateInfo((prev) => ({
       ...prev,
+      name: animal.name,
       species: animal.species,
       mainImageUrl: images?.[0]?.imgUrl ?? prev.mainImageUrl ?? '',
       isSterilized: animal.isSterilized ?? 'no',
     }));
-  }, [animal.species, animal.isSterilized, images]);
+  }, [animal.name, animal.species, animal.isSterilized, images]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
