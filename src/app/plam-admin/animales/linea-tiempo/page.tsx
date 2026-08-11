@@ -41,11 +41,22 @@ export default function LineaTiempoPage() {
   const [dateFilter, setDateFilter] = useState<{ startDate: number; endDate: number }>(
     INITIAL_DATE_FILTER
   );
+  const [pendingDateFilter, setPendingDateFilter] = useState<{
+    startDate: number;
+    endDate: number;
+  }>(INITIAL_DATE_FILTER);
 
   const [searchControler, setSearchControler] = useState<boolean>(false);
   const MIN_LOADING_TIME = 600;
 
   const cardsRef = useRef<HTMLDivElement>(null);
+  const vaccinationCount = transactions.filter((t) => t.transactionType === 'vaccination').length;
+  const sterilizationCount = transactions.filter(
+    (t) => t.transactionType === 'sterilization'
+  ).length;
+  const veterinaryCareCount = transactions.filter(
+    (t) => t.transactionType === 'medical' || t.transactionType === 'emergency'
+  ).length;
 
   useEffect(() => {
     const loadData = async () => {
@@ -138,10 +149,10 @@ export default function LineaTiempoPage() {
             <input
               className="bg-white px-2 rounded outline focus:outline-3 focus:outline-amber-sunset"
               type="date"
-              value={formatToLocalDateString(dateFilter.startDate)}
+              value={formatToLocalDateString(pendingDateFilter.startDate)}
               onChange={(e) => {
                 if (!e.target.value) {
-                  setDateFilter((prev) => ({
+                  setPendingDateFilter((prev) => ({
                     ...prev,
                     startDate: new Date().getTime() - 1 * 24 * 60 * 60 * 1000,
                   }));
@@ -151,7 +162,7 @@ export default function LineaTiempoPage() {
                 const [year, month, day] = e.target.value.split('-').map(Number);
                 const uruguayDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 
-                setDateFilter((prev) => ({
+                setPendingDateFilter((prev) => ({
                   ...prev,
                   startDate: uruguayDate.getTime(),
                 }));
@@ -160,10 +171,10 @@ export default function LineaTiempoPage() {
             <input
               className="bg-white px-2 rounded outline focus:outline-3 focus:outline-amber-sunset"
               type="date"
-              value={formatToLocalDateString(dateFilter.endDate)}
+              value={formatToLocalDateString(pendingDateFilter.endDate)}
               onChange={(e) => {
                 if (!e.target.value) {
-                  setDateFilter((prev) => ({
+                  setPendingDateFilter((prev) => ({
                     ...prev,
                     endDate: new Date().getTime(),
                   }));
@@ -173,7 +184,7 @@ export default function LineaTiempoPage() {
                 const [year, month, day] = e.target.value.split('-').map(Number);
                 const uruguayDate = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-                setDateFilter((prev) => ({
+                setPendingDateFilter((prev) => ({
                   ...prev,
                   endDate: uruguayDate.getTime(),
                 }));
@@ -181,7 +192,10 @@ export default function LineaTiempoPage() {
             />
             <button
               className="rounded px-4 p-2 bg-black text-white"
-              onClick={() => setSearchControler(!searchControler)}
+              onClick={() => {
+                setDateFilter(pendingDateFilter);
+                setSearchControler((prev) => !prev);
+              }}
             >
               Buscar
             </button>
@@ -226,6 +240,21 @@ export default function LineaTiempoPage() {
               }
             </p>
             <p className="text-sm text-green-dark mt-1">Con familia nueva</p>
+          </div>
+          <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-2">Vacunaciones</h3>
+            <p className="text-7xl text-white">{vaccinationCount}</p>
+            <p className="text-sm text-cream-light mt-1">Eventos registrados</p>
+          </div>
+          <div className="bg-caramel-deep rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-2">Castraciones</h3>
+            <p className="text-7xl text-white">{sterilizationCount}</p>
+            <p className="text-sm text-cream-light mt-1">Procedimientos registrados</p>
+          </div>
+          <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-black mb-2">Atenciones veterinarias</h3>
+            <p className="text-7xl text-black">{veterinaryCareCount}</p>
+            <p className="text-sm text-green-dark mt-1">Eventos médicos y emergencias</p>
           </div>
           <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg sm:col-span-2">
             <h3 className="text-lg text-white mb-2">Deuda Generada</h3>
