@@ -117,10 +117,17 @@ export default function LitterMembersSection({
               ))}
             </div>
             {member.images.length < 5 && (
-              <UploadImages
-                onImagesAdd={(newImages) => onMemberImagesAdd(index, newImages)}
-                maxFiles={5 - member.images.length}
-              />
+              <>
+                <UploadImages
+                  onImagesAdd={(newImages) => onMemberImagesAdd(index, newImages)}
+                  maxFiles={5 - member.images.length}
+                />
+                <UploadImages
+                  enableCropping
+                  onImagesAdd={(newImages) => onMemberImagesAdd(index, newImages)}
+                  maxFiles={5 - member.images.length}
+                />
+              </>
             )}
           </div>
         </div>
