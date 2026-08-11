@@ -502,8 +502,9 @@ export default function AnimalClientPage({
   const isCaseClosed = status === 'adoptado' || status === 'fallecido';
   const isAdopted = status === 'adoptado';
 
-  const heroTitle = privateInfo.newName ?? name;
-  const heroSubtitle = privateInfo.newName ? name : undefined;
+  const adopterName = privateInfo.newName?.trim() || '';
+  const heroTitle = adopterName || name;
+  const heroSubtitle = adopterName ? name : undefined;
 
   const bannerImg = animal.bannerImage
     ? img.find((i) => i.imgId === animal.bannerImage) || img[0]
@@ -533,7 +534,7 @@ export default function AnimalClientPage({
         <AnimalInfoSection
           animal={animal}
           images={img}
-          newName={privateInfo.newName}
+          newName={adopterName || undefined}
           eventImages={privateInfo.eventImages}
         />
 
