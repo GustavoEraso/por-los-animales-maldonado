@@ -15,7 +15,6 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import RoleGuard from '@/components/RoleGuard';
 import { logger } from '@/lib/logger';
-import ReturnButton from '@/components/ReturnButton';
 
 const ROLE_BADGE_CLASSES: Record<UserRole, string> = {
   superadmin: 'bg-purple-100 text-purple-800',
@@ -146,7 +145,6 @@ export default function PlamAdminUsers() {
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
       <main className="flex min-h-screen w-full min-w-0 flex-col gap-5 overflow-x-hidden px-3 py-5 pb-24 sm:gap-6 sm:px-6 sm:py-8 lg:px-10">
-        <ReturnButton />
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="mb-1 text-sm font-semibold uppercase tracking-[0.16em] text-green-forest">

@@ -13,6 +13,7 @@ import { deleteFirestoreData } from '@/lib/firebase/deleteFirestoreData';
 import { handlePromiseToast } from '@/lib/handleToast';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import { EditIcon, TrashIcon, EyeIcon, CheckIcon } from '@/components/Icons';
 import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createTimestamp } from '@/lib/dateUtils';
@@ -523,6 +524,7 @@ export default function AnimalClientPage({
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <div className="flex flex-col items-center pb-6 gap-8 w-full min-h-screen bg-white">
+        <ReturnButton />
         <Hero
           imgURL={bannerImg.imgUrl}
           title={heroTitle}

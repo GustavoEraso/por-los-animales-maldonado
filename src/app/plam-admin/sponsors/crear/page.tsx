@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
@@ -129,6 +130,7 @@ export default function CreateSponsorForm() {
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
       <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <ReturnButton />
         <h1 className="text-4xl font-bold">Nuevo Sponsor</h1>
         <p>Agregá un nuevo sponsor al carrusel de la página principal.</p>
         <form

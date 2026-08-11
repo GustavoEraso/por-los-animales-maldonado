@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { ArrowLeftIcon } from '@/components/Icons';
+import ReturnButton from '@/components/ReturnButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -77,7 +76,6 @@ export default function FormularioDetailContent({
   initialAnimals,
   initialUsers,
 }: FormularioDetailContentProps) {
-  const router = useRouter();
   const { currentUser } = useAuth();
 
   const userIds = initialUsers.map((u) => u.id);
@@ -243,12 +241,7 @@ export default function FormularioDetailContent({
       <ProtectedRoute requiredRole="rescatista">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <p className="text-gray-500">Formulario no encontrado.</p>
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm text-green-forest hover:underline"
-          >
-            <ArrowLeftIcon size={16} title="Volver" /> Volver
-          </button>
+          <ReturnButton />
         </div>
       </ProtectedRoute>
     );
@@ -265,12 +258,7 @@ export default function FormularioDetailContent({
       <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-6">
         {/* Back button + header */}
         <div className="flex items-start gap-3">
-          <button
-            onClick={() => router.back()}
-            className="mt-1 text-gray-400 hover:text-green-forest transition-colors shrink-0"
-          >
-            <ArrowLeftIcon size={22} title="Volver" />
-          </button>
+          <ReturnButton />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-2xl font-bold text-gray-900 leading-tight">

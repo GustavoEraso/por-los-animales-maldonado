@@ -9,6 +9,7 @@ import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import Image from 'next/image';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
@@ -133,6 +134,7 @@ export default function CreateCarouselPage() {
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
       <main className="flex flex-col gap-6 p-4 md:px-16 pb-24 max-w-3xl mx-auto">
+        <ReturnButton />
         <h1 className="text-3xl font-bold">Nuevo Carrusel</h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -317,13 +319,6 @@ export default function CreateCarouselPage() {
               className="flex-1 py-3 bg-green-forest text-white rounded-lg hover:bg-green-dark transition-colors font-semibold"
             >
               Guardar carrusel
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
-            >
-              Cancelar
             </button>
           </div>
         </form>

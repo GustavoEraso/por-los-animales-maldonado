@@ -12,6 +12,7 @@ import { auth } from '@/firebase';
 import { PlusIcon } from '@/components/Icons';
 import Image from 'next/image';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
 
@@ -138,6 +139,7 @@ export default function CreateAnimalForm() {
   return (
     <ProtectedRoute requiredRole="admin" redirectPath="/plam-admin">
       <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <ReturnButton />
         <h1 className="text-4xl font-bold">Nuevo Banner</h1>
         <p>sube un nuevo banner.</p>
         <section className="w-full  "></section>

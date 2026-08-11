@@ -18,7 +18,7 @@ export default function ReturnButton(): React.ReactElement {
     <button
       type="button"
       onClick={() => router.back()}
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 py-2 text-sm text-green-forest transition-colors hover:bg-green-forest/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-forest focus-visible:ring-offset-2"
+      className="inline-flex min-h-11 self-start items-center gap-2 rounded-lg px-1 py-2 text-sm text-green-forest transition-colors hover:bg-green-forest/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-forest focus-visible:ring-offset-2"
     >
       <ArrowLeftIcon size={16} title="Volver" />
       Volver

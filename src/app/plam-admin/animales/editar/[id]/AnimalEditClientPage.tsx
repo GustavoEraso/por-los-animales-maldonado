@@ -12,6 +12,7 @@ import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getChangedFieldsWithValues } from '@/lib/getChangedFields';
 import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import ParentSelectionSection from '@/components/ParentSelectionSection';
 import ImagesSection from '../../components/ImagesSection';
 import CompatibilityFields from '../../components/CompatibilityFields';
@@ -477,6 +478,7 @@ export default function AnimalEditClientPage({
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <ReturnButton />
         <h1 className="text-4xl font-bold">Editar Animal</h1>
         <p>actualiza los datos del animal.</p>
         <form

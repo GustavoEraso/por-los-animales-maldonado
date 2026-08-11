@@ -3,6 +3,7 @@
 import Loader from '@/components/Loader';
 import { PlusIcon } from '@/components/Icons';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ReturnButton from '@/components/ReturnButton';
 import { useCreateAnimal } from './hooks/useCreateAnimal';
 import BasicInfoFields from '../components/BasicInfoFields';
 import CompatibilityFields from '../components/CompatibilityFields';
@@ -71,6 +72,7 @@ function CreateAnimalFormContent(): React.ReactElement {
   return (
     <ProtectedRoute requiredRole="rescatista" redirectPath="/plam-admin">
       <section className="flex flex-col gap-6 justify-center items-center p-8 lg:px-32 w-full">
+        <ReturnButton />
         <h1 className="text-4xl font-bold">
           {isAddingSibling ? 'Agregar hermano a camada' : 'Crear Animal'}
         </h1>
