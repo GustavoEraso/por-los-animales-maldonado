@@ -39,11 +39,13 @@ export default function CreateUserPage() {
   /**
    * Handle form input changes
    */
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target;
+    const normalizedValue = name === 'email' ? value.toLowerCase() : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: normalizedValue,
     }));
   };
 
@@ -66,7 +68,12 @@ export default function CreateUserPage() {
       });
       return existingUser !== null;
     } catch (error) {
-      logger({ level: 'error', code: 'CHECK_EMAIL_EXISTENCE_ERROR', message: 'Error checking email existence:', data: error });
+      logger({
+        level: 'error',
+        code: 'CHECK_EMAIL_EXISTENCE_ERROR',
+        message: 'Error checking email existence:',
+        data: error,
+      });
       // If document doesn't exist, getFirestoreDocById throws error
       return false;
     }
@@ -75,7 +82,7 @@ export default function CreateUserPage() {
   /**
    * Handle form submission
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (!currentUser) {
@@ -87,8 +94,10 @@ export default function CreateUserPage() {
       return;
     }
 
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
     // Validation
-    if (!formData.email || !formData.name) {
+    if (!normalizedEmail || !formData.name) {
       handleToast({
         type: 'error',
         title: 'Campos requeridos',
@@ -97,7 +106,7 @@ export default function CreateUserPage() {
       return;
     }
 
-    if (!isValidEmail(formData.email)) {
+    if (!isValidEmail(normalizedEmail)) {
       handleToast({
         type: 'error',
         title: 'Email inválido',
@@ -110,7 +119,7 @@ export default function CreateUserPage() {
 
     try {
       // Check if email already exists
-      const emailExists = await checkEmailExists(formData.email);
+      const emailExists = await checkEmailExists(normalizedEmail);
 
       if (emailExists) {
         handleToast({
@@ -126,7 +135,7 @@ export default function CreateUserPage() {
       await createAuditLog({
         type: 'user',
         action: 'create',
-        entityId: formData.email,
+        entityId: normalizedEmail,
         entityName: formData.name,
         modifiedBy: currentUser.id,
         modifiedByName: currentUser.name,
@@ -140,9 +149,12 @@ export default function CreateUserPage() {
 
       await handlePromiseToast(
         postFirestoreData({
-          data: formData,
+          data: {
+            ...formData,
+            email: normalizedEmail,
+          },
           currentCollection: 'authorizedEmails',
-          id: formData.email, // Use email as document ID
+          id: normalizedEmail, // Use normalized email as document ID
         }),
         {
           messages: {
@@ -171,7 +183,12 @@ export default function CreateUserPage() {
 
       router.push('/plam-admin/usuarios');
     } catch (error) {
-      logger({ level: 'error', code: 'CREATE_USER_ERROR', message: 'Error creating user:', data: error });
+      logger({
+        level: 'error',
+        code: 'CREATE_USER_ERROR',
+        message: 'Error creating user:',
+        data: error,
+      });
     } finally {
       setLoading(false);
     }
