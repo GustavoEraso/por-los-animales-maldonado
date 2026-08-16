@@ -187,6 +187,7 @@ export default function FormulariosPageContent({
           }>({
             currentCollection: 'googleFormComments',
             id: form.id,
+            logNotFound: false,
           });
           if (commentDoc?.unreadBy?.includes(currentUser.id)) {
             unreadIds.add(form.id);

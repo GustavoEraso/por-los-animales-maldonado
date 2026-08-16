@@ -6,6 +6,8 @@ import { CollectionsType } from '@/types';
 interface Props {
   currentCollection: CollectionsType['currentColection'];
   id: string;
+  /** When false, skips the DOC_NOT_FOUND log for missing documents (e.g. optional lookups). Defaults to true. */
+  logNotFound?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ interface Props {
 export const getFirestoreDocById = async <T>({
   currentCollection,
   id,
+  logNotFound = true,
 }: Props): Promise<T | null> => {
   try {
     const docRef = doc(db, currentCollection, id);
@@ -44,11 +47,18 @@ export const getFirestoreDocById = async <T>({
     if (docSnap.exists()) {
       return docSnap.data() as T;
     } else {
-      logger({ level: 'info', code: 'DOC_NOT_FOUND', message: 'No such document!' });
+      if (logNotFound) {
+        logger({ level: 'info', code: 'DOC_NOT_FOUND', message: 'No such document!' });
+      }
       return null;
     }
   } catch (error) {
-    logger({ level: 'error', code: 'GET_DOCUMENT', message: 'Error getting document:', data: error });
+    logger({
+      level: 'error',
+      code: 'GET_DOCUMENT',
+      message: 'Error getting document:',
+      data: error,
+    });
     throw error;
   }
 };
