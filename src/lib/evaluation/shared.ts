@@ -13,7 +13,7 @@ const googleAi = new GoogleGenAI({
   apiKey: process.env['GEMINI_FORMS_API_KEY'],
 });
 
-const googleModels = ['gemini-3.1-flash-lite', 'gemma-4-31b', 'gemma-4-26b'];
+const googleModels = ['gemini-3.1-flash-lite', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it'];
 
 // ---------------------------------------------------------------------------
 // System prompts
