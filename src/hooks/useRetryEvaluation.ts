@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { logger } from '@/lib/logger';
 import { retryEvaluation } from '@/lib/evaluation/actions';
 import type { GoogleFormEvaluation } from '@/types';
 
@@ -21,7 +22,7 @@ interface UseRetryEvaluationReturn {
 /**
  * Custom hook that encapsulates the form evaluation retry flow.
  *
- * Handles audit logging (before the operation, per project convention),
+ * Handles audit logging (before and after the operation, per project convention),
  * calls the Server Action, and manages loading state + toast feedback.
  * Reusable across both the desktop DetailPanel and the mobile detail page.
  *
@@ -58,24 +59,77 @@ export function useRetryEvaluation(): UseRetryEvaluationReturn {
           },
         });
 
-        const result = await handlePromiseToast(retryEvaluation(formId, rawFormData), {
-          messages: {
-            pending: {
-              title: 'Reevaluando...',
-              text: 'sof-IA está analizando el formulario.',
+        // Reject when the evaluation is null so the toast shows an error instead of a false success
+        const result = await handlePromiseToast(
+          retryEvaluation(formId, rawFormData).then((evaluation) => {
+            if (!evaluation) {
+              throw new Error('All AI providers failed to evaluate the form');
+            }
+            return evaluation;
+          }),
+          {
+            messages: {
+              pending: {
+                title: 'Reevaluando...',
+                text: 'sof-IA está analizando el formulario.',
+              },
+              success: {
+                title: '¡Evaluación completada!',
+                text: 'La evaluación ya está disponible.',
+              },
+              error: {
+                title: 'Error',
+                text: 'No se pudo completar la evaluación. Intentá de nuevo.',
+              },
             },
-            success: {
-              title: '¡Evaluación completada!',
-              text: 'La evaluación ya está disponible.',
-            },
-            error: {
-              title: 'Error',
-              text: 'No se pudo completar la evaluación. Intentá de nuevo.',
+          }
+        );
+
+        // Audit log AFTER the operation with the real outcome
+        await createAuditLog({
+          type: 'form',
+          action: 'update',
+          entityId: formId,
+          entityName: formName ?? formId,
+          modifiedBy: currentUser.id,
+          modifiedByName: currentUser.name,
+          changes: {
+            before: { evaluation: null },
+            after: {
+              evaluation: {
+                score: result.score,
+                recommendation: result.recommendation,
+              },
             },
           },
+          metadata: { retryOutcome: 'success' },
         });
 
-        return result ?? null;
+        return result;
+      } catch (err) {
+        logger({
+          level: 'error',
+          code: 'RETRY_EVALUATION_FAILED',
+          message: `Evaluation retry failed for form ${formId}`,
+          data: err,
+        });
+
+        // Audit log the failed attempt with the real outcome
+        await createAuditLog({
+          type: 'form',
+          action: 'update',
+          entityId: formId,
+          entityName: formName ?? formId,
+          modifiedBy: currentUser.id,
+          modifiedByName: currentUser.name,
+          changes: {
+            before: { evaluation: null },
+            after: { evaluation: null },
+          },
+          metadata: { retryOutcome: 'failed' },
+        });
+
+        return null;
       } finally {
         setIsRetrying(false);
       }
