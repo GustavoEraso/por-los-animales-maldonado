@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap/dist/gsap';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
@@ -17,6 +17,8 @@ import FormChat from '@/components/FormChat';
 import EvaluationMissingCard from '@/components/EvaluationMissingCard';
 import { downloadFormPdf } from '@/lib/generateFormPdf';
 import { FIELD_LABELS } from '@/lib/constants/formLabels';
+import FormFiltersBar from './FormFiltersBar';
+import { applyFormFilters, EMPTY_FILTERS, type FormFilters } from './formFilters';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,7 +74,7 @@ const defaultDateTo = (): string => {
   return toDateInputValue(new Date());
 };
 
-type FilterTab = GoogleFormStatus | 'all';
+type FilterTab = GoogleFormStatus | 'all' | 'custom';
 
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -101,19 +103,35 @@ export default function FormulariosPageContent({
 }: FormulariosPageContentProps) {
   const { currentUser } = useAuth();
 
-  const userIds = initialUsers.map((u) => u.id);
+  const userIds = useMemo(() => initialUsers.map((u) => u.id), [initialUsers]);
 
   const cardsRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [forms, setForms] = useState<GoogleFormEntry[]>([]);
   const [selected, setSelected] = useState<GoogleFormEntry | null>(null);
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
   const [refresh, setRefresh] = useState<boolean>(false);
   const [dateFrom, setDateFrom] = useState(defaultDateFrom());
   const [dateTo, setDateTo] = useState(defaultDateTo());
   const [unreadFormIds, setUnreadFormIds] = useState<Set<string>>(new Set());
+  const [filters, setFilters] = useState<FormFilters>(EMPTY_FILTERS);
+
+  const deferredSearch = useDeferredValue(filters.search);
+
+  const activeTab: FilterTab =
+    filters.statuses.length === 0
+      ? 'all'
+      : filters.statuses.length === 1
+        ? filters.statuses[0]
+        : 'custom';
+
+  const handleTabClick = (tab: FilterTab): void => {
+    setFilters((prev) => ({
+      ...prev,
+      statuses: tab === 'all' ? [] : tab === 'custom' ? prev.statuses : [tab],
+    }));
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -217,83 +235,100 @@ export default function FormulariosPageContent({
   // ---------------------------------------------------------------------------
   // Filtered list
   // ---------------------------------------------------------------------------
-  const filteredForms =
-    activeTab === 'all' ? forms : forms.filter((f) => resolvedStatus(f) === activeTab);
+  const filteredForms = useMemo(
+    () => applyFormFilters(forms, { ...filters, search: deferredSearch }),
+    [forms, filters, deferredSearch]
+  );
+
+  const handleResetFilters = useCallback((): void => {
+    setFilters(EMPTY_FILTERS);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Status change
   // ---------------------------------------------------------------------------
-  const handleStatusChange = async (
-    newStatus: GoogleFormStatus,
-    approvedAnimal?: { id: string; name: string }
-  ) => {
-    if (!selected || !currentUser) return;
+  const handleStatusChange = useCallback(
+    async (
+      newStatus: GoogleFormStatus,
+      approvedAnimal?: { id: string; name: string }
+    ): Promise<void> => {
+      if (!selected || !currentUser) return;
 
-    const previous = resolvedStatus(selected);
-    if (previous === newStatus && !approvedAnimal && !selected.approvedAnimalId) return;
+      const previous = resolvedStatus(selected);
+      if (previous === newStatus && !approvedAnimal && !selected.approvedAnimalId) return;
 
-    setUpdatingStatus(true);
+      setUpdatingStatus(true);
 
-    const updateData: Partial<GoogleFormEntry> = { status: newStatus };
-    const changesAfter: Record<string, unknown> = { status: newStatus };
+      const updateData: Partial<GoogleFormEntry> = { status: newStatus };
+      const changesAfter: Record<string, unknown> = { status: newStatus };
 
-    if (newStatus === 'approved') {
-      if (approvedAnimal) {
-        updateData.approvedAnimalId = approvedAnimal.id;
-        updateData.approvedAnimalName = approvedAnimal.name;
-        changesAfter.approvedAnimalId = approvedAnimal.id;
-        changesAfter.approvedAnimalName = approvedAnimal.name;
+      if (newStatus === 'approved') {
+        if (approvedAnimal) {
+          updateData.approvedAnimalId = approvedAnimal.id;
+          updateData.approvedAnimalName = approvedAnimal.name;
+          changesAfter.approvedAnimalId = approvedAnimal.id;
+          changesAfter.approvedAnimalName = approvedAnimal.name;
+        } else {
+          updateData.approvedAnimalId = '';
+          updateData.approvedAnimalName = '';
+          changesAfter.approvedAnimalId = '';
+          changesAfter.approvedAnimalName = '';
+        }
       } else {
         updateData.approvedAnimalId = '';
         updateData.approvedAnimalName = '';
         changesAfter.approvedAnimalId = '';
         changesAfter.approvedAnimalName = '';
       }
-    } else {
-      updateData.approvedAnimalId = '';
-      updateData.approvedAnimalName = '';
-      changesAfter.approvedAnimalId = '';
-      changesAfter.approvedAnimalName = '';
-    }
 
-    const promise = (async () => {
-      await createAuditLog({
-        type: 'form',
-        action: 'update',
-        entityId: selected.id,
-        entityName: selected.fullName ?? selected.id,
-        modifiedBy: currentUser.id,
-        modifiedByName: currentUser.name,
-        changes: {
-          before: {
-            status: previous,
-            approvedAnimalId: selected.approvedAnimalId,
-            approvedAnimalName: selected.approvedAnimalName,
+      const promise = (async () => {
+        await createAuditLog({
+          type: 'form',
+          action: 'update',
+          entityId: selected.id,
+          entityName: selected.fullName ?? selected.id,
+          modifiedBy: currentUser.id,
+          modifiedByName: currentUser.name,
+          changes: {
+            before: {
+              status: previous,
+              approvedAnimalId: selected.approvedAnimalId,
+              approvedAnimalName: selected.approvedAnimalName,
+            },
+            after: changesAfter,
           },
-          after: changesAfter,
+        });
+
+        await postFirestoreData<Partial<GoogleFormEntry>>({
+          data: updateData,
+          currentCollection: 'googleForms',
+          id: selected.id,
+        });
+
+        setSelected({ ...selected, ...updateData });
+        setRefresh((r) => !r);
+      })();
+
+      await handlePromiseToast(promise, {
+        messages: {
+          pending: { title: 'Actualizando estado...', text: '' },
+          success: {
+            title: 'Estado actualizado',
+            text: `Nuevo estado: ${STATUS_LABELS[newStatus]}`,
+          },
+          error: { title: 'Error', text: 'No se pudo actualizar el estado.' },
         },
       });
 
-      await postFirestoreData<Partial<GoogleFormEntry>>({
-        data: updateData,
-        currentCollection: 'googleForms',
-        id: selected.id,
-      });
+      setUpdatingStatus(false);
+    },
+    [selected, currentUser]
+  );
 
-      setSelected({ ...selected, ...updateData });
-      setRefresh((r) => !r);
-    })();
-
-    await handlePromiseToast(promise, {
-      messages: {
-        pending: { title: 'Actualizando estado...', text: '' },
-        success: { title: 'Estado actualizado', text: `Nuevo estado: ${STATUS_LABELS[newStatus]}` },
-        error: { title: 'Error', text: 'No se pudo actualizar el estado.' },
-      },
-    });
-
-    setUpdatingStatus(false);
-  };
+  const handleFormUpdate = useCallback((updatedForm: GoogleFormEntry): void => {
+    setSelected(updatedForm);
+    setForms((prev) => prev.map((f) => (f.id === updatedForm.id ? updatedForm : f)));
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -353,7 +388,7 @@ export default function FormulariosPageContent({
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
+              onClick={() => handleTabClick(tab.value)}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 activeTab === tab.value
                   ? 'bg-green-forest text-white'
@@ -395,6 +430,14 @@ export default function FormulariosPageContent({
             Últimos 7 días
           </button>
         </div>
+
+        {/* Search + preference filters */}
+        <FormFiltersBar
+          filters={filters}
+          onChange={setFilters}
+          onReset={handleResetFilters}
+          resultCount={filteredForms.length}
+        />
 
         {/* Desktop: split panel */}
         <div className="hidden md:grid md:grid-cols-[280px_1fr] gap-4 flex-1">
@@ -485,10 +528,7 @@ export default function FormulariosPageContent({
                 updatingStatus={updatingStatus}
                 initialAnimals={initialAnimals}
                 userIds={userIds}
-                onFormUpdate={(updatedForm) => {
-                  setSelected(updatedForm);
-                  setForms((prev) => prev.map((f) => (f.id === updatedForm.id ? updatedForm : f)));
-                }}
+                onFormUpdate={handleFormUpdate}
               />
             )}
           </div>
@@ -604,8 +644,9 @@ interface DetailPanelProps {
 /**
  * Detail panel shown on the right side of the desktop CRM split view.
  * Displays AI evaluation summary and status controls.
+ * Memoized so that typing in the search bar does not re-render the chat.
  */
-function DetailPanel({
+const DetailPanel = memo(function DetailPanel({
   form,
   onStatusChange,
   updatingStatus,
@@ -981,4 +1022,4 @@ function DetailPanel({
       </div>
     </div>
   );
-}
+});
