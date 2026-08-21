@@ -7,6 +7,7 @@ import {
   AnimalActionModalProps,
   EventFormData,
   Img,
+  PdfMetadata,
   UserType,
 } from '@/types';
 import { auth } from '@/firebase';
@@ -20,6 +21,9 @@ import { CalendarIcon, LockClosedIcon, EditIcon } from '@/components/Icons';
 import { eventLabels } from '@/lib/constants/animalLabels';
 import { createTimestamp } from '@/lib/dateUtils';
 import UploadImages from '@/elements/UploadImage';
+import UploadPdf from '@/elements/UploadPdf';
+import { getPdfThumbnailUrl } from '@/lib/pdfThumbnail';
+import { deleteImage } from '@/lib/deleteIgame';
 import { logger } from '@/lib/logger';
 import { normalizeManager } from '@/lib/data/seguimientos';
 
@@ -52,6 +56,16 @@ function quickDateOptions(): { label: string; days: number }[] {
     { label: '+6 meses', days: 180 },
     { label: '+1 año', days: 365 },
   ];
+}
+
+/** Formats a file size for display in the event form. */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+
+  const kilobytes = bytes / 1024;
+  if (kilobytes < 1024) return `${kilobytes.toFixed(1)} KB`;
+
+  return `${(kilobytes / 1024).toFixed(1)} MB`;
 }
 
 interface EventModalProps extends AnimalActionModalProps {
@@ -100,6 +114,7 @@ export default function EventModal({
   const [quickDayValue, setQuickDayValue] = useState<string>('');
   const [closeCase, setCloseCase] = useState<boolean>(false);
   const [eventImages, setEventImages] = useState<Img[]>([]);
+  const [eventPdfs, setEventPdfs] = useState<PdfMetadata[]>([]);
 
   // --- Follow-up manager view state ---
   const [showManagerView, setShowManagerView] = useState<boolean>(false);
@@ -118,6 +133,46 @@ export default function EventModal({
     setSelectedFollowUpManagers((prev) =>
       prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
     );
+  };
+
+  /**
+   * Removes an event image from the form and deletes it from Cloudinary.
+   * The image is removed from the list immediately; if the Cloudinary deletion
+   * fails, a warning is shown and the file remains stored (orphaned).
+   */
+  const handleRemoveEventImage = (imageIndex: number): void => {
+    const imageToRemove = eventImages[imageIndex];
+    setEventImages((previousImages) =>
+      previousImages.filter((_, currentIndex) => currentIndex !== imageIndex)
+    );
+    if (!imageToRemove) return;
+    deleteImage(imageToRemove.imgId).catch(() => {
+      handleToast({
+        type: 'warning',
+        title: 'No se pudo borrar la imagen',
+        text: 'La imagen quedó guardada en Cloudinary',
+      });
+    });
+  };
+
+  /**
+   * Removes an event PDF from the form and deletes it from Cloudinary.
+   * The PDF is removed from the list immediately; if the Cloudinary deletion
+   * fails, a warning is shown and the file remains stored (orphaned).
+   */
+  const handleRemoveEventPdf = (pdfIndex: number): void => {
+    const pdfToRemove = eventPdfs[pdfIndex];
+    setEventPdfs((previousPdfs) =>
+      previousPdfs.filter((_, currentIndex) => currentIndex !== pdfIndex)
+    );
+    if (!pdfToRemove) return;
+    deleteImage(pdfToRemove.publicId).catch(() => {
+      handleToast({
+        type: 'warning',
+        title: 'No se pudo borrar el documento',
+        text: 'El PDF quedó guardado en Cloudinary',
+      });
+    });
   };
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : eventModalOpen;
@@ -352,6 +407,7 @@ export default function EventModal({
       name: privateInfo.name || '',
       img: animal.images?.[0],
       eventImg: eventImages.length > 0 ? eventImages : undefined,
+      eventPdfs: eventPdfs.length > 0 ? eventPdfs : undefined,
       transactionType: eventData.eventType,
       date: now,
       modifiedBy: auth.currentUser?.email || 'system',
@@ -466,6 +522,7 @@ export default function EventModal({
       setQuickDayValue('');
       setCloseCase(false);
       setEventImages([]);
+      setEventPdfs([]);
       onEventSaved?.();
     } catch (error) {
       logger({
@@ -865,9 +922,7 @@ export default function EventModal({
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                setEventImages((prev) => prev.filter((_, i) => i !== idx))
-                              }
+                              onClick={() => handleRemoveEventImage(idx)}
                               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
                             >
                               ×
@@ -906,6 +961,73 @@ export default function EventModal({
                         />
                       </div>
                     )}
+                  </div>
+
+                  {/* Event PDF uploads */}
+                  <div>
+                    <label className="block text-green-dark font-semibold mb-2">
+                      Documentos PDF (opcional)
+                    </label>
+                    {eventPdfs.length > 0 && (
+                      <ul className="flex flex-col gap-2 mb-3">
+                        {eventPdfs.map((pdf, pdfIndex) => (
+                          <li
+                            key={`${pdf.publicId}-${pdfIndex}`}
+                            className="flex items-center gap-3 rounded-lg border-2 border-green-dark bg-white p-3"
+                          >
+                            <a
+                              href={pdf.secureUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Abrir ${pdf.fileName}`}
+                              className="shrink-0 transition-opacity hover:opacity-80"
+                            >
+                              <img
+                                src={getPdfThumbnailUrl(pdf.secureUrl)}
+                                alt={`Primera página de ${pdf.fileName}`}
+                                loading="lazy"
+                                className="h-20 w-14 rounded-lg border-2 border-green-dark bg-white object-cover"
+                                onError={(e) => {
+                                  const imgEl = e.currentTarget as HTMLImageElement;
+                                  if (!imgEl.dataset.fallback) {
+                                    imgEl.dataset.fallback = 'true';
+                                    imgEl.src = '/logo300.webp';
+                                  }
+                                }}
+                              />
+                            </a>
+                            <div className="min-w-0 flex-1">
+                              <a
+                                href={pdf.secureUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={pdf.fileName}
+                                className="block truncate text-sm font-medium text-green-700 underline hover:text-green-900"
+                              >
+                                {pdf.fileName}
+                              </a>
+                              <span className="text-xs text-gray-500">
+                                {formatFileSize(pdf.bytes)}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEventPdf(pdfIndex)}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-700"
+                              aria-label={`Quitar ${pdf.fileName}`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <UploadPdf
+                      onPdfsAdd={(pdfs) => {
+                        setEventPdfs((previousPdfs) => [...previousPdfs, ...pdfs]);
+                      }}
+                    />
                   </div>
 
                   {/* Next follow-up date (only for adopted animals + followup events) */}

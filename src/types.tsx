@@ -6,6 +6,16 @@ export interface Img {
   imgAlt: string;
 }
 
+/** Metadata for a PDF uploaded to Cloudinary. */
+export interface PdfMetadata {
+  publicId: string;
+  secureUrl: string;
+  fileName: string;
+  format: string;
+  bytes: number;
+  resourceType: 'image' | 'raw';
+}
+
 type YesNoUnknown = 'si' | 'no' | 'no_se';
 
 export interface CompatibilityType {
@@ -132,6 +142,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   img?: Img;
   /** Image(s) uploaded specifically for this event. Supports legacy single image for backward compatibility. */
   eventImg?: Img | Img[];
+  /** PDF documents uploaded specifically for this event. */
+  eventPdfs?: PdfMetadata[];
   changes?: {
     before?: beforeAfterType;
     after?: beforeAfterType;
