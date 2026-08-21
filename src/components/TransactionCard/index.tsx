@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { formatedDateOnly } from '@/lib/dateUtils';
 import { getRescueReasonLabel, getTransactionLabel } from '@/lib/constants/animalLabels';
+import { getPdfThumbnailUrl } from '@/lib/pdfThumbnail';
 import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -86,7 +87,7 @@ export default function TransactionCard({
         ref={cardRef}
         className="relative flex flex-col border border-green-dark/15 rounded bg-white shadow-md p-4"
       >
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 pb-2">
           {showImg && (
             <section className=" flex flex-col  w-48 h-48">
               <Image
@@ -132,6 +133,54 @@ export default function TransactionCard({
                   />
                 </button>
               ))}
+            </div>
+          )}
+          {transaction.eventPdfs && transaction.eventPdfs.length > 0 && (
+            <div className="flex shrink-0 flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-2">
+              <span className="font-semibold text-red-800">Documentos PDF:</span>
+              {/* max-w-64 = exactly three w-20 columns plus two gap-2 gutters, so up
+                  to three thumbnails share one row and extra ones wrap below */}
+              <div className="flex max-w-64 flex-wrap items-center justify-center gap-2">
+                {transaction.eventPdfs.map((pdf) => (
+                  <div key={pdf.publicId} className="flex w-20 shrink-0 flex-col gap-1.5">
+                    <a
+                      href={pdf.secureUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Abrir ${pdf.fileName}`}
+                      className="block overflow-hidden rounded-lg border border-red-200 bg-white transition-opacity hover:opacity-80"
+                    >
+                      <Image
+                        src={getPdfThumbnailUrl(pdf.secureUrl)}
+                        alt={`Primera página de ${pdf.fileName}`}
+                        width={400}
+                        height={566}
+                        loading="lazy"
+                        className="h-auto w-full object-contain"
+                        onError={(e) => {
+                          const imgEl = e.currentTarget as HTMLImageElement;
+                          if (!imgEl.dataset.fallback) {
+                            imgEl.dataset.fallback = 'true';
+                            imgEl.src = '/logo300.webp';
+                          }
+                        }}
+                      />
+                    </a>
+                    <a
+                      href={pdf.secureUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={pdf.fileName}
+                      className="flex min-w-0 items-center gap-1.5 text-sm text-red-700 underline hover:text-red-900"
+                    >
+                      <span className="shrink-0 rounded bg-red-200 px-1.5 py-0.5 text-xs font-bold">
+                        PDF
+                      </span>
+                      <span className="truncate">{pdf.fileName}</span>
+                    </a>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <ul className=" text-xl text-start font-semibold flex flex-col gap- p-2 bg-white ">
@@ -297,6 +346,7 @@ const HANDLED_KEYS = new Set([
   'litterName',
   'adoptionFormId',
   'adoptionFormName',
+  'eventPdfs',
 ]);
 
 function formatValue(value: unknown): string {
