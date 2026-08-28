@@ -35,6 +35,7 @@ function toLeanTransaction(tx: AnimalTransactionType, transactionId: string): Le
   if (tx.status) lean.status = tx.status;
   if (tx.img) lean.img = tx.img;
   if (tx.cost !== undefined) lean.cost = tx.cost;
+  if (tx.isExternal !== undefined) lean.isExternal = tx.isExternal;
 
   return lean;
 }

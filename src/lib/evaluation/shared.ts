@@ -14,6 +14,7 @@ const googleAi = new GoogleGenAI({
 });
 
 const googleModels = ['gemini-3.1-flash-lite', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it'];
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 // ---------------------------------------------------------------------------
 // System prompts
@@ -515,7 +516,7 @@ async function evaluateWithGroq(
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT_GROQ },
           { role: 'user', content: JSON.stringify(mappedData, null, 2) },

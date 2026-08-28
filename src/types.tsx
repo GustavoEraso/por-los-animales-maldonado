@@ -128,6 +128,7 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     | 'emergency'
     | 'supply'
     | 'followup'
+    | 'transfer'
     | 'rename'
     | 'deceased'
     | 'note'
@@ -148,6 +149,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     before?: beforeAfterType;
     after?: beforeAfterType;
   };
+  /** Marks transactions registered for animals without a profile (external cases). */
+  isExternal?: boolean;
 }
 
 /**
@@ -229,6 +232,8 @@ export interface LeanTransaction {
   status?: string;
   img?: Img;
   cost?: number;
+  /** Marks transactions registered for animals without a profile (external cases). */
+  isExternal?: boolean;
 }
 
 /**
@@ -413,6 +418,7 @@ export type EventType =
   | 'emergency'
   | 'supply'
   | 'followup'
+  | 'transfer'
   | 'rename'
   | 'deceased'
   | 'other';

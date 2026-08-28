@@ -815,6 +815,7 @@ export default function EventModal({
                   {!isDeceased && <option value="sterilization">Esterilización</option>}
                   {!isDeceased && <option value="medical">Médico</option>}
                   {!isDeceased && <option value="emergency">Emergencia</option>}
+                  {!isDeceased && <option value="transfer">Traslado</option>}
                   {!isDeceased && <option value="supply">Suministro alimento insumos etc</option>}
                   {isAdopted && <option value="rename">Renombrar</option>}
                   {!isDeceased && <option value="deceased">Fallecimiento</option>}

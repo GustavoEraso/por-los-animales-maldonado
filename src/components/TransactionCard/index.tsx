@@ -118,7 +118,7 @@ export default function TransactionCard({
                   title="Ver imagen ampliada"
                 >
                   <Image
-                    src={img.imgUrl}
+                    src={img.imgUrl || '/logo300.webp'}
                     alt={img.imgAlt || 'Imagen del evento'}
                     width={96}
                     height={96}
@@ -220,7 +220,7 @@ export default function TransactionCard({
                   </Link>
                 </li>
               )}
-            {showAnimalLink && (
+            {showAnimalLink && !transaction.isExternal && (
               <li className="font-semibold">
                 {' '}
                 Ficha:{' '}
@@ -231,6 +231,14 @@ export default function TransactionCard({
                 >
                   Ver animal →
                 </Link>
+              </li>
+            )}
+            {transaction.isExternal && (
+              <li className="font-semibold">
+                {' '}
+                <span className="px-2 py-0.5 bg-gray-700 text-white text-xs font-bold rounded-full">
+                  Caso externo
+                </span>
               </li>
             )}
           </ul>
@@ -631,7 +639,7 @@ function ChangeList({
           {' '}
           Imagen principal:{' '}
           <img
-            src={list.mainImageUrl}
+            src={list.mainImageUrl || '/logo300.webp'}
             alt="Imagen principal"
             className="w-16 h-16 object-cover rounded border"
             onError={(e) => {
@@ -657,7 +665,7 @@ function ChangeList({
             {list.images.map((image) => (
               <Image
                 key={image.imgId}
-                src={image.imgUrl}
+                src={image.imgUrl || '/logo300.webp'}
                 alt={image.imgAlt}
                 width={64}
                 height={64}
