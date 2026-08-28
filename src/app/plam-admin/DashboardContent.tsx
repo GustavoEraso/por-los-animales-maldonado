@@ -366,7 +366,7 @@ export default function DashboardContent({
                         <div className="flex gap-2 items-center justify-between w-full">
                           <div className="flex flex-col sm:flex-row gap-2 items-center">
                             <img
-                              src={tx.img?.imgUrl}
+                              src={tx.img?.imgUrl || '/logo300.webp'}
                               alt={tx.img?.imgAlt || 'Imagen del animal'}
                               className="w-16 h-16 rounded-full object-cover object-center"
                             />
@@ -377,18 +377,25 @@ export default function DashboardContent({
                               {getTransactionLabel(tx.transactionType)}
                             </p>
                           )}
+                          {tx.isExternal && (
+                            <p className="text-sm px-3 py-1 bg-gray-700 text-white rounded-3xl">
+                              Caso externo
+                            </p>
+                          )}
                           <span className="font-normal text-sm text-amber-sunset text-center text-balance">
                             Modificado por {user?.name ?? tx.modifiedBy.split('@')[0]}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 text-center">{date} hs</p>
-                        <SmartLink
-                          href={`/plam-admin/animales/${tx.id}#linea-del-tiempo`}
-                          prefetch={false}
-                          variant="primary"
-                        >
-                          Ver Detalles
-                        </SmartLink>
+                        {!tx.isExternal && (
+                          <SmartLink
+                            href={`/plam-admin/animales/${tx.id}#linea-del-tiempo`}
+                            prefetch={false}
+                            variant="primary"
+                          >
+                            Ver Detalles
+                          </SmartLink>
+                        )}
                       </div>
                     </div>
                   );

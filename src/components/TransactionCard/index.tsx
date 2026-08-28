@@ -220,7 +220,7 @@ export default function TransactionCard({
                   </Link>
                 </li>
               )}
-            {showAnimalLink && (
+            {showAnimalLink && !transaction.isExternal && (
               <li className="font-semibold">
                 {' '}
                 Ficha:{' '}
@@ -231,6 +231,14 @@ export default function TransactionCard({
                 >
                   Ver animal →
                 </Link>
+              </li>
+            )}
+            {transaction.isExternal && (
+              <li className="font-semibold">
+                {' '}
+                <span className="px-2 py-0.5 bg-gray-700 text-white text-xs font-bold rounded-full">
+                  Caso externo
+                </span>
               </li>
             )}
           </ul>

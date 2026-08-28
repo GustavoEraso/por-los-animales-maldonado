@@ -149,6 +149,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
     before?: beforeAfterType;
     after?: beforeAfterType;
   };
+  /** Marks transactions registered for animals without a profile (external cases). */
+  isExternal?: boolean;
 }
 
 /**
@@ -230,6 +232,8 @@ export interface LeanTransaction {
   status?: string;
   img?: Img;
   cost?: number;
+  /** Marks transactions registered for animals without a profile (external cases). */
+  isExternal?: boolean;
 }
 
 /**
