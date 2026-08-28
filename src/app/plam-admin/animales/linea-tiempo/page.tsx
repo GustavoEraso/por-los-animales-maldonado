@@ -3,6 +3,7 @@ import { CalendarIcon, FilterIcon } from '@/components/Icons';
 import Loader from '@/components/Loader';
 import TransactionCard from '@/components/TransactionCard';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getRescueReasonLabel } from '@/lib/constants/animalLabels';
 import { AnimalTransactionType } from '@/types';
 import Link from 'next/dist/client/link';
 import { useEffect, useState, useRef } from 'react';
@@ -54,9 +55,63 @@ export default function LineaTiempoPage() {
   const sterilizationCount = transactions.filter(
     (t) => t.transactionType === 'sterilization'
   ).length;
-  const veterinaryCareCount = transactions.filter(
-    (t) => t.transactionType === 'medical' || t.transactionType === 'emergency'
+  const medicalCount = transactions.filter((t) => t.transactionType === 'medical').length;
+  const emergencyCount = transactions.filter((t) => t.transactionType === 'emergency').length;
+
+  const rescueReasonCounts = transactions
+    .filter((t) => t.transactionType === 'create')
+    .reduce<Record<string, number>>((acc, transaction) => {
+      const reason = transaction.changes?.after?.rescueReason ?? transaction.rescueReason;
+      if (reason) acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {});
+
+  const adoptionCount = transactions.filter(
+    (t) => t.status === 'adoptado' || t.changes?.after?.status === 'adoptado'
   ).length;
+  const returnCount = transactions.filter((t) => t.transactionType === 'return').length;
+  const returnRate = adoptionCount > 0 ? Math.round((returnCount / adoptionCount) * 100) : 0;
+  const followUpCount = transactions.filter((t) => t.transactionType === 'followup').length;
+
+  const sumCostByType = (types: AnimalTransactionType['transactionType'][]): number =>
+    transactions
+      .filter((t) => types.includes(t.transactionType))
+      .reduce((sum, t) => sum + (t.cost || 0), 0);
+
+  const costBreakdown = [
+    { label: 'Atención veterinaria', amount: sumCostByType(['medical', 'emergency']) },
+    { label: 'Vacunaciones', amount: sumCostByType(['vaccination']) },
+    { label: 'Castraciones', amount: sumCostByType(['sterilization']) },
+    { label: 'Suministros', amount: sumCostByType(['supply']) },
+    {
+      label: 'Otros',
+      amount: transactions
+        .filter(
+          (t) =>
+            t.transactionType !== 'medical' &&
+            t.transactionType !== 'emergency' &&
+            t.transactionType !== 'vaccination' &&
+            t.transactionType !== 'sterilization' &&
+            t.transactionType !== 'supply'
+        )
+        .reduce((sum, t) => sum + (t.cost || 0), 0),
+    },
+  ].filter((item) => item.amount > 0);
+
+  const prolongedMedicalAnimalIds = new Set<string>();
+  const medicalEventCountById = new Map<string, number>();
+  transactions.forEach((t) => {
+    if (t.transactionType === 'medical' || t.transactionType === 'emergency') {
+      medicalEventCountById.set(t.id, (medicalEventCountById.get(t.id) || 0) + 1);
+    }
+    if (t.changes?.after?.medicalConditions || t.medicalConditions) {
+      prolongedMedicalAnimalIds.add(t.id);
+    }
+  });
+  medicalEventCountById.forEach((count, id) => {
+    if (count >= 2) prolongedMedicalAnimalIds.add(id);
+  });
+  const prolongedMedicalCount = prolongedMedicalAnimalIds.size;
 
   useEffect(() => {
     const loadData = async () => {
@@ -252,9 +307,65 @@ export default function LineaTiempoPage() {
             <p className="text-sm text-cream-light mt-1">Procedimientos registrados</p>
           </div>
           <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
-            <h3 className="text-lg text-black mb-2">Atenciones veterinarias</h3>
-            <p className="text-7xl text-black">{veterinaryCareCount}</p>
-            <p className="text-sm text-green-dark mt-1">Eventos médicos y emergencias</p>
+            <h3 className="text-lg text-black mb-2">Consultas médicas</h3>
+            <p className="text-7xl text-black">{medicalCount}</p>
+            <p className="text-sm text-green-dark mt-1">Eventos médicos registrados</p>
+          </div>
+          <div className="bg-caramel-deep rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-2">Emergencias</h3>
+            <p className="text-7xl text-white">{emergencyCount}</p>
+            <p className="text-sm text-cream-light mt-1">Casos de urgencia</p>
+          </div>
+          <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-2">Devoluciones</h3>
+            <p className="text-7xl text-white">{returnCount}</p>
+            <p className="text-sm text-cream-light mt-1">
+              {returnRate}% de las adopciones del período
+            </p>
+          </div>
+          <div className="bg-green-dark rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-2">Seguimientos de adopción</h3>
+            <p className="text-7xl text-white">{followUpCount}</p>
+            <p className="text-sm text-cream-light mt-1">Contactos post-adopción</p>
+          </div>
+          <div className="bg-amber-sunset rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-black mb-2">Seguimiento médico prolongado</h3>
+            <p className="text-7xl text-black">{prolongedMedicalCount}</p>
+            <p className="text-sm text-green-dark mt-1">Animales con ≥2 atenciones o patología</p>
+          </div>
+          <div className="bg-green-dark rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-3">Rescates por motivo</h3>
+            {Object.keys(rescueReasonCounts).length > 0 ? (
+              <ul className="flex flex-col gap-1.5">
+                {Object.entries(rescueReasonCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([reason, count]) => (
+                    <li key={reason} className="flex items-center justify-between text-white">
+                      <span className="text-sm text-cream-light">
+                        {getRescueReasonLabel(reason)}
+                      </span>
+                      <span className="font-bold text-2xl">{count}</span>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-cream-light">Sin registros en el período</p>
+            )}
+          </div>
+          <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg">
+            <h3 className="text-lg text-white mb-3">Gasto por categoría</h3>
+            {costBreakdown.length > 0 ? (
+              <ul className="flex flex-col gap-1.5">
+                {costBreakdown.map((item) => (
+                  <li key={item.label} className="flex items-center justify-between text-white">
+                    <span className="text-sm text-cream-light">{item.label}</span>
+                    <span className="font-bold">${item.amount}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-cream-light">Sin gastos en el período</p>
+            )}
           </div>
           <div className="bg-green-forest rounded-3xl p-6 pb-2 shadow-lg sm:col-span-2">
             <h3 className="text-lg text-white mb-2">Deuda Generada</h3>
