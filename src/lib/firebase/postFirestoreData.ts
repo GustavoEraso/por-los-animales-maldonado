@@ -36,33 +36,40 @@ interface Props<T> {
  * const updatedTransaction = { ...transactionData, status: 'adoptado' };
  * await postFirestoreData<AnimalTransactionType>({ data: updatedTransaction, currentCollection: 'animalTransactions', id: 'txn456' });
  */
+/**
+ * Removes undefined values recursively from objects and arrays so the result
+ * can be written to Firestore (which rejects undefined fields).
+ *
+ * @param value - Any value that may contain undefined nested fields
+ * @returns The same value with all undefined fields removed
+ */
+export function removeUndefinedDeep<V>(value: V): V {
+  if (value === null || value === undefined) return value;
+
+  if (Array.isArray(value)) {
+    const items = value.map((v: unknown) => removeUndefinedDeep<unknown>(v));
+    return items.filter((v): v is Exclude<unknown, undefined> => v !== undefined) as unknown as V;
+  }
+
+  if (typeof value === 'object') {
+    const obj: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const cleaned = removeUndefinedDeep(v as unknown);
+      if (cleaned !== undefined) obj[k] = cleaned;
+    }
+    return obj as V;
+  }
+
+  return value;
+}
+
 export async function postFirestoreData<T extends object>({
   data,
   currentCollection,
   id,
 }: Props<T>): Promise<void> {
-  // Remove undefined values recursively (objects & arrays)
-  function removeUndefinedDeep<V>(value: V): V {
-    if (value === null || value === undefined) return value;
-
-    if (Array.isArray(value)) {
-      const items = value.map((v: unknown) => removeUndefinedDeep<unknown>(v));
-      return items.filter((v): v is Exclude<unknown, undefined> => v !== undefined) as unknown as V;
-    }
-
-    if (typeof value === 'object') {
-      const obj: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-        const cleaned = removeUndefinedDeep(v as unknown);
-        if (cleaned !== undefined) obj[k] = cleaned;
-      }
-      return obj as V;
-    }
-
-    return value;
-  }
-
   try {
+    // Remove undefined values recursively (objects & arrays)
     const sanitized = removeUndefinedDeep(data) as unknown as Record<string, unknown>;
 
     if (!id) {
@@ -72,7 +79,12 @@ export async function postFirestoreData<T extends object>({
       await setDoc(docRef, sanitized as DocumentData, { merge: true });
     }
   } catch (error) {
-    logger({ level: 'error', code: 'SAVE_DOCUMENT', message: 'Error creating/updating document:', data: error });
+    logger({
+      level: 'error',
+      code: 'SAVE_DOCUMENT',
+      message: 'Error creating/updating document:',
+      data: error,
+    });
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { postFirestoreData } from './postFirestoreData';
+import { updateDailyTransactionAggregate } from './dailyTransactionAggregates';
 import { revalidateCache } from '@/lib/revalidateCache';
 import generateId from '@/lib/generateId';
 import type {
@@ -191,6 +192,9 @@ export async function postTransactionData({
     id,
   });
 
+  // Update daily aggregate (fire-and-forget — errors logged but not thrown)
+  await updateDailyTransactionAggregate(txWithId);
+
   // Update analytics (fire-and-forget — errors logged but not thrown)
   await updateDashboardAnalytics([txWithId]);
 
@@ -223,6 +227,10 @@ export async function postTransactionsData({
         currentCollection: 'animalTransactions',
       })
     )
+  );
+
+  await Promise.all(
+    transactionsWithIds.map(({ transaction }) => updateDailyTransactionAggregate(transaction))
   );
 
   await updateDashboardAnalytics(transactionsWithIds.map(({ transaction }) => transaction));
