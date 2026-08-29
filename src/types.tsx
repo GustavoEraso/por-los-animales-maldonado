@@ -259,6 +259,19 @@ export interface DashboardAnalyticsData {
   updatedAt: number;
 }
 
+/**
+ * Daily aggregated transactions document stored in dailyTransactionAggregates/{dayKey}.
+ * Keeps a full copy of each day's transactions so the timeline page can read one
+ * document per day instead of one per transaction.
+ */
+export interface DailyTransactionAggregate {
+  /** Day key in America/Montevideo timezone, format 'YYYY-MM-DD'. */
+  dayKey: string;
+  /** Full transaction copies keyed by transactionId (or doc id for legacy records). */
+  transactions: Record<string, AnimalTransactionType>;
+  updatedAt: number;
+}
+
 export interface CollectionsType {
   currentColection:
     | 'animals'

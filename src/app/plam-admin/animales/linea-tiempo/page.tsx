@@ -3,7 +3,7 @@ import { CalendarIcon, FilterIcon } from '@/components/Icons';
 import Loader from '@/components/Loader';
 import TransactionCard from '@/components/TransactionCard';
 import ReportSection from './ReportSection';
-import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getTransactionsByDateRange } from '@/lib/firebase/dailyTransactionAggregates';
 import { getRescueReasonLabel } from '@/lib/constants/animalLabels';
 import { ReportSummary } from '@/lib/reportGenerator';
 import { AnimalTransactionType } from '@/types';
@@ -183,15 +183,7 @@ export default function LineaTiempoPage() {
       try {
         setLoading(true);
         setVisibleCount(VISIBLE_CARDS_STEP);
-        const data = await getFirestoreData({
-          currentCollection: 'animalTransactions',
-          orderBy: 'date',
-          direction: 'desc',
-          filter: [
-            ['date', '>=', dateFilter.startDate],
-            ['date', '<=', dateFilter.endDate],
-          ],
-        });
+        const data = await getTransactionsByDateRange(dateFilter.startDate, dateFilter.endDate);
         startTransition(() => {
           setransactions(data);
         });
