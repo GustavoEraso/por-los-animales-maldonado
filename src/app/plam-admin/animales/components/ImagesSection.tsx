@@ -34,6 +34,13 @@ export default function ImagesSection({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItemIndex = useRef<number | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
+  // Tracks image ids that failed to load (orphan/broken Cloudinary references)
+  // so they render a placeholder instead of a broken image icon.
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+
+  const handleImageError = useCallback((imgId: string) => {
+    setBrokenImages((prev) => new Set(prev).add(imgId));
+  }, []);
 
   const handleDragStart = useCallback((index: number) => {
     dragItemIndex.current = index;
@@ -181,14 +188,25 @@ export default function ImagesSection({
                     <StarIcon size="sm" color={isBanner ? 'white' : undefined} />
                   </button>
                 )}
-                <img
-                  src={img.imgUrl}
-                  alt={img.imgAlt}
-                  className={`w-40 h-40 object-cover rounded mb-2 pointer-events-none ${
-                    isBanner ? 'ring-4 ring-amber-sunset' : ''
-                  }`}
-                  draggable={false}
-                />
+                {brokenImages.has(img.imgId) ? (
+                  <div
+                    className={`w-40 h-40 flex items-center justify-center bg-gray-100 text-gray-400 text-xs text-center px-2 rounded mb-2 ${
+                      isBanner ? 'ring-4 ring-amber-sunset' : ''
+                    }`}
+                  >
+                    Imagen no disponible
+                  </div>
+                ) : (
+                  <img
+                    src={img.imgUrl}
+                    alt={img.imgAlt}
+                    onError={() => handleImageError(img.imgId)}
+                    className={`w-40 h-40 object-cover rounded mb-2 pointer-events-none ${
+                      isBanner ? 'ring-4 ring-amber-sunset' : ''
+                    }`}
+                    draggable={false}
+                  />
+                )}
                 {/* <span className="text-sm text-gray-500">{img.imgId}</span> */}
               </div>
             );
