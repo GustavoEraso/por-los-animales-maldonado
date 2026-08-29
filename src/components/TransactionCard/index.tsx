@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { formatedDateOnly } from '@/lib/dateUtils';
 import { getRescueReasonLabel, getTransactionLabel } from '@/lib/constants/animalLabels';
 import { getPdfThumbnailUrl } from '@/lib/pdfThumbnail';
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -34,7 +34,7 @@ const formatedDate = (date: number) =>
  * @param showImg - Whether to show the animal image (default: false)
  * @returns React element representing the transaction card
  */
-export default function TransactionCard({
+export default memo(function TransactionCard({
   transaction,
   showImg = false,
   showAnimalLink = false,
@@ -318,7 +318,7 @@ export default function TransactionCard({
       )}
     </>
   );
-}
+});
 
 const HANDLED_KEYS = new Set([
   'caseManager',
