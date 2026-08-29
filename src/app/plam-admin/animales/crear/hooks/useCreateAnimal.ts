@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import { deleteImage } from '@/lib/deleteIgame';
@@ -92,6 +92,34 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
   const [transaction, setTransaction] = useState<AnimalTransactionType>(INITIAL_TRANSACTION);
   const [images, setImages] = useState<Img[]>([]);
   const [bannerImage, setBannerImage] = useState<string | undefined>(undefined);
+  // Public IDs whose Cloudinary assets should be destroyed only AFTER the animal
+  // has been successfully persisted to Firestore. This prevents orphaned URLs
+  // (broken 404s) if the user deletes a photo but never saves.
+  const pendingImageDeletesRef = useRef<string[]>([]);
+
+  /**
+   * Destroys the Cloudinary assets that were removed from the form state, only
+   * after the corresponding animal document has been saved successfully.
+   * Failures are logged but never block the save flow.
+   */
+  const flushPendingImageDeletes = async (): Promise<void> => {
+    const pending = pendingImageDeletesRef.current;
+    pendingImageDeletesRef.current = [];
+    await Promise.all(
+      pending.map(async (imgId) => {
+        try {
+          await deleteImage(imgId);
+        } catch (error) {
+          logger({
+            level: 'error',
+            code: 'DELETE_IMAGE_AFTER_SAVE',
+            message: `Error deleting image after save: ${imgId}`,
+            data: error,
+          });
+        }
+      })
+    );
+  };
   const [contacts, setContacts] = useState<
     { type: 'celular' | 'email' | 'other'; value: string | number }[]
   >([{ type: 'celular', value: '' }]);
@@ -293,18 +321,10 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
     });
   };
 
-  /** Deletes an image from a specific litter member */
-  const handleLitterMemberImageDelete = async (
-    memberIndex: number,
-    imgId: string
-  ): Promise<void> => {
-    await handlePromiseToast(deleteImage(imgId), {
-      messages: {
-        pending: { title: 'Eliminando imagen...', text: 'Por favor espera...' },
-        success: { title: 'Imagen eliminada', text: 'La imagen fue eliminada exitosamente' },
-        error: { title: 'Error', text: 'Hubo un error al eliminar la imagen' },
-      },
-    });
+  /** Removes an image from a litter member and queues its Cloudinary asset for
+   *  destruction, deferred until the litter is saved successfully. */
+  const handleLitterMemberImageDelete = (memberIndex: number, imgId: string): Promise<void> => {
+    pendingImageDeletesRef.current.push(imgId);
     setLitterMembers((prev) => {
       const updated = [...prev];
       updated[memberIndex] = {
@@ -313,6 +333,7 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       };
       return updated;
     });
+    return Promise.resolve();
   };
 
   /** Validates and submits the form to create a new animal or litter */
@@ -480,6 +501,9 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       },
     });
 
+    // Destroy Cloudinary assets for removed photos now that the animal is saved.
+    await flushPendingImageDeletes();
+
     await revalidateAnimalCache(id);
     resetForm();
     router.replace('/plam-admin/animales');
@@ -635,25 +659,24 @@ export function useCreateAnimal(): UseCreateAnimalReturn {
       },
     });
 
+    // Destroy Cloudinary assets for removed photos now that the litter is saved.
+    await flushPendingImageDeletes();
+
     await revalidateAnimalCache();
     resetForm();
     router.replace('/plam-admin/animales');
   };
 
-  /** Deletes an uploaded image from Cloudinary and removes it from state */
-  const handleImageDelete = async (imgId: string): Promise<void> => {
-    await handlePromiseToast(deleteImage(imgId), {
-      messages: {
-        pending: { title: 'Eliminando imagen...', text: 'Por favor espera...' },
-        success: { title: 'Imagen eliminada', text: 'La imagen fue eliminada exitosamente' },
-        error: { title: 'Error', text: 'Hubo un error al eliminar la imagen' },
-      },
-    });
+  /** Removes an image from the form state and queues its Cloudinary asset for
+   *  destruction, which is deferred until the animal is saved successfully. */
+  const handleImageDelete = (imgId: string): Promise<void> => {
+    pendingImageDeletesRef.current.push(imgId);
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
     if (bannerImage === imgId) {
       setBannerImage(undefined);
     }
+    return Promise.resolve();
   };
 
   return {

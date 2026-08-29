@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animal, Img, AnimalTransactionType, CompatibilityType, PrivateInfoType } from '@/types';
 import { deleteImage } from '@/lib/deleteIgame';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -110,6 +110,10 @@ export default function AnimalEditClientPage({
     useState<AnimalTransactionType>(initialTransactionInfo);
   const [images, setImages] = useState<Img[]>([]);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  // Public IDs whose Cloudinary assets should be destroyed only AFTER the animal
+  // has been successfully saved to Firestore, preventing orphaned (404) URLs
+  // when a photo is removed but the form is never submitted.
+  const pendingImageDeletesRef = useRef<string[]>([]);
   const [motherId, setMotherId] = useState('');
   const [fatherId, setFatherId] = useState('');
 
@@ -400,6 +404,9 @@ export default function AnimalEditClientPage({
         },
       });
 
+      // Destroy Cloudinary assets for removed photos now that the animal is saved.
+      await flushPendingImageDeletes();
+
       // Propagate parent changes to all litter siblings
       if (animal.litterId) {
         const motherChanged = motherId !== (oldAnimal.motherId || '');
@@ -447,28 +454,35 @@ export default function AnimalEditClientPage({
     }
   };
 
-  const handleImageDelete = async (imgId: string) => {
-    await handlePromiseToast(deleteImage(imgId), {
-      messages: {
-        pending: {
-          title: `Eliminando imagen...`,
-          text: `Por favor espera mientras eliminamos la imagen`,
-        },
-        success: {
-          title: `Imagen eliminada`,
-          text: `La imagen fue eliminada exitosamente`,
-        },
-        error: {
-          title: `Error`,
-          text: `Hubo un error al eliminar la imagen`,
-        },
-      },
-    });
+  /** Destroys the queued Cloudinary assets after the animal was saved successfully.
+   *  Failures are logged but never block the save flow. */
+  const flushPendingImageDeletes = async (): Promise<void> => {
+    const pending = pendingImageDeletesRef.current;
+    pendingImageDeletesRef.current = [];
+    await Promise.all(
+      pending.map(async (imgId) => {
+        try {
+          await deleteImage(imgId);
+        } catch (error) {
+          logger({
+            level: 'error',
+            code: 'DELETE_IMAGE_AFTER_SAVE',
+            message: `Error deleting image after save: ${imgId}`,
+            data: error,
+          });
+        }
+      })
+    );
+  };
+
+  const handleImageDelete = (imgId: string): Promise<void> => {
+    pendingImageDeletesRef.current.push(imgId);
     const filteredImages = images.filter((img) => img.imgId !== imgId);
     setImages(filteredImages);
     if (bannerImage === imgId) {
       setBannerImage(null);
     }
+    return Promise.resolve();
   };
 
   if (isLoading) {

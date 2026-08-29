@@ -77,13 +77,22 @@ export async function DELETE(req: NextRequest): Promise<NextResponse<DeleteImage
 
     const result = await cloudinary.uploader.destroy(publicId);
 
-    if (result.result !== 'ok') {
+    // Treat "not found" as a successful cleanup: the asset no longer exists in
+    // Cloudinary (orphan/broken reference) so there is nothing left to delete.
+    const isNotFound = result.result !== 'ok' && /not[\s_-]?found/i.test(result.result ?? '');
+
+    if (result.result !== 'ok' && !isNotFound) {
       return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
-    logger({ level: 'error', code: 'DELETE_IMAGE', message: 'Cloudinary deletion error:', data: error });
+    logger({
+      level: 'error',
+      code: 'DELETE_IMAGE',
+      message: 'Cloudinary deletion error:',
+      data: error,
+    });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
