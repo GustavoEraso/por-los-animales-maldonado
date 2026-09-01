@@ -10,7 +10,11 @@ import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
-import { FIELD_LABELS } from '@/lib/constants/formLabels';
+import { getFormFieldDefinitions, resolveFormVersion } from '@/lib/googleForms/formPresentation';
+import {
+  classifyResponsibleOwnership,
+  RESPONSIBLE_OWNERSHIP_ALERT_STYLES,
+} from '@/lib/googleForms/alerts';
 import FormChat from '@/components/FormChat';
 import EvaluationMissingCard from '@/components/EvaluationMissingCard';
 import { downloadFormPdf } from '@/lib/generateFormPdf';
@@ -251,7 +255,13 @@ export default function FormularioDetailContent({
   const status = resolvedStatus(form);
   const rawAnswers = form.rawData ? Object.entries(form.rawData).filter(([, v]) => v?.trim()) : [];
 
-  const labelKeys = Object.keys(FIELD_LABELS) as Array<keyof GoogleFormEntry>;
+  const version = resolveFormVersion(form);
+  const fieldDefinitions = getFormFieldDefinitions(version);
+  const ownershipAlert = classifyResponsibleOwnership(form.responsibleOwnershipAgreement);
+  const alertStyles =
+    ownershipAlert.category === 'none'
+      ? null
+      : RESPONSIBLE_OWNERSHIP_ALERT_STYLES[ownershipAlert.category];
 
   return (
     <ProtectedRoute requiredRole="rescatista">
@@ -328,6 +338,37 @@ export default function FormularioDetailContent({
             )}
           </div>
         </div>
+
+        {/* Form version indicator */}
+        <div>
+          <span
+            className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+              version === 'v2' ? 'bg-green-forest text-white' : 'bg-gray-200 text-gray-600'
+            }`}
+          >
+            {version === 'v2' ? 'Formulario nuevo' : 'Formulario anterior'}
+          </span>
+        </div>
+
+        {/* Responsible ownership alert */}
+        {alertStyles && ownershipAlert.category !== 'none' && (
+          <div
+            className={`border rounded-xl p-3 flex items-start gap-3 ${alertStyles.container}`}
+            role="alert"
+          >
+            <span
+              className={`inline-block w-3 h-3 rounded-full shrink-0 mt-1.5 ${
+                ownershipAlert.category === 'red'
+                  ? 'bg-red-600'
+                  : ownershipAlert.category === 'amber'
+                    ? 'bg-amber-500'
+                    : 'bg-yellow-500'
+              }`}
+              aria-hidden="true"
+            />
+            <p className="text-sm text-gray-800 leading-relaxed">{ownershipAlert.message}</p>
+          </div>
+        )}
 
         {/* AI Evaluation card */}
         {!evaluation ? (
@@ -582,17 +623,18 @@ export default function FormularioDetailContent({
             <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {labelKeys.map((key) => {
-                if (typeof form[key] !== 'string') return null;
+              {fieldDefinitions.map(({ field, label }) => {
+                const rawValue = form[field];
+                const value = typeof rawValue === 'string' ? rawValue : undefined;
+                if (!value || !value.trim()) return null;
 
-                const value = form[key];
                 return (
                   <div
-                    key={key}
+                    key={field}
                     className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow"
                   >
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                      {FIELD_LABELS[key] ?? key}
+                      {label}
                     </p>
                     <p className="text-sm text-gray-800 leading-relaxed">
                       {value.trim() || 'Sin respuesta'}

@@ -52,4 +52,9 @@ export const FIELD_LABELS: Record<string, string> = {
   alternativePetInterest:
     '¿En caso de no estar disponible la mascota (perro/gato) que le gusto para adoptar, le interesaria adoptar otra mascota(perro/gato)?',
   sizePreference: '¿Tiene alguna preferencia de tamaño de la mascota? si la tiene ¿Cual seria?',
+  // v2-only fields (safe to add globally — they are only populated by v2 forms)
+  applicantEmail: 'Mail',
+  googleAccountEmail: 'Dirección de correo electrónico',
+  responsibleOwnershipAgreement:
+    'La Ley N° 19.889 y el Decreto N° 57/023, Reglamentan que a partir de febrero de 2023, Es obligatoria la esterilización de todos los perros y gatos en el territorio nacional. Como grupo de rescate nos parece importante su implementación, por lo que se realizará un seguimiento y ayuda de coordinación de castración a los 6 meses.',
 } as const;

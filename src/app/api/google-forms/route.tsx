@@ -114,6 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     docRef = await addDoc(collection(db, 'googleForms'), {
       ...mappedData,
+      formVersion: 'legacy',
       rawData: cleanedData,
       evaluation: null,
       createdAt: new Date().toISOString(),

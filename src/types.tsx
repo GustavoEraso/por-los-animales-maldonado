@@ -357,6 +357,13 @@ export interface GoogleFormEntry {
   workSchedule?: string;
   employmentStatus?: string;
   vacationPlan?: string;
+  // Form version
+  formVersion?: 'legacy' | 'v2';
+  // Email fields (stored separately, excluded from AI evaluation)
+  applicantEmail?: string;
+  googleAccountEmail?: string;
+  // Responsible-ownership-law response (v2)
+  responsibleOwnershipAgreement?: string;
   // Metadata
   submittedAt?: string;
   createdAt: string;

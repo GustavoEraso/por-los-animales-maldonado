@@ -1,6 +1,10 @@
 'use server';
 
-import { prepareEvaluationData, runFullEvaluation } from '@/lib/evaluation/shared';
+import {
+  prepareEvaluationData,
+  resolveEvaluationProfile,
+  runFullEvaluation,
+} from '@/lib/evaluation/shared';
 import { logger } from '@/lib/logger';
 import type { GoogleFormEvaluation } from '@/types';
 
@@ -51,8 +55,24 @@ export async function retryEvaluation(
     Object.entries(rawFormData).filter(([key]) => !METADATA_FIELDS.has(key))
   );
 
+  // Select the evaluation profile from the stored form version so a legacy form
+  // is never re-evaluated with the new-form prompt (and vice versa).
+  const profile = resolveEvaluationProfile(rawFormData.formVersion as string | undefined);
+
+  if (
+    rawFormData.formVersion !== undefined &&
+    rawFormData.formVersion !== 'legacy' &&
+    rawFormData.formVersion !== 'v2'
+  ) {
+    logger({
+      level: 'warn',
+      code: 'RETRY_INVALID_FORM_VERSION',
+      message: `Retry received an invalid formVersion for form ${formId}; falling back to legacy`,
+    });
+  }
+
   const evaluationData = prepareEvaluationData(cleanData);
-  const result = await runFullEvaluation(formId, evaluationData);
+  const result = await runFullEvaluation(formId, evaluationData, profile);
 
   return result as GoogleFormEvaluation | null;
 }

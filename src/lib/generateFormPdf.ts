@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { GoogleFormEntry, GoogleFormEvaluation } from '@/types';
-import { FIELD_LABELS } from '@/lib/constants/formLabels';
+import { getFormFieldDefinitions, resolveFormVersion } from '@/lib/googleForms/formPresentation';
 import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
@@ -362,13 +362,17 @@ function drawResponses({ doc, y, form }: DrawResponsesParams): number {
 
   y += 14;
 
-  const labelKeys = Object.keys(FIELD_LABELS) as Array<keyof GoogleFormEntry>;
+  // Use the version-aware ordered presentation so the PDF matches the
+  // administrative interface for both legacy and v2 forms.
+  const version = resolveFormVersion(form);
+  const fieldDefinitions = getFormFieldDefinitions(version);
 
-  for (const key of labelKeys) {
-    const value = form[key];
-    if (typeof value !== 'string' || !value.trim()) continue;
+  for (const { field, label } of fieldDefinitions) {
+    const rawValue = form[field];
+    const value = typeof rawValue === 'string' ? rawValue : '';
+    if (!value.trim()) continue;
 
-    const question = FIELD_LABELS[key] ?? key;
+    const question = label;
 
     // Page break check — need at least 20mm for question + first line of answer
     if (y > PAGE_H - 25) {
