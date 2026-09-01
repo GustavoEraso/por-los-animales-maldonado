@@ -52,4 +52,9 @@ export const FIELD_LABELS: Record<string, string> = {
   alternativePetInterest:
     '¿En caso de no estar disponible la mascota (perro/gato) que le gusto para adoptar, le interesaria adoptar otra mascota(perro/gato)?',
   sizePreference: '¿Tiene alguna preferencia de tamaño de la mascota? si la tiene ¿Cual seria?',
+  // v2-only fields (safe to add globally — they are only populated by v2 forms)
+  applicantEmail: 'Mail',
+  googleAccountEmail: 'Dirección de correo electrónico',
+  responsibleOwnershipAgreement:
+    'Ley de tenencia responsable y esterilización (Ley 19.889 y Decreto 57/023)',
 } as const;

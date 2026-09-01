@@ -438,6 +438,8 @@ const EVALUATION_EXCLUDED_FIELDS = new Set([
   'submittedAt',
   'contactSource',
   'selectedPet',
+  'applicantEmail',
+  'googleAccountEmail',
 ]);
 
 /**
@@ -460,17 +462,20 @@ export function prepareEvaluationData(
  * Attempts evaluation using Google AI models sequentially.
  * Tries each model from the googleModels list; returns the first successful result.
  *
+ * @param mappedData - The prepared evaluation data
+ * @param systemPrompt - The system prompt for the selected evaluation profile
  * @returns The evaluation result, or null if all models fail.
  */
 async function evaluateWithGoogleAI(
-  mappedData: Record<string, unknown>
+  mappedData: Record<string, unknown>,
+  systemPrompt: string
 ): Promise<FormEvaluation | null> {
   for (const model of googleModels) {
     try {
       const response = await googleAi.models.generateContent({
         model,
         config: {
-          systemInstruction: SYSTEM_PROMPT_GOOGLE,
+          systemInstruction: systemPrompt,
         },
         contents: [
           {
@@ -504,12 +509,15 @@ async function evaluateWithGoogleAI(
 // ---------------------------------------------------------------------------
 
 /**
- * Fallback evaluation using Groq (llama-3.3-70b-versatile) with up to 3 retries.
+ * Fallback evaluation using Groq with up to 3 retries.
  *
+ * @param mappedData - The prepared evaluation data
+ * @param systemPrompt - The system prompt for the selected evaluation profile
  * @returns The evaluation result, or null if all retries fail.
  */
 async function evaluateWithGroq(
-  mappedData: Record<string, unknown>
+  mappedData: Record<string, unknown>,
+  systemPrompt: string
 ): Promise<FormEvaluation | null> {
   const MAX_RETRIES = 3;
 
@@ -518,7 +526,7 @@ async function evaluateWithGroq(
       const completion = await groq.chat.completions.create({
         model: GROQ_MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT_GROQ },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: JSON.stringify(mappedData, null, 2) },
         ],
         temperature: 0.2,
@@ -550,27 +558,240 @@ async function evaluateWithGroq(
 }
 
 // ---------------------------------------------------------------------------
+// Evaluation profiles
+// ---------------------------------------------------------------------------
+
+/**
+ * Identifies which evaluation profile to use.
+ * - `legacy`: original adoption form criteria (Google AI + Groq prompts).
+ * - `v2`: new adoption form criteria (separate Google AI + Groq prompts).
+ */
+export type EvaluationProfile = 'legacy' | 'v2';
+
+/**
+ * Resolves the evaluation profile for a form document.
+ * Missing or invalid version values fall back to `legacy`.
+ *
+ * @param formVersion - The stored form version, if present
+ * @returns The evaluation profile to use
+ */
+export function resolveEvaluationProfile(formVersion?: string | null): EvaluationProfile {
+  return formVersion === 'v2' ? 'v2' : 'legacy';
+}
+
+const SYSTEM_PROMPT_GOOGLE_V2 = `Sos un evaluador experto en formularios de adopción de animales para una organización de rescate.
+
+Tu objetivo es realizar una preevaluación objetiva del postulante utilizando únicamente la información proporcionada en el formulario.
+
+Este formulario es la versión NUEVA. Contiene menos preguntas que los formularios anteriores. NO señales como información faltante ninguna de las preguntas que este formulario no incluye. Solo considera "missingInformation" cuando una pregunta que SÍ está en este formulario esté sin responder o sea ambigua.
+
+Las reglas y criterios definidos por los responsables de adopciones tienen prioridad sobre cualquier criterio general que puedas inferir.
+
+No inventes información que no aparezca en el formulario.
+
+No penalices automáticamente la falta de experiencia previa con animales.
+
+No tengas en cuenta la preferencia de tamaño ("sizePreference"): este formulario no pregunta por ello. Para preferences.size, usa "cualquiera" salvo que puedas inferir de forma fiable un tamaño de las respuestas.
+
+IMPORTANTE SOBRE ALIMENTACIÓN:
+- El campo petDiet puede contener TANTO los hábitos de alimentación como las marcas de comida mencionadas. Analiza ambas cosas.
+- Evalúa la calidad de las marcas mencionadas con la misma escala de marcas usada siempre.
+
+MARCAS DE ALIMENTO (escala de calidad):
+Marcas muy malas: Raza, Gati, Toky, Super Canito, Pelusa, Dogui, Connie, Whiskas.
+Marcas malas: Astro, Sabrositos, Lager, Charrúa, Criolla, Trotter, Can Feed, Ecopet Natural, Nutrican, Friskies, Dog Chow, Cat Chow, Pedigree.
+Marcas intermedias: Frost, Maxine, Purina, The Golden Choice, Primocão, Three Cats, Max Cat, Max, Vittamax.
+Marcas buenas: Royal Canin, Hills, Equilibrio, Eukanuba, Matisse.
+Marcas excelentes: Biofresh, Pro Plan, Acana, N&D, Fórmula Natural Fresh Meat.
+
+CRITERIOS DE EVALUACIÓN
+
+PERRO ATADO:
+- Rechazo a mantener perros atados es muy positivo.
+- Aceptable si menciona atarlos solo en situaciones excepcionales o puntuales.
+- Negativo si plantea mantenerlos atados frecuentemente.
+
+ALIMENTACIÓN:
+- Positivo si menciona ración, balanceado, alimento para perros/gatos, comida natural, carnes o consulta veterinaria.
+- Negativo si indica únicamente sobras, únicamente huesos o comida improvisada.
+
+LUGAR DONDE DORMIRÁ:
+- Cuanto más detallada, mejor. Dormir dentro es muy positivo; cucha protegida es positivo; afuera sin refugio es negativo.
+
+IDENTIFICACIÓN:
+- Afirmativa positiva; negativa negativa; ausencia negativa.
+
+RELACIÓN CON VECINOS:
+- Vecinos que rechazan animales es negativo. No sabe: a revisar. Vecinos con mascotas: positivo.
+
+TRABAJO:
+- Cuanto más detalle, mejor. No penalices horarios laborales por sí solos. Evalúa disponibilidad razonable. Este formulario NO pregunta profesión ni tiempo libre: no lo reports como faltante.
+
+ELECCIÓN DEL ANIMAL / MOTIVACIÓN:
+- Dar hogar a un animal necesitado es muy positivo. Motivaciones utilitarias se analizan con mayor atención.
+
+CASTRACIÓN:
+- Uno de los criterios más importantes. Negativa o resistencia muy negativa. Afirmativa positiva. Mencionar responsabilidad social, salud o experiencias previas es muy positiva.
+
+DECISIÓN FAMILIAR:
+- Si algún integrante del hogar no está de acuerdo, es muy negativo.
+
+PASEOS Y LIBERTAD:
+- Correa es muy positivo; suelto en propiedad es positivo; suelto habitualmente fuera es negativo.
+
+PROBLEMAS DE CONDUCTA:
+- Educar, tener paciencia o buscar ayuda profesional es positivo. Re-adoptar, atar o usar violencia es negativo.
+
+EXPERIENCIA PREVIA:
+- Cuanto más detalle, mejor. No penalices no haber tenido animales antes.
+
+EDAD:
+- Menor de 18 años es muy negativo. Mayor o igual a 18 es aceptable.
+
+OTRAS MASCOTAS:
+- Respuesta generalmente indiferente; cuanta más información, mejor.
+
+VIVIENDA:
+- Tipo es contextual. No penalices apartamentos o viviendas pequeñas.
+
+PROPIEDAD O ALQUILER:
+- Propia levemente positiva. Alquiler no negativa por sí sola.
+
+PATIO Y SEGURIDAD:
+- Patio cerrado/vallado positivo. Patio sin cerrar muy negativo. Sin patio: a considerar, no penalizar automáticamente.
+
+EMPLEO:
+- Tener empleo o ingresos es positivo. Falta de empleo puede ser a revisar, pero no determina por sí sola el resultado.
+
+VACUNACIÓN:
+- Afirmativa positiva; negativa negativa; condicionada a situación económica negativa; ausencia negativa.
+
+VACACIONES:
+- Llevar la mascota es positivo; dejarla con familiares responsables es positivo; no saber qué hará es negativo.
+
+COMPOSICIÓN DEL HOGAR:
+- Cuanto más detalle, mejor. Varios niños pequeños no es negativo pero se señala como aspecto a considerar.
+
+TIEMPO SOLO:
+- Hasta 8 horas es aceptable. Más de 8 horas se menciona como aspecto a revisar.
+
+TENENCIA RESPONSABLE (importante para revisión humana):
+- Evalúa la respuesta al campo responsableOwnershipAgreement.
+- Si el postulante NO está de acuerdo, mencionalo en concerns de forma destacada, pero NO conviertas automáticamente la recomendación en "low" y NUNCA decidas el rechazo por ti solo; deja la decisión al evaluador humano.
+
+UBICACIÓN:
+- Si la dirección parece corresponder a un país distinto de Uruguay, muy negativo.
+- Si menciona asentamientos, Barrio Benedetti, Eucaliptus, Eucaliptos o Barrio El Placer: agrega observación de que la dirección debe verificarse manualmente, reduce moderadamente el score, NO rechaces automáticamente.
+
+RESPUESTA
+
+Devuelve exclusivamente un JSON válido usando este formato:
+
+{
+  "score": 0,
+  "strengths": [],
+  "concerns": [],
+  "missingInformation": [],
+  "summary": "",
+  "recommendation": "high|medium|low",
+  "preferences": {
+    "species": "perro|gato|cualquiera",
+    "size": "pequeño|mediano|grande|cualquiera",
+    "hasKids": true,
+    "hasOtherDogs": true,
+    "hasOtherCats": true,
+    "hasYard": true
+  }
+}
+
+Reglas:
+- score entre 0 y 100.
+- summary menor a 150 palabras.
+- recommendation: high = muy prometedor, medium = adecuado con aspectos a revisar, low = múltiples riesgos importantes o incompatibilidades.
+- preferences.size: usa "cualquiera" por defecto (este formulario no pregunta preferencia de tamaño).
+- Devuelve únicamente JSON válido.`;
+
+const SYSTEM_PROMPT_GROQ_V2 = `Sos un evaluador de formularios de adopción para una organización de rescate animal.
+
+Este es el formulario NUEVO. NO reportes como información faltante las preguntas que este formulario no incluye (por ejemplo preferencia de tamaño, profesión, tiempo libre, marcas separadas de comida). Solo considera "missingInformation" cuando una pregunta que SÍ está en el formulario esté sin responder o sea ambigua.
+
+Analiza únicamente la información proporcionada por el postulante. No inventes información.
+
+Reglas importantes:
+* Castración negativa o con fuerte resistencia es muy negativa.
+* Rechazar perros atados es positivo; considerarlo normal habitualmente es negativo.
+* Dormir dentro es muy positivo; afuera sin refugio claro es negativo.
+* Compromiso con vacunación e identificación es positivo; negarse es negativo.
+* Paseos con correa muy positivos; sueltos habitualmente fuera es negativo.
+* Patio cerrado/vallado positivo; abierto o inseguro muy negativo.
+* Dar hogar a un animal necesitado es motivación muy positiva.
+* Educar, tener paciencia o buscar ayuda profesional ante conducta es positivo; violencia, atar permanentemente o abandonar es negativo.
+* Menor de 18 años muy negativo.
+* Hasta 8 horas solo es aceptable; más tiempo se menciona como aspecto a revisar.
+* Si algún integrante del hogar no está de acuerdo, muy negativo.
+* No penalices automáticamente falta de experiencia previa, vivir en apartamento o alquilar.
+* En alimento, negativo si menciona únicamente sobras, huesos o comida improvisada.
+
+Marcas negativas: Raza, Gati, Toky, Super Canito, Pelusa, Dogui, Connie, Whiskas, Astro, Sabrositos, Lager, Charrúa, Criolla, Trotter, Can Feed, Ecopet Natural, Nutrican, Friskies, Dog Chow, Cat Chow y Pedigree.
+
+Dirección:
+* Si parece de un país distinto a Uruguay, muy negativo.
+* Si menciona asentamientos, Barrio Benedetti, Eucaliptus, Eucaliptos o Barrio El Placer, agrega observación de verificación manual y reduce moderadamente el score.
+
+Tenencia responsable: si el postulante NO está de acuerdo, mencionalo en concerns de forma destacada pero no decidas el rechazo por ti mismo; deja la decisión al humano.
+
+Devuelve exclusivamente JSON válido con esta estructura:
+
+{
+"score": 0,
+"strengths": [],
+"concerns": [],
+"missingInformation": [],
+"summary": "",
+"recommendation": "high|medium|low",
+"preferences": {
+"species": "perro|gato|cualquiera",
+"size": "pequeño|mediano|grande|cualquiera",
+"hasKids": true,
+"hasOtherDogs": true,
+"hasOtherCats": true,
+"hasYard": true
+}
+}
+
+Reglas:
+* score entre 0 y 100.
+* summary menor a 150 palabras.
+* size: usar "cualquiera" por defecto (este formulario no pregunta preferencia de tamaño).
+* Devuelve únicamente JSON válido.`;
+
+// ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
 
 /**
- * Runs the full evaluation pipeline:
+ * Runs the full evaluation pipeline for a given profile:
  * 1. Google AI (3 models, first-success)
- * 2. Groq fallback (llama-3.3-70b, 3 retries)
+ * 2. Groq fallback (3 retries)
  * 3. Writes the result to Firestore googleForms/{docId} with merge
  *
  * @param docId - The Firestore document ID of the form to evaluate
  * @param evaluationData - Pre-processed form data (already filtered via prepareEvaluationData)
+ * @param profile - The evaluation profile to use ('legacy' or 'v2'). Defaults to 'legacy' for backward compatibility.
  * @returns The evaluation result, or null if all providers + retries fail
  */
 export async function runFullEvaluation(
   docId: string,
-  evaluationData: Record<string, unknown>
+  evaluationData: Record<string, unknown>,
+  profile: EvaluationProfile = 'legacy'
 ): Promise<FormEvaluation | null> {
-  let evaluation = await evaluateWithGoogleAI(evaluationData);
+  const systemPromptGoogle = profile === 'v2' ? SYSTEM_PROMPT_GOOGLE_V2 : SYSTEM_PROMPT_GOOGLE;
+  const systemPromptGroq = profile === 'v2' ? SYSTEM_PROMPT_GROQ_V2 : SYSTEM_PROMPT_GROQ;
+
+  let evaluation = await evaluateWithGoogleAI(evaluationData, systemPromptGoogle);
 
   if (!evaluation) {
-    evaluation = await evaluateWithGroq(evaluationData);
+    evaluation = await evaluateWithGroq(evaluationData, systemPromptGroq);
   }
 
   if (evaluation) {
