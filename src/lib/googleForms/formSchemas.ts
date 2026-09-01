@@ -28,10 +28,10 @@ export function normalizeQuestion(question: string): string {
  * Kept independent from the legacy `FIELD_MAP` so that a wording change in one
  * form never affects the other.
  *
- * The combined food question maps entirely to `petDiet`; the responsible-ownership
- * law paragraph maps to `responsibleOwnershipAgreement`; the informational
- * adoption-responsibility paragraph is intentionally NOT mapped (it requires no
- * response and is preserved only in `rawData`).
+ * The combined food question maps entirely to `petDiet`; the
+ * responsible-ownership question maps to `responsibleOwnershipAgreement`; the
+ * informational adoption-responsibility note is intentionally NOT mapped (it
+ * requires no response and is preserved only in `rawData`).
  */
 export const FIELD_MAP_V2: Record<string, string> = {
   'Marca temporal': 'submittedAt',
@@ -52,8 +52,7 @@ export const FIELD_MAP_V2: Record<string, string> = {
   '¿Tiene algún vecino que esté especialmente en contra de que habiten perros en las viviendas cercanas?':
     'neighborIssues',
   '¿Vivienda propia o de alquiler?': 'housingOwnership',
-  '¿Qué alimentación cree que es la adecuada para un perro (o gato si es lo que quiere adoptar)? ¿Que marcas de comida suele darles a sus animales?':
-    'petDiet',
+  '¿Qué alimentación y qué marcas de comida le daría a su mascota?': 'petDiet',
   '¿Qué piensa de la castración? ¿Castraría usted a su mascota? ¿Por qué?': 'neuteringOpinion',
   '¿Por qué se decide a adoptar a un animal? ¿Con qué finalidad lo adopta? (Para compañía, para cría, para caza, como guardián, como terapia,...)':
     'adoptionReason',
@@ -72,7 +71,7 @@ export const FIELD_MAP_V2: Record<string, string> = {
     'identificationCommitment',
   'Por la salud de su mascota y para evitar enfermedades es necesario vacunarlo anualmente. En caso de ser cachorro, se le debe completar el plan de vacunas y al siguiente año continuar con la anual (una vez al año). ¿Está en condiciones de hacerlo?':
     'annualVaccination',
-  'La Ley N° 19.889 y el Decreto N° 57/023, Reglamentan que a partir de febrero de 2023, Es obligatoria la esterilización de todos los perros y gatos en el territorio nacional. Como grupo de rescate nos parece importante su implementación, por lo que se realizará un seguimiento y ayuda de coordinación de castración a los 6 meses.':
+  'Ley de tenencia responsable y esterilización (Ley 19.889 y Decreto 57/023)':
     'responsibleOwnershipAgreement',
   'Dirección de correo electrónico': 'googleAccountEmail',
 };

@@ -193,8 +193,7 @@ export const NEW_FORM_FIELDS: FormFieldPresentation[] = [
   { field: 'housingOwnership', label: '¿Vivienda propia o de alquiler?' },
   {
     field: 'petDiet',
-    label:
-      '¿Qué alimentación cree que es la adecuada para un perro (o gato si es lo que quiere adoptar)? ¿Que marcas de comida suele darles a sus animales?',
+    label: '¿Qué alimentación y qué marcas de comida le daría a su mascota?',
   },
   {
     field: 'neuteringOpinion',
@@ -240,8 +239,7 @@ export const NEW_FORM_FIELDS: FormFieldPresentation[] = [
   },
   {
     field: 'responsibleOwnershipAgreement',
-    label:
-      'La Ley N° 19.889 y el Decreto N° 57/023, Reglamentan que a partir de febrero de 2023, Es obligatoria la esterilización de todos los perros y gatos en el territorio nacional. Como grupo de rescate nos parece importante su implementación, por lo que se realizará un seguimiento y ayuda de coordinación de castración a los 6 meses.',
+    label: 'Ley de tenencia responsable y esterilización (Ley 19.889 y Decreto 57/023)',
   },
   { field: 'googleAccountEmail', label: 'Dirección de correo electrónico' },
 ];

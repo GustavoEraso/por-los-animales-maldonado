@@ -56,5 +56,5 @@ export const FIELD_LABELS: Record<string, string> = {
   applicantEmail: 'Mail',
   googleAccountEmail: 'Dirección de correo electrónico',
   responsibleOwnershipAgreement:
-    'La Ley N° 19.889 y el Decreto N° 57/023, Reglamentan que a partir de febrero de 2023, Es obligatoria la esterilización de todos los perros y gatos en el territorio nacional. Como grupo de rescate nos parece importante su implementación, por lo que se realizará un seguimiento y ayuda de coordinación de castración a los 6 meses.',
+    'Ley de tenencia responsable y esterilización (Ley 19.889 y Decreto 57/023)',
 } as const;
