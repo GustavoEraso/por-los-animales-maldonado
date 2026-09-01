@@ -591,7 +591,7 @@ No inventes información que no aparezca en el formulario.
 
 No penalices automáticamente la falta de experiencia previa con animales.
 
-No tengas en cuenta la preferencia de tamaño ("sizePreference"): este formulario no pregunta por ello. Para preferences.size, usa "cualquiera" salvo que puedas inferir de forma fiable un tamaño de las respuestas.
+Para preferences.species y preferences.size, infiere de forma fiable la especie y el tamaño del animal que el postulante dice que eligió (por su nombre, descripción o foto); si no es posible inferirlos, usa "cualquiera".
 
 IMPORTANTE SOBRE ALIMENTACIÓN:
 - El campo petDiet puede contener TANTO los hábitos de alimentación como las marcas de comida mencionadas. Analiza ambas cosas.
@@ -670,7 +670,8 @@ VACACIONES:
 - Llevar la mascota es positivo; dejarla con familiares responsables es positivo; no saber qué hará es negativo.
 
 COMPOSICIÓN DEL HOGAR:
-- Cuanto más detalle, mejor. Varios niños pequeños no es negativo pero se señala como aspecto a considerar.
+- Cuanto más detalle, mejor. Varios niños pequeños no es negativo por sí mismo, pero se señala como aspecto a considerar.
+- Tener niños/as en el hogar NO es negativo por sí mismo; solo señálalo como aspecto a verificar si el animal elegido (especie, tamaño o temperamento) resulta una preocupación para convivir con niños pequeños.
 
 TIEMPO SOLO:
 - Hasta 8 horas es aceptable. Más de 8 horas se menciona como aspecto a revisar.
@@ -762,7 +763,8 @@ Devuelve exclusivamente JSON válido con esta estructura:
 Reglas:
 * score entre 0 y 100.
 * summary menor a 150 palabras.
-* size: usar "cualquiera" por defecto (este formulario no pregunta preferencia de tamaño).
+* size: inferir de forma fiable la especie y el tamaño del animal que el postulante dice que eligió (nombre, descripción o foto); si no es posible, usar "cualquiera".
+* Niños en el hogar: NO son negativos por sí mismos; solo señálalos como aspecto a verificar si el animal elegido (especie, tamaño o temperamento) es una preocupación para convivir con niños pequeños.
 * Devuelve únicamente JSON válido.`;
 
 // ---------------------------------------------------------------------------
