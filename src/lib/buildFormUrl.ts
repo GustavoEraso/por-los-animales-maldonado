@@ -4,12 +4,12 @@ interface FormUrlParams {
 }
 
 const FORM_BASE =
-  'https://docs.google.com/forms/d/e/1FAIpQLScvzAe9is0FY9Yj3jJuVCfi61Un3WhhnmgkXHPWmkwWQcujIw/viewform';
+  'https://docs.google.com/forms/d/e/1FAIpQLSfopaLEpwmju5lrNfCRQzaBLeR-i5Tzgi49EQh14Kxf6z3omw/viewform';
 
 /**
- * Builds a Google Form URL with pre-filled fields for dog adoption.
- * The generated URL includes the dog's name and a link to its adoption page,
- * automatically filling the corresponding fields in the Google Form.
+ * Builds a Google Form URL for the new adoption form with pre-filled data.
+ * Automatically fills the "Nombre o descripción de la mascota elegida" field
+ * with the dog's name and a link to its adoption page.
  *
  * @param {Object} params - Parameters for building the form URL.
  * @param {string} params.dogName - The name of the dog.
@@ -37,7 +37,6 @@ export function buildFormUrl({ dogName, dogId }: FormUrlParams): string {
 
   const params = new URLSearchParams({
     usp: 'pp_url',
-    'entry.1842397340': 'sitio web',
     'entry.1406517497': combined,
   });
 
