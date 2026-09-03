@@ -16,6 +16,8 @@ export interface AdoptionFormData {
   newStatus?: 'transitorio' | 'adoptado';
   selectedFormId?: string;
   selectedFormName?: string;
+  /** Applicant profile id of the selected form, to link real adoptions to the ficha. */
+  selectedFormApplicantId?: string;
   nextFollowUpDays: number;
   followUpManager: string;
   /** Name given by the adopter, distinct from the original animal name. */

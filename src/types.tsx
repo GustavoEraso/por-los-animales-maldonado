@@ -109,6 +109,8 @@ export interface PrivateInfoType {
   sterilizationDate?: number;
   /** Images uploaded during follow-up events (sterilizations, vaccinations, etc.). */
   eventImages?: Img[];
+  /** Applicant profile (ficha) of the current adopter, when adoption came from a linked form. */
+  currentAdopterApplicantId?: string;
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
@@ -145,6 +147,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   eventImg?: Img | Img[];
   /** PDF documents uploaded specifically for this event. */
   eventPdfs?: PdfMetadata[];
+  /** Applicant profile involved in adoption/return events, when known. */
+  applicantId?: string;
   changes?: {
     before?: beforeAfterType;
     after?: beforeAfterType;
@@ -182,7 +186,8 @@ export type AuditLogType =
   | 'config'
   | 'sponsor'
   | 'carousel'
-  | 'form';
+  | 'form'
+  | 'applicant';
 
 /**
  * Actions that can be performed on entities
@@ -286,6 +291,8 @@ export interface CollectionsType {
     | 'config'
     | 'googleForms'
     | 'googleFormComments'
+    | 'applicantProfiles'
+    | 'applicantContactIndex'
     | 'seguimientoMatches';
 }
 
@@ -373,6 +380,138 @@ export interface GoogleFormEntry {
   // Approved animal reference (does NOT auto-execute adoption)
   approvedAnimalId?: string;
   approvedAnimalName?: string;
+  // Applicant profile linkage (added by the identity resolution pipeline)
+  applicantId?: string;
+  identityResolution?: IdentityResolution;
+  // Human decision details shown in the applicant history
+  decisionReason?: string;
+  decisionAt?: string;
+  decisionBy?: string;
+  // Lifecycle of the AI evaluation; distinguishes "not run yet" from "skipped"
+  evaluationState?:
+    | 'pending'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'skipped_blacklist'
+    | 'skipped_error';
+}
+
+/**
+ * Result of resolving which applicant profile a form belongs to.
+ *
+ * - `created`: a brand new profile was created for this submission.
+ * - `matched`: exactly one existing profile was found via its contacts.
+ * - `ambiguous`: different contacts pointed to different profiles; needs review.
+ * - `unresolved`: no reliable contact was present to build identity on.
+ * - `manually_linked`: an admin linked the form by hand.
+ */
+export type IdentityMatchStatus =
+  | 'created'
+  | 'matched'
+  | 'ambiguous'
+  | 'unresolved'
+  | 'manually_linked';
+
+export interface IdentityResolution {
+  status: IdentityMatchStatus;
+  matchedContactTypes: ('email' | 'phone')[];
+  /** Profiles that were candidates when the outcome was ambiguous. */
+  candidateApplicantIds?: string[];
+  resolvedAt: string;
+  resolvedBy: 'system' | string;
+}
+
+// ---------------------------------------------------------------------------
+// Applicant profiles (fichas de postulantes)
+// ---------------------------------------------------------------------------
+
+/** Activation state and audit trail of the applicant blacklist. */
+export interface ApplicantBlacklist {
+  active: boolean;
+  reason: string | null;
+  activatedAt: string | null;
+  activatedBy: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+/**
+ * Canonical, stable record of a person applying to adopt ("ficha de postulante").
+ * The document ID is a UUID generated server-side and never changes even when
+ * the person's contacts change. Contacts are stored inline in the profile
+ * and indexed in the reverse-lookup collection `applicantContactIndex`.
+ */
+export interface ApplicantProfile {
+  id: string;
+  canonicalName: string;
+  nameAliases: string[];
+  /** All known contacts, stored inline (small, bounded list per person). */
+  contacts: ApplicantContact[];
+  blacklist: ApplicantBlacklist;
+  /** Number of linked googleForms (denormalized counter). */
+  formsCount: number;
+  /** Number of confirmed adoption transactions (denormalized counter). */
+  adoptionCount: number;
+  /** Number of return transactions (denormalized counter). */
+  returnCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /**
+   * Identity lifecycle state of the profile.
+   * - `active`: the profile is operational and usable.
+   * - `needs_review`: there is insufficient info or an identity conflict.
+   * - `merged`: the profile was merged into another (see `mergedInto`).
+   */
+  identityStatus: 'active' | 'needs_review' | 'merged';
+  /**
+   * When a profile is merged into another, this points to the surviving
+   * profile. The merged profile is kept (never deleted) so history is
+   * recoverable and links do not break.
+   */
+  mergedInto?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** General inline notes (no subcollections per project decision). */
+  notes?: ApplicantNote[];
+}
+
+/** A free-form note left by staff on an applicant profile. */
+export interface ApplicantNote {
+  text: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+/** A contact stored inline in the applicant profile's `contacts` array. */
+export interface ApplicantContact {
+  type: 'email' | 'phone';
+  /** Raw value as entered, for display purposes. */
+  value: string;
+  /** Normalized value used for matching. */
+  normalizedValue: string;
+  /** Source field(s) the value came from, e.g. ['applicantEmail']. */
+  labels: string[];
+  /** Forms where this contact was seen. */
+  sourceFormIds: string[];
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+/**
+ * Reverse index: normalized contact (HMAC-hashed as the document ID) ->
+ * candidate profiles. Several profiles can share a contact (family phone,
+ * recycled numbers); those cases are flagged with `conflict` and reviewed
+ * by humans instead of auto-merged.
+ */
+export interface ApplicantContactIndexEntry {
+  id: string;
+  type: 'email' | 'phone';
+  applicantIds: string[];
+  conflict: boolean;
+  firstSeenAt: string;
+  lastSeenAt: string;
 }
 
 /**

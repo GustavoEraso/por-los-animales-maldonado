@@ -4,9 +4,13 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { hasPermission } from '@/lib/permissions';
 import { logger } from '@/lib/logger';
 import { retryEvaluation } from '@/lib/evaluation/actions';
 import type { GoogleFormEvaluation } from '@/types';
+
+/** Minimum role required to retry an AI evaluation. */
+const MIN_RETRY_ROLE = 'rescatista';
 
 interface UseRetryEvaluationReturn {
   /** Triggers a re-evaluation for the given form. Returns the evaluation or null on failure. */
@@ -42,6 +46,15 @@ export function useRetryEvaluation(): UseRetryEvaluationReturn {
     ): Promise<GoogleFormEvaluation | null> => {
       if (!currentUser || !rawFormData) return null;
 
+      if (!hasPermission(currentUser.role, MIN_RETRY_ROLE)) {
+        logger({
+          level: 'warn',
+          code: 'RETRY_UNAUTHORIZED',
+          message: `User ${currentUser.id} (role: ${currentUser.role}) is not authorized to retry evaluations`,
+        });
+        return null;
+      }
+
       setIsRetrying(true);
 
       try {
@@ -61,7 +74,7 @@ export function useRetryEvaluation(): UseRetryEvaluationReturn {
 
         // Reject when the evaluation is null so the toast shows an error instead of a false success
         const result = await handlePromiseToast(
-          retryEvaluation(formId, rawFormData).then((evaluation) => {
+          retryEvaluation(formId, rawFormData, currentUser.role).then((evaluation) => {
             if (!evaluation) {
               throw new Error('All AI providers failed to evaluate the form');
             }

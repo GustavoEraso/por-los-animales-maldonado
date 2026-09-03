@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { increment } from 'firebase/firestore';
 import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
-import { auth } from '@/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
-import { handlePromiseToast } from '@/lib/handleToast';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
@@ -48,11 +50,12 @@ export default function ReturnModal({
   setPrivateInfo,
   setAllAnimalTransactions,
 }: AnimalActionModalProps): React.ReactElement {
+  const { currentUser } = useAuth();
   const [returnModalOpen, setReturnModalOpen] = useState<boolean>(false);
   const [adoptionData, setAdoptionData] = useState<AdoptionFormData>({
     ...DEFAULT_ADOPTION_DATA,
     newStatus: undefined,
-    followUpManager: auth.currentUser?.email ?? '',
+    followUpManager: currentUser?.id ?? '',
   });
 
   // Form selector state
@@ -153,13 +156,39 @@ export default function ReturnModal({
     fetchOtherForms();
   }, [viewMode, otherFormsDateFrom, otherFormsDateTo, animal.id]);
 
-  const selectForm = (form: GoogleFormEntry) => {
+  const selectForm = async (form: GoogleFormEntry): Promise<void> => {
+    // Block selection if the applicant profile linked to the form is blacklisted.
+    if (form.applicantId) {
+      try {
+        const profile = await getFirestoreDocById<{ blacklist?: { active?: boolean } }>({
+          currentCollection: 'applicantProfiles',
+          id: form.applicantId,
+        });
+        if (profile?.blacklist?.active) {
+          handleToast({
+            type: 'error',
+            title: 'Ficha en lista negra',
+            text: 'Este postulante está en lista negra y no puede ser seleccionado para una adopción.',
+          });
+          return;
+        }
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'FETCH_APPLICANT_FOR_RETURN_ERROR',
+          message: 'Error checking blacklist for return form',
+          data: error,
+        });
+      }
+    }
+
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
       contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
+      selectedFormApplicantId: form.applicantId,
     }));
     setViewMode('main');
   };
@@ -169,14 +198,46 @@ export default function ReturnModal({
       ...prev,
       selectedFormId: undefined,
       selectedFormName: undefined,
+      selectedFormApplicantId: undefined,
     }));
   };
 
   const handleReturn = async (): Promise<void> => {
-    setReturnModalOpen(false);
-
     const newStatus = adoptionData.newStatus || 'transitorio';
     const isGoingToNewAdopter = newStatus === 'adoptado';
+
+    // Re-check blacklist at submit time for re-adoptions to prevent TOCTOU.
+    if (isGoingToNewAdopter && adoptionData.selectedFormApplicantId) {
+      try {
+        const profile = await getFirestoreDocById<{ blacklist?: { active?: boolean } }>({
+          currentCollection: 'applicantProfiles',
+          id: adoptionData.selectedFormApplicantId,
+        });
+        if (profile?.blacklist?.active) {
+          handleToast({
+            type: 'error',
+            title: 'Ficha en lista negra',
+            text: 'Este postulante fue incluido en lista negra mientras se completaba el formulario. No se puede registrar la re-adopción.',
+          });
+          return;
+        }
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'RETURN_BLACKLIST_RECHECK_ERROR',
+          message: 'Error re-checking blacklist at return submit time',
+          data: error,
+        });
+        handleToast({
+          type: 'error',
+          title: 'Error de verificación',
+          text: 'No se pudo verificar el estado de lista negra. Intentá de nuevo.',
+        });
+        return;
+      }
+    }
+
+    setReturnModalOpen(false);
     const notePrefix = isGoingToNewAdopter ? '[Nota de re-adopción] - ' : '[Nota de retorno] - ';
     const now = createTimestamp();
 
@@ -189,8 +250,15 @@ export default function ReturnModal({
         ? {
             adoptionFormId: adoptionData.selectedFormId,
             adoptionFormName: adoptionData.selectedFormName,
+            ...(adoptionData.selectedFormApplicantId
+              ? { currentAdopterApplicantId: adoptionData.selectedFormApplicantId }
+              : { currentAdopterApplicantId: privateInfo.currentAdopterApplicantId ?? '' }),
           }
-        : { adoptionFormId: '' as const, adoptionFormName: '' as const }),
+        : {
+            adoptionFormId: '' as const,
+            adoptionFormName: '' as const,
+            currentAdopterApplicantId: '',
+          }),
       // ─── Seguimiento denormalized fields ───
       species: animal.species,
       mainImageUrl: animal.images?.[0]?.imgUrl ?? '',
@@ -201,8 +269,8 @@ export default function ReturnModal({
             followUpStatus: 'active',
             followUpManager: adoptionData.followUpManager
               ? [adoptionData.followUpManager]
-              : auth.currentUser?.email
-                ? [auth.currentUser.email]
+              : currentUser?.id
+                ? [currentUser.id]
                 : [],
             adoptionDate: now,
             nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
@@ -240,13 +308,22 @@ export default function ReturnModal({
       img: animal.images?.[0],
       transactionType: isGoingToNewAdopter ? 'adoption' : 'return',
       date: now,
-      modifiedBy: auth.currentUser?.email || 'system',
+      modifiedBy: currentUser?.id || 'system',
       since: now,
       status: newStatus,
       isAvailable: !isGoingToNewAdopter,
       isVisible: !isGoingToNewAdopter,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      // Re-adoption: link the new adopter's ficha. Return to transit: keep the
+      // returning adopter's ficha on the historical record (plan 9.4).
+      ...(isGoingToNewAdopter
+        ? adoptionData.selectedFormApplicantId
+          ? { applicantId: adoptionData.selectedFormApplicantId }
+          : {}
+        : privateInfo.currentAdopterApplicantId
+          ? { applicantId: privateInfo.currentAdopterApplicantId }
+          : {}),
       changes: {
         before: {
           status: animal.status,
@@ -272,8 +349,8 @@ export default function ReturnModal({
           followUpManager: isGoingToNewAdopter
             ? adoptionData.followUpManager
               ? [adoptionData.followUpManager]
-              : auth.currentUser?.email
-                ? [auth.currentUser.email]
+              : currentUser?.id
+                ? [currentUser.id]
                 : []
             : [],
         },
@@ -297,7 +374,7 @@ export default function ReturnModal({
         action: 'update',
         entityId: privateInfo.id,
         entityName: privateInfo.name || animal.name,
-        modifiedBy: auth.currentUser?.email || 'system',
+        modifiedBy: currentUser?.id || 'system',
         changes: newTransactionData.changes as {
           before?: Record<string, unknown>;
           after?: Record<string, unknown>;
@@ -318,6 +395,25 @@ export default function ReturnModal({
           postTransactionData({
             data: newTransactionData,
           }),
+          // Denormalize return/adoption count on the applicant profile so the
+          // ficha can display it without scanning all transactions.
+          ...(isGoingToNewAdopter && adoptionData.selectedFormApplicantId
+            ? [
+                postFirestoreData({
+                  data: { adoptionCount: increment(1) },
+                  currentCollection: 'applicantProfiles',
+                  id: adoptionData.selectedFormApplicantId,
+                }),
+              ]
+            : !isGoingToNewAdopter && privateInfo.currentAdopterApplicantId
+              ? [
+                  postFirestoreData({
+                    data: { returnCount: increment(1) },
+                    currentCollection: 'applicantProfiles',
+                    id: privateInfo.currentAdopterApplicantId,
+                  }),
+                ]
+              : []),
         ]),
         {
           messages: {
@@ -493,6 +589,7 @@ export default function ReturnModal({
                       newStatus: e.target.value as 'transitorio' | 'adoptado',
                       selectedFormId: undefined,
                       selectedFormName: undefined,
+                      selectedFormApplicantId: undefined,
                     }));
                   }}
                 >

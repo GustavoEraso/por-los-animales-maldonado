@@ -20,6 +20,13 @@ const METADATA_FIELDS = new Set([
   'status',
   'approvedAnimalId',
   'approvedAnimalName',
+  'applicantId',
+  'identityResolution',
+  'decisionReason',
+  'decisionAt',
+  'decisionBy',
+  'evaluationState',
+  'formVersion',
 ]);
 
 /**
@@ -39,13 +46,50 @@ const METADATA_FIELDS = new Set([
  */
 export async function retryEvaluation(
   formId: string,
-  rawFormData: Record<string, unknown>
+  rawFormData: Record<string, unknown>,
+  userRole?: string
 ): Promise<GoogleFormEvaluation | null> {
   if (!formId || !rawFormData) {
     logger({
       level: 'warn',
       code: 'RETRY_INVALID_PARAMS',
       message: 'Missing formId or rawFormData for evaluation retry',
+    });
+    return null;
+  }
+
+  // Server-side role check (defense-in-depth; primary check is in the client hook).
+  // Once Firebase Admin SDK is integrated, this should verify the session cookie.
+  // When the role is not provided at all we also reject, because the client
+  // should always supply it and a missing value could indicate tampering.
+  const ALLOWED_ROLES = ['rescatista', 'admin', 'superadmin'];
+  if (!userRole || !ALLOWED_ROLES.includes(userRole)) {
+    logger({
+      level: 'warn',
+      code: 'RETRY_ROLE_DENIED',
+      message: `Retry rejected: user role "${userRole ?? 'missing'}" is not authorized`,
+    });
+    return null;
+  }
+
+  // Ensure the client-submitted document id matches the form being retried so a
+  // caller cannot request evaluation for an arbitrary form id.
+  if (rawFormData.id !== undefined && String(rawFormData.id) !== String(formId)) {
+    logger({
+      level: 'warn',
+      code: 'RETRY_FORM_ID_MISMATCH',
+      message: 'Retry formId does not match the submitted document id',
+    });
+    return null;
+  }
+
+  // Fail closed: a form skipped because of a blacklist must never be evaluated
+  // through the retry path.
+  if (rawFormData.evaluationState === 'skipped_blacklist') {
+    logger({
+      level: 'warn',
+      code: 'RETRY_BLACKLISTED',
+      message: `Refusing to evaluate form ${formId} because it is blacklisted`,
     });
     return null;
   }

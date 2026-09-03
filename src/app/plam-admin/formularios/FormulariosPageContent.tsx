@@ -254,17 +254,36 @@ export default function FormulariosPageContent({
   const handleStatusChange = useCallback(
     async (
       newStatus: GoogleFormStatus,
-      approvedAnimal?: { id: string; name: string }
+      approvedAnimal?: { id: string; name: string },
+      reason?: string
     ): Promise<void> => {
       if (!selected || !currentUser) return;
 
       const previous = resolvedStatus(selected);
-      if (previous === newStatus && !approvedAnimal && !selected.approvedAnimalId) return;
+      const hasApprovalData =
+        approvedAnimal !== undefined || selected.approvedAnimalId !== undefined;
+      const reasonChanged =
+        reason !== undefined && reason.trim() !== (selected.decisionReason ?? '');
+      if (previous === newStatus && !hasApprovalData && !reasonChanged) return;
 
       setUpdatingStatus(true);
 
       const updateData: Partial<GoogleFormEntry> = { status: newStatus };
       const changesAfter: Record<string, unknown> = { status: newStatus };
+
+      const decisionTimestamp = new Date().toISOString();
+      updateData.decisionAt = decisionTimestamp;
+      updateData.decisionBy = currentUser.id;
+      changesAfter.decisionAt = decisionTimestamp;
+      changesAfter.decisionBy = currentUser.id;
+
+      // Only overwrite the reason when an explicit one is provided. Clearing it
+      // to '' on every non-rejected transition would destroy the decision history
+      // (plan §11: "the history must not be destroyed").
+      if (reason !== undefined && reason.trim()) {
+        updateData.decisionReason = reason.trim();
+        changesAfter.decisionReason = reason.trim();
+      }
 
       if (newStatus === 'approved') {
         if (approvedAnimal) {
@@ -322,9 +341,9 @@ export default function FormulariosPageContent({
           },
           error: { title: 'Error', text: 'No se pudo actualizar el estado.' },
         },
+      }).finally(() => {
+        setUpdatingStatus(false);
       });
-
-      setUpdatingStatus(false);
     },
     [selected, currentUser]
   );
@@ -636,7 +655,8 @@ interface DetailPanelProps {
   form: GoogleFormEntry;
   onStatusChange: (
     status: GoogleFormStatus,
-    approvedAnimal?: { id: string; name: string }
+    approvedAnimal?: { id: string; name: string },
+    reason?: string
   ) => Promise<void>;
   updatingStatus: boolean;
   initialAnimals: Animal[];
@@ -666,6 +686,8 @@ const DetailPanel = memo(function DetailPanel({
   const [animals] = useState<Animal[]>(initialAnimals);
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [rejectReason, setRejectReason] = useState(form.decisionReason ?? '');
+  const [showRejectInput, setShowRejectInput] = useState(false);
 
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
@@ -810,7 +832,45 @@ const DetailPanel = memo(function DetailPanel({
       </div>
 
       {/* Evaluation */}
-      {!evaluation ? (
+      {form.evaluationState === 'skipped_blacklist' ? (
+        <div className="border border-red-200 bg-red-50 rounded-xl p-4 flex items-start gap-3">
+          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+            🚫
+          </span>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-red-800">Evaluación omitida por lista negra</p>
+            <p className="text-xs text-red-700 leading-relaxed">
+              La ficha asociada está en lista negra, por lo que este formulario debe ser revisado
+              únicamente por personal autorizado.
+            </p>
+          </div>
+        </div>
+      ) : form.evaluationState === 'skipped_error' ? (
+        <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex items-start gap-3">
+          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+            ⚠
+          </span>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-amber-800">Evaluación omitida</p>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              No se pudo verificar la identidad del postulante, por lo que la evaluación automática
+              quedó en pausa por seguridad.
+            </p>
+          </div>
+        </div>
+      ) : form.evaluationState === 'running' ? (
+        <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 flex items-start gap-3">
+          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+            ⏳
+          </span>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-blue-800">Evaluación en progreso</p>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              sof-IA está analizando este formulario. Los resultados aparecerán automáticamente.
+            </p>
+          </div>
+        </div>
+      ) : !evaluation && form.evaluationState !== 'completed' ? (
         <EvaluationMissingCard
           formId={form.id}
           formName={form.fullName}
@@ -822,72 +882,81 @@ const DetailPanel = memo(function DetailPanel({
       ) : (
         <>
           {/* Score + recommendation */}
-          <h2 className="font-semibold text-gray-800">
-            Evaluación de{' '}
-            <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span>
-          </h2>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div
-              className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(evaluation.score)}`}
-            >
-              {evaluation.score}
-            </div>
-            <span
-              className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[evaluation.recommendation]}`}
-            >
-              {RECOMMENDATION_LABELS[evaluation.recommendation] ?? evaluation.recommendation}
-            </span>
-          </div>
+          {(() => {
+            const ev = evaluation as NonNullable<typeof evaluation>;
+            return (
+              <>
+                <h2 className="font-semibold text-gray-800">
+                  Evaluación de{' '}
+                  <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">
+                    sof-IA
+                  </span>
+                </h2>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div
+                    className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(ev.score)}`}
+                  >
+                    {ev.score}
+                  </div>
+                  <span
+                    className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[ev.recommendation]}`}
+                  >
+                    {RECOMMENDATION_LABELS[ev.recommendation] ?? ev.recommendation}
+                  </span>
+                </div>
 
-          {/* Summary */}
-          {evaluation.summary && (
-            <p className="text-sm text-gray-600 leading-relaxed">{evaluation.summary}</p>
-          )}
+                {/* Summary */}
+                {ev.summary && (
+                  <p className="text-sm text-gray-600 leading-relaxed">{ev.summary}</p>
+                )}
 
-          {/* Strengths */}
-          {evaluation.strengths.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
-              <ul className="flex flex-col gap-1">
-                {evaluation.strengths.map((s, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-gray-700">
-                    <span className="text-green-600 mt-0.5 shrink-0">•</span>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {/* Strengths */}
+                {ev.strengths.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
+                    <ul className="flex flex-col gap-1">
+                      {ev.strengths.map((s, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-700">
+                          <span className="text-green-600 mt-0.5 shrink-0">•</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-          {/* Concerns */}
-          {evaluation.concerns.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
-              <ul className="flex flex-col gap-1">
-                {evaluation.concerns.map((c, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-gray-700">
-                    <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {/* Concerns */}
+                {ev.concerns.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
+                    <ul className="flex flex-col gap-1">
+                      {ev.concerns.map((c, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-700">
+                          <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-          {/* Missing info */}
-          {evaluation.missingInformation.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Información faltante</p>
-              <ul className="flex flex-col gap-1">
-                {evaluation.missingInformation.map((m, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-gray-500">
-                    <span className="mt-0.5 shrink-0">•</span>
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {/* Missing info */}
+                {ev.missingInformation.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Información faltante</p>
+                    <ul className="flex flex-col gap-1">
+                      {ev.missingInformation.map((m, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-500">
+                          <span className="mt-0.5 shrink-0">•</span>
+                          {m}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </>
       )}
 
@@ -923,7 +992,12 @@ const DetailPanel = memo(function DetailPanel({
                 onClick={() => {
                   setShowApprovalOptions(false);
                   setShowAnimalPicker(false);
-                  onStatusChange(s);
+                  if (s === 'rejected') {
+                    setShowRejectInput((prev) => !prev);
+                  } else {
+                    setShowRejectInput(false);
+                    onStatusChange(s);
+                  }
                 }}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
                   isActive
@@ -936,6 +1010,54 @@ const DetailPanel = memo(function DetailPanel({
             );
           })}
         </div>
+
+        {/* Reject reason input */}
+        {showRejectInput && (
+          <div className="mt-3 border border-red-200 bg-red-50 rounded-xl p-3 flex flex-col gap-2">
+            <p className="text-xs font-semibold text-red-800">Motivo del rechazo (opcional)</p>
+            <textarea
+              className="w-full h-20 p-2 border border-red-300 rounded-lg text-sm bg-white field-sizing-content"
+              placeholder="Escribe el motivo del rechazo..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  onStatusChange('rejected', undefined, rejectReason);
+                  setShowRejectInput(false);
+                }}
+                disabled={updatingStatus}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                Confirmar rechazo
+              </button>
+              <button
+                onClick={() => {
+                  setShowRejectInput(false);
+                  setRejectReason(form.decisionReason ?? '');
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Existing decision reason */}
+        {!showRejectInput && form.decisionReason && (
+          <div className="mt-3 border border-gray-200 bg-gray-50 rounded-xl p-3">
+            <p className="text-xs font-semibold text-gray-600 mb-1">Motivo de decisión</p>
+            <p className="text-sm text-gray-800">{form.decisionReason}</p>
+            {form.decisionBy && (
+              <p className="text-xs text-gray-500 mt-1">
+                Registrado por {form.decisionBy}
+                {form.decisionAt && ` el ${new Date(form.decisionAt).toLocaleDateString('es-UY')}`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Approval sub-options */}
         {showApprovalOptions && (

@@ -790,6 +790,19 @@ export async function runFullEvaluation(
   const systemPromptGoogle = profile === 'v2' ? SYSTEM_PROMPT_GOOGLE_V2 : SYSTEM_PROMPT_GOOGLE;
   const systemPromptGroq = profile === 'v2' ? SYSTEM_PROMPT_GROQ_V2 : SYSTEM_PROMPT_GROQ;
 
+  // Mark the form as being evaluated so the UI can show a "running" indicator.
+  try {
+    await setDoc(doc(db, 'googleForms', docId), { evaluationState: 'running' }, { merge: true });
+  } catch (err) {
+    logger({
+      level: 'error',
+      code: 'FIRESTORE_MERGE_FAILED',
+      errorType: 'Firestore',
+      message: `${docId} (running state)`,
+      data: err,
+    });
+  }
+
   let evaluation = await evaluateWithGoogleAI(evaluationData, systemPromptGoogle);
 
   if (!evaluation) {
@@ -798,13 +811,31 @@ export async function runFullEvaluation(
 
   if (evaluation) {
     try {
-      await setDoc(doc(db, 'googleForms', docId), { evaluation }, { merge: true });
+      await setDoc(
+        doc(db, 'googleForms', docId),
+        { evaluation, evaluationState: 'completed' },
+        { merge: true }
+      );
     } catch (err) {
       logger({
         level: 'error',
         code: 'FIRESTORE_MERGE_FAILED',
         errorType: 'Firestore',
         message: docId,
+        data: err,
+      });
+    }
+  } else {
+    // All AI providers failed; record the failure so the UI can show it and
+    // allow a manual retry later.
+    try {
+      await setDoc(doc(db, 'googleForms', docId), { evaluationState: 'failed' }, { merge: true });
+    } catch (err) {
+      logger({
+        level: 'error',
+        code: 'FIRESTORE_MERGE_FAILED',
+        errorType: 'Firestore',
+        message: `${docId} (failed state)`,
         data: err,
       });
     }

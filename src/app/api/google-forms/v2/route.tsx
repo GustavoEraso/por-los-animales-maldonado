@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/firebase';
 import { logger } from '@/lib/logger';
-import { prepareEvaluationData, runFullEvaluation } from '@/lib/evaluation/shared';
 import { FIELD_MAP_V2, normalizeQuestion } from '@/lib/googleForms/formSchemas';
+import { normalizeEmail } from '@/lib/applicants/contacts';
+import { processApplicantSubmission } from '@/lib/applicants/submission';
 
 /**
  * Normalizes the v2 form payload into canonical Firestore fields using the
@@ -37,14 +36,6 @@ function cleanRawData(data: Record<string, string | string[]>): Record<string, s
   );
 }
 
-function normalizeEmail(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed === '' ? undefined : trimmed.toLowerCase();
-}
-
-const EVALUATION_TIMEOUT_MS = 9500;
-
 /**
  * POST /api/google-forms/v2
  *
@@ -53,33 +44,53 @@ const EVALUATION_TIMEOUT_MS = 9500;
  * the two email fields independently, and starts the v2 AI evaluation.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-  if (token !== process.env.GOOGLE_FORMS_V2_API_SECRET) {
+  // Fail closed: a missing server secret must never authorize a request.
+  const expectedSecret = process.env.GOOGLE_FORMS_V2_API_SECRET;
+  if (!expectedSecret) {
+    logger({
+      level: 'error',
+      code: 'MISSING_ENDPOINT_SECRET',
+      message: 'GOOGLE_FORMS_V2_API_SECRET is not configured; rejecting request',
+    });
+    return NextResponse.json({ error: 'Service misconfigured' }, { status: 500 });
+  }
+
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+  if (!token || token !== expectedSecret) {
     logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid v2 token' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
+  let data: unknown;
+  try {
+    data = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
   const dataRecord = data as Record<string, string | string[]>;
 
   const mappedData = normalizeFormData(dataRecord);
   const cleanedData = cleanRawData(dataRecord);
-  const evaluationData = prepareEvaluationData(mappedData);
 
   // Store the two email fields independently (never merged, never overwritten).
   const applicantEmail = normalizeEmail(mappedData.applicantEmail);
   const googleAccountEmail = normalizeEmail(mappedData.googleAccountEmail);
 
-  let docRef;
+  let result: Awaited<ReturnType<typeof processApplicantSubmission>>;
   try {
-    docRef = await addDoc(collection(db, 'googleForms'), {
-      ...mappedData,
-      formVersion: 'v2',
-      applicantEmail,
-      googleAccountEmail,
-      rawData: cleanedData,
-      evaluation: null,
-      createdAt: new Date().toISOString(),
+    result = await processApplicantSubmission({
+      canonicalData: mappedData,
+      evaluationProfile: 'v2',
+      extraFields: {
+        formVersion: 'v2',
+        applicantEmail,
+        googleAccountEmail,
+        rawData: cleanedData,
+      },
     });
   } catch (err) {
     logger({
@@ -93,17 +104,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  // Always run the v2 evaluation profile.
-  const evaluationPromise = runFullEvaluation(docRef.id, evaluationData, 'v2');
-
-  const evaluation = await Promise.race([
-    evaluationPromise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), EVALUATION_TIMEOUT_MS)),
-  ]);
-
-  if (evaluation) {
-    return NextResponse.json({ id: docRef.id, evaluation }, { status: 201 });
+  if (result.status === 'skipped_blacklist') {
+    return NextResponse.json({ id: result.formId, status: 'skipped_blacklist' }, { status: 201 });
   }
 
-  return NextResponse.json({ id: docRef.id, status: 'pending' }, { status: 201 });
+  if (result.status === 'skipped_error') {
+    return NextResponse.json(
+      {
+        id: result.formId,
+        status: 'skipped_error',
+        skippedReason: result.identity.skippedReason,
+      },
+      { status: 201 }
+    );
+  }
+
+  if (result.evaluation) {
+    return NextResponse.json({ id: result.formId, evaluation: result.evaluation }, { status: 201 });
+  }
+
+  // The evaluation timed out or failed — mark as failed so the UI shows a
+  // retry option instead of leaving the form in an ambiguous pending state.
+  return NextResponse.json({ id: result.formId, status: 'pending' }, { status: 201 });
 }
