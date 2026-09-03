@@ -50,7 +50,8 @@ const EVALUATION_TIMEOUT_MS = 9500;
  *
  * Receives submissions from the NEW Google Form. Authenticates with the v2
  * secret, stores the record in `googleForms` with `formVersion: 'v2'`, stores
- * the two email fields independently, and starts the v2 AI evaluation.
+ * the applicant Google Account email independently, and starts the v2 AI
+ * evaluation.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -66,21 +67,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const cleanedData = cleanRawData(dataRecord);
   const evaluationData = prepareEvaluationData(mappedData);
 
-  // Store the two email fields independently (never merged, never overwritten).
-  const applicantEmail = normalizeEmail(mappedData.applicantEmail);
+  // Store the applicant Google Account email independently (never merged).
+  // The legacy "Mail" question is no longer part of the form, so rawData is the
+  // only place where an applicant-provided email may appear if the sheet kept it.
   const googleAccountEmail = normalizeEmail(mappedData.googleAccountEmail);
+
+  const formDoc = {
+    ...mappedData,
+    formVersion: 'v2',
+    rawData: cleanedData,
+    evaluation: null,
+    createdAt: new Date().toISOString(),
+    ...(googleAccountEmail ? { googleAccountEmail } : {}),
+  };
 
   let docRef;
   try {
-    docRef = await addDoc(collection(db, 'googleForms'), {
-      ...mappedData,
-      formVersion: 'v2',
-      applicantEmail,
-      googleAccountEmail,
-      rawData: cleanedData,
-      evaluation: null,
-      createdAt: new Date().toISOString(),
-    });
+    docRef = await addDoc(collection(db, 'googleForms'), formDoc);
   } catch (err) {
     logger({
       level: 'error',
