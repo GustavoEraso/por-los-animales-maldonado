@@ -10,28 +10,31 @@ export async function generateMetadata(
   const { id } = await params;
 
   const animal = await getAnimalById(id);
+  const baseUrl = 'https://www.porlosanimalesmaldonado.org';
   if (!animal) {
     return {
       title: 'Animal no encontrado',
+      robots: { index: false, follow: false },
       openGraph: {
         type: 'article',
         title: 'Animal no encontrado',
         description: 'No se pudo encontrar el animal solicitado.',
-        url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
+        url: `${baseUrl}/adopta/${id}`,
       },
     };
   }
-  const { name, description, images } = animal;
+  const { name, description, images, isAvailable } = animal;
 
   const cover = images?.length ? images?.[0]?.imgUrl : null;
 
   return {
     title: `${name} - Por los Animales Maldonado`,
+    robots: { index: isAvailable === true, follow: true },
     openGraph: {
       type: 'article',
       title: name,
       description,
-      url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
+      url: `${baseUrl}/adopta/${id}`,
       images: cover
         ? [{ url: cover, alt: `Foto de ${name}` }] // Solo la imagen del animal
         : undefined, // Deja que Next.js use las del layout padre
