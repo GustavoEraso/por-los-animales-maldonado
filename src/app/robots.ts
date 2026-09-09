@@ -11,14 +11,7 @@ const PUBLIC_PATHS = [
   '/nosotros',
 ];
 
-const PRIVATE_PATHS = [
-  '/login',
-  '/bingo',
-  '/gracias',
-  '/plam-admin',
-  '/plam-admin/:path*',
-  '/adopta/:path*',
-];
+const PRIVATE_PATHS = ['/login', '/bingo', '/gracias', '/plam-admin', '/plam-admin/:path*'];
 
 export default function robots(): MetadataRoute.Robots {
   return {
