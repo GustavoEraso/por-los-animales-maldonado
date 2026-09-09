@@ -1,4 +1,5 @@
 import { Suspense, type ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 import Loader from '@/components/Loader';
 import { getAnimalsData } from '@/lib/data/animals';
@@ -10,6 +11,13 @@ import CompartirClient from './CompartirClient';
 interface CompartirPageProps {
   params: Promise<{ id: string }>;
 }
+
+export const generateMetadata = (): Metadata => {
+  return {
+    title: 'Generar imagen para compartir',
+    robots: { index: false, follow: false },
+  };
+};
 
 async function CompartirData({ params }: CompartirPageProps): Promise<ReactElement> {
   const { id } = await params;
