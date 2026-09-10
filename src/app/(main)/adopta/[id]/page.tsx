@@ -200,7 +200,7 @@ async function AnimalDetails({ params }: { params: Promise<{ id: string }> }) {
           variant="primary"
           shareTitle={`Conoce a ${name}`}
           shareText={`Ayudanos a que ${name} encuentre una familia.`}
-          urlToShare={`https://porlosanimalesmaldonado.org/adopta/${id}`}
+          urlToShare={`https://www.porlosanimalesmaldonado.org/adopta/${id}`}
           aria-label={`Compartir perfil de ${name} con enlace`}
         >
           <ShareIcon size="lg" title={`Compartir perfil de ${name} con enlace`} />
