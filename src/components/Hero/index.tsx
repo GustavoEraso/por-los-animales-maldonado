@@ -57,7 +57,7 @@ interface Props {
  *   imgAlt="Luna in foster care"
  *   title="Luna"
  *   enableShare
- *   shareUrl="https://porlosanimalesmaldonado.org/adopta/luna"
+ *   shareUrl="https://www.porlosanimalesmaldonado.org/adopta/luna"
  * />
  */
 export default function Hero({
@@ -92,9 +92,9 @@ export default function Hero({
         <section className="flex flex-col gap-4 w-full h-2/3 justify-end max-w-4xl xl:pr-60 ">
           <div className="flex items-end gap-2 lg:gap-4 self-start">
             <div>
-              <h3 className="text-5xl lg:text-8xl font-extrabold text-green-dark uppercase ">
+              <h1 className="text-5xl lg:text-8xl font-extrabold text-green-dark uppercase ">
                 {displayTitle}
-              </h3>
+              </h1>
               {subtitle && (
                 <p className="text-lg lg:text-2xl text-green-dark/60 italic mt-0.5">
                   antes: {subtitle}

@@ -5,9 +5,45 @@ import LogoCarousel from '@/components/LogoCarousel';
 import SmartLink from '@/lib/SmartLink';
 import { FacebookIcon, InstagramIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
+import JsonLd from '@/components/JsonLd';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { getBannersData } from '@/lib/data/banners';
 import { SponsorType } from '@/types';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
+import type { Metadata } from 'next';
+
+const ORGANIZATION_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo300.webp`,
+  sameAs: [
+    'https://www.facebook.com/PorLosAnimalesMaldonado',
+    'https://www.instagram.com/porlosanimales_maldonado/',
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'porlosanimalesmaldo@gmail.com',
+    contactType: 'customer service',
+    areaServed: 'Maldonado, Uruguay',
+    availableLanguage: 'Spanish',
+  },
+};
+
+export const generateMetadata = (): Metadata => {
+  return {
+    title: { absolute: SITE_NAME },
+    description:
+      'Grupo de rescatistas independientes en Maldonado, Uruguay. Perros y gatos en adopción, hogares transitorios, traslados solidarios, donaciones y castraciones.',
+    alternates: {
+      canonical: SITE_URL,
+    },
+    openGraph: {
+      url: SITE_URL,
+    },
+  };
+};
 
 export default async function Home() {
   const [banners, sponsors, carousels] = await Promise.all([
@@ -20,6 +56,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col items-center min-h-screen overflow-x-hidden">
+      <JsonLd data={ORGANIZATION_JSON_LD} />
       <HeroCarrousel items={banners} replaceDefault />
       {/* <Hero /> */}
       <main className="flex flex-col w-full  items-center justify-center">

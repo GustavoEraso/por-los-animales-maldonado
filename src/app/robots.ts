@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = 'https://www.porlosanimalesmaldonado.org';
+import { SITE_URL } from '@/lib/site';
 
 const PUBLIC_PATHS = [
   '/',
@@ -20,6 +19,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: PUBLIC_PATHS,
       disallow: PRIVATE_PATHS,
     },
-    sitemap: `${BASE_URL}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
-const BASE_URL = 'https://www.porlosanimalesmaldonado.org';
+/** Build-date anchor for the sitemap. Keep it static so the route stays prerendered. */
+const LAST_MODIFIED = new Date('2026-09-08');
 
 interface SitemapRoute {
   path: string;
@@ -19,7 +21,8 @@ const PUBLIC_ROUTES: SitemapRoute[] = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return PUBLIC_ROUTES.map((route) => ({
-    url: `${BASE_URL}${route.path}`,
+    url: `${SITE_URL}${route.path}`,
+    lastModified: LAST_MODIFIED,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
