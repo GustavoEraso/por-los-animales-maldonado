@@ -2,6 +2,23 @@ import Image from 'next/image';
 import PayPalProvider from '@/components/PaypalProvider';
 import PayPalSuscriptionButton from '@/elements/PayPalSuscriptionButton';
 import Hero from '@/components/Hero';
+import { SITE_URL } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export const generateMetadata = (): Metadata => {
+  return {
+    title: 'Donaciones por suscripción',
+    description:
+      'Hacé un aporte mensual por PayPal para sostener la atención veterinaria, el alimento y los insumos de los animales rescatados por Por Los Animales Maldonado.',
+    alternates: {
+      canonical: `${SITE_URL}/donaciones/paypalsuscripciones`,
+    },
+    openGraph: {
+      url: `${SITE_URL}/donaciones/paypalsuscripciones`,
+    },
+  };
+};
+
 export default function PaypalSuscripciones() {
   const subscriptionPlans: [string, string][] = [
     ['5', 'P-3EE21900BN8910020NCEVJ2Q'],
