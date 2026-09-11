@@ -13,16 +13,23 @@ import ImpactoBanner from '@/components/ImpactoBanner';
 import LogoCarousel from '@/components/LogoCarousel';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { SponsorType } from '@/types';
+import { SITE_URL } from '@/lib/site';
 
 export const generateMetadata = (): Metadata => {
   return {
+    title: 'Donaciones',
+    description:
+      'Colaborá con Por Los Animales Maldonado con aportes económicos, donación de insumos y alimentos. Ayudanos a cubrir la atención veterinaria de los animales rescatados.',
+    alternates: {
+      canonical: `${SITE_URL}/donaciones`,
+    },
     openGraph: {
       title: 'Ellos te necesitan 🐾',
       description: 'Necesitamos de tu ayuda para saldar nuestras deudas!.',
-      url: 'https://www.porlosanimalesmaldonado.org/donaciones',
+      url: `${SITE_URL}/donaciones`,
       images: [
         {
-          url: 'https://www.porlosanimalesmaldonado.org/og/cachorritos.jpg',
+          url: `${SITE_URL}/og/cachorritos.jpg`,
           width: 1200,
           height: 630,
           alt: 'imagen de cachorritos',

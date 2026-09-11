@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getAnimalById } from '@/lib/data/animals';
+import { SITE_URL } from '@/lib/site';
 
 type RouteParams = { id: string };
 
@@ -10,28 +11,34 @@ export async function generateMetadata(
   const { id } = await params;
 
   const animal = await getAnimalById(id);
+  const animalUrl = `${SITE_URL}/adopta/${id}`;
   if (!animal) {
     return {
       title: 'Animal no encontrado',
+      robots: { index: false, follow: false },
       openGraph: {
         type: 'article',
         title: 'Animal no encontrado',
         description: 'No se pudo encontrar el animal solicitado.',
-        url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
+        url: animalUrl,
       },
     };
   }
-  const { name, description, images } = animal;
+  const { name, description, images, isAvailable } = animal;
 
   const cover = images?.length ? images?.[0]?.imgUrl : null;
 
   return {
-    title: `${name} - Por los Animales Maldonado`,
+    title: name,
+    robots: { index: isAvailable === true, follow: true },
+    alternates: {
+      canonical: animalUrl,
+    },
     openGraph: {
       type: 'article',
       title: name,
       description,
-      url: `https://porlosanimalesmaldonado.org/adopta/${id}`,
+      url: animalUrl,
       images: cover
         ? [{ url: cover, alt: `Foto de ${name}` }] // Solo la imagen del animal
         : undefined, // Deja que Next.js use las del layout padre

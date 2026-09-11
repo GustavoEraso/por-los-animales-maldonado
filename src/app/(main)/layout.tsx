@@ -2,21 +2,26 @@ import type { Metadata } from 'next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
 import { getContactsData } from '@/lib/data/contacts';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Por Los Animales Maldonado',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s - ${SITE_NAME}`,
+  },
   description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
   openGraph: {
-    title: 'Por Los Animales Maldonado',
+    title: SITE_NAME,
     description: 'Somos un grupo de particulares que ayuda a animales en situación de calle.',
-    url: 'https://porlosanimalesmaldonado.org',
-    siteName: 'Por Los Animales Maldonado',
+    url: SITE_URL,
+    siteName: SITE_NAME,
     images: [
       {
-        url: 'https://porlosanimalesmaldonado.org/logo300.webp',
-        width: 300,
-        height: 300,
-        alt: 'Logo de Por Los Animales Maldonado',
+        url: `${SITE_URL}/og/cachorritos.jpg`,
+        width: 1200,
+        height: 630,
+        alt: 'Por Los Animales Maldonado',
       },
     ],
     locale: 'es_ES',

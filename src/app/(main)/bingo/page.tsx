@@ -3,6 +3,8 @@ import Bingo from '@/components/Bingo';
 
 export const generateMetadata = (): Metadata => {
   return {
+    title: 'Bingo Solidario 🐾',
+    robots: { index: false, follow: false },
     openGraph: {
       title: 'Bingo Solidario 🐾',
       description: 'Vení a nuestro Bingo Solidario y ayudanos a seguir cuidando a los animales.',

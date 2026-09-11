@@ -6,6 +6,22 @@ import SmartLink from '@/lib/SmartLink';
 import LogoCarousel from '@/components/LogoCarousel';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { SponsorType } from '@/types';
+import { SITE_URL } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export const generateMetadata = (): Metadata => {
+  return {
+    title: 'Involucrate',
+    description:
+      'Ayudanos a ayudar: hogares transitorios, traslados solidarios, donaciones, castraciones y denuncia de maltrato animal en Maldonado, Uruguay.',
+    alternates: {
+      canonical: `${SITE_URL}/involucrate`,
+    },
+    openGraph: {
+      url: `${SITE_URL}/involucrate`,
+    },
+  };
+};
 
 export default async function INVOLUCRATE() {
   const [sponsors, carousels] = await Promise.all([

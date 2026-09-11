@@ -4,6 +4,22 @@ import IconCard from '@/components/IconCard';
 import LogoCarousel from '@/components/LogoCarousel';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { SponsorType } from '@/types';
+import { SITE_URL } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export const generateMetadata = (): Metadata => {
+  return {
+    title: 'Nosotros',
+    description:
+      'Conocé quiénes somos en Por Los Animales Maldonado: un grupo de rescatistas independientes que trabaja con transitorios, traslados, donaciones y adopciones en Maldonado, Uruguay.',
+    alternates: {
+      canonical: `${SITE_URL}/nosotros`,
+    },
+    openGraph: {
+      url: `${SITE_URL}/nosotros`,
+    },
+  };
+};
 
 export default async function Nosotros() {
   const [sponsors, carousels] = await Promise.all([

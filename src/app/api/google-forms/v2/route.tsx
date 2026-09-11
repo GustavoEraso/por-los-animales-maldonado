@@ -41,7 +41,8 @@ function cleanRawData(data: Record<string, string | string[]>): Record<string, s
  *
  * Receives submissions from the NEW Google Form. Authenticates with the v2
  * secret, stores the record in `googleForms` with `formVersion: 'v2'`, stores
- * the two email fields independently, and starts the v2 AI evaluation.
+ * the applicant Google Account email independently, and starts the v2 AI
+ * evaluation.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   // Fail closed: a missing server secret must never authorize a request.
@@ -76,8 +77,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const mappedData = normalizeFormData(dataRecord);
   const cleanedData = cleanRawData(dataRecord);
 
-  // Store the two email fields independently (never merged, never overwritten).
-  const applicantEmail = normalizeEmail(mappedData.applicantEmail);
+  // Store the applicant Google Account email independently (never merged).
+  // The legacy "Mail" question is no longer part of the form, so rawData is the
+  // only place where an applicant-provided email may appear if the sheet kept it.
   const googleAccountEmail = normalizeEmail(mappedData.googleAccountEmail);
 
   let result: Awaited<ReturnType<typeof processApplicantSubmission>>;
@@ -87,8 +89,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       evaluationProfile: 'v2',
       extraFields: {
         formVersion: 'v2',
-        applicantEmail,
-        googleAccountEmail,
+        // Firestore rejects undefined values, so only write the email when present.
+        ...(googleAccountEmail ? { googleAccountEmail } : {}),
         rawData: cleanedData,
       },
     });

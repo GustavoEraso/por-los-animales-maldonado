@@ -40,9 +40,8 @@ export const FIELD_MAP_V2: Record<string, string> = {
   'Nombre o descripción de la mascota elegida (pueden agregar el link de la foto donde lo vieron):':
     'selectedPet',
   'Domicilio detallado (calle, número) y Localidad:': 'address',
-  Mail: 'applicantEmail',
   '¿Qué edad tiene usted?': 'age',
-  '¿Trabaja actualmente?': 'employmentStatus',
+  '¿Trabaja actualmente? Cuál es su profesión? Horario de trabajo?': 'employmentStatus',
   '¿Ha pensado qué hará con su perro cuando se tome vacaciones?': 'vacationPlan',
   '¿Qué otras personas habitan en su casa? Tienes hijo/s? en caso de tener, que edad tiene/n ?':
     'householdMembers',
@@ -52,7 +51,8 @@ export const FIELD_MAP_V2: Record<string, string> = {
   '¿Tiene algún vecino que esté especialmente en contra de que habiten perros en las viviendas cercanas?':
     'neighborIssues',
   '¿Vivienda propia o de alquiler?': 'housingOwnership',
-  '¿Qué alimentación y qué marcas de comida le daría a su mascota?': 'petDiet',
+  '¿Qué alimentación cree que es la adecuada para un perro (o gato si es lo que quiere adoptar)? ¿Que marcas de comida suele darles a sus animales?':
+    'petDiet',
   '¿Qué piensa de la castración? ¿Castraría usted a su mascota? ¿Por qué?': 'neuteringOpinion',
   '¿Por qué se decide a adoptar a un animal? ¿Con qué finalidad lo adopta? (Para compañía, para cría, para caza, como guardián, como terapia,...)':
     'adoptionReason',
@@ -71,7 +71,7 @@ export const FIELD_MAP_V2: Record<string, string> = {
     'identificationCommitment',
   'Por la salud de su mascota y para evitar enfermedades es necesario vacunarlo anualmente. En caso de ser cachorro, se le debe completar el plan de vacunas y al siguiente año continuar con la anual (una vez al año). ¿Está en condiciones de hacerlo?':
     'annualVaccination',
-  'Ley de tenencia responsable y esterilización (Ley 19.889 y Decreto 57/023)':
+  'La Ley N° 19.889 y el Decreto N° 57/023, Reglamentan que a partir de febrero de 2023, Es obligatoria la esterilización de todos los perros y gatos en el territorio nacional. Como grupo de rescate nos parece importante su implementación, por lo que se realizará un seguimiento y ayuda de coordinación de castración a los 6 meses.':
     'responsibleOwnershipAgreement',
   'Dirección de correo electrónico': 'googleAccountEmail',
 };

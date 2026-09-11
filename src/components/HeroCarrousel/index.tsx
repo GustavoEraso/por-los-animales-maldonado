@@ -162,10 +162,20 @@ export default function HeroCarrousel({
             setBanners(data);
           }
         } else {
-          logger({ level: 'error', code: 'FETCH_BANNERS_FAILED', message: 'Failed to fetch banners:', data: response.statusText });
+          logger({
+            level: 'error',
+            code: 'FETCH_BANNERS_FAILED',
+            message: 'Failed to fetch banners:',
+            data: response.statusText,
+          });
         }
       } catch (error) {
-        logger({ level: 'error', code: 'FETCH_BANNERS_ERROR', message: 'Error fetching banners:', data: error });
+        logger({
+          level: 'error',
+          code: 'FETCH_BANNERS_ERROR',
+          message: 'Error fetching banners:',
+          data: error,
+        });
       }
     }
 
@@ -295,11 +305,17 @@ export default function HeroCarrousel({
                 className={`${index == currentIndex && 'animate-wiggle'} w-full h-full md:h-3/4 z-10 flex flex-col justify-end items-center  absolute bottom-0 lg:pb-8 left-1/2 -translate-x-1/2 text-black  p-4 rounded-lg`}
               >
                 <section className="flex flex-col gap-2 lg:gap-4 w-full h-2/3 justify-end p-2 lg:pb-10 max-w-4xl xl:pr-60 text-cream-light text-shadow-xs  text-shadow-black">
-                  {item.showTitle && item.title && (
-                    <h3 className="text-xl lg:text-5xl font-bold lg:font-extrabold self-start uppercase ">
-                      {item.title}
-                    </h3>
-                  )}
+                  {item.showTitle &&
+                    item.title &&
+                    (currentIndex === index ? (
+                      <h1 className="text-xl lg:text-5xl font-bold lg:font-extrabold self-start uppercase ">
+                        {item.title}
+                      </h1>
+                    ) : (
+                      <h2 className="text-xl lg:text-5xl font-bold lg:font-extrabold self-start uppercase ">
+                        {item.title}
+                      </h2>
+                    ))}
                   {item.showDescription && item.description && (
                     <p className="text-sm lg:text-2xl text-left font-bold">{item.description}</p>
                   )}

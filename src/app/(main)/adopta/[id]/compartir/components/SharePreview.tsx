@@ -244,7 +244,7 @@ export default function SharePreview({
           />
         </div>
         <p className="text-xs text-cream-light text-center">
-          {`porlosanimalesmaldonado.org/adopta/${animal.id}`}
+          {`www.porlosanimalesmaldonado.org/adopta/${animal.id}`}
         </p>
       </footer>
     </div>

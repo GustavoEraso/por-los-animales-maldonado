@@ -11,17 +11,55 @@ import LogoCarousel from '@/components/LogoCarousel';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { Suspense } from 'react';
 import AdoptaSkeleton from './Skeleton';
+import JsonLd from '@/components/JsonLd';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
+
+const FAQ_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: '¿Cómo puedo adoptar un animal?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Buscá en la lista de animales en adopción, conocé su historia y postulate con el formulario de adopción de la mascota que elegiste.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Qué requisitos hay para adoptar?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Adoptar una mascota es un compromiso para toda la vida que requiere tiempo, dedicación, amor y recursos. Llená el formulario y nuestro equipo se pondrá en contacto.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Qué pasa si el animal no está disponible?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Si una mascota no está disponible por el momento, no se puede postular su adopción hasta que vuelva a estarlo.',
+      },
+    },
+  ],
+};
 
 export const generateMetadata = (): Metadata => {
   return {
+    title: 'Animales en adopción',
+    description: `Perros y gatos en adopción en ${SITE_NAME}, Maldonado, Uruguay. Animales rescatados que buscan un hogar lleno de amor.`,
+    alternates: {
+      canonical: `${SITE_URL}/adopta`,
+    },
     openGraph: {
       title: 'Adopta una mascota 🐾',
       description:
         'Conoce a nuestros animales en adopción. Perros, gatos y otros animales esperan encontrar un hogar lleno de amor.',
-      url: 'https://www.porlosanimalesmaldonado.org/adopta',
+      url: `${SITE_URL}/adopta`,
       images: [
         {
-          url: 'https://www.porlosanimalesmaldonado.org/og/cachorritos.jpg',
+          url: `${SITE_URL}/og/cachorritos.jpg`,
           width: 1200,
           height: 630,
           alt: 'Animales en adopción',
@@ -76,6 +114,7 @@ async function AdoptaContent({ searchParams }: AdoptaProps) {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
+      <JsonLd data={FAQ_JSON_LD} />
       <Hero imgURL={cover} title="Animales en adopción" />
       <section className="flex flex-col gap-4 px-9 py-4 w-full max-w-7xl justify-center items-center">
         <SearchBox />
