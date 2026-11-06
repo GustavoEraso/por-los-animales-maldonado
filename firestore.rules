@@ -176,5 +176,13 @@ service cloud.firestore {
       allow read, write: if isRescuer();
     }
 
+    /* ───── 18) dailyTransactionAggregates ─────
+       Daily transaction aggregates for the timeline dashboard. Staff read
+       them from the client, and the adoption/return flows write them.
+    ───── */
+    match /dailyTransactionAggregates/{dayKey} {
+      allow read, write: if isRescuer();
+    }
+
   }
 }
