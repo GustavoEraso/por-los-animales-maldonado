@@ -109,6 +109,8 @@ export interface PrivateInfoType {
   sterilizationDate?: number;
   /** Images uploaded during follow-up events (sterilizations, vaccinations, etc.). */
   eventImages?: Img[];
+  /** Applicant profile (ficha) of the current adopter, when adoption came from a linked form. */
+  currentAdopterApplicantId?: string;
 }
 
 export type beforeAfterType = Partial<Animal> & Partial<PrivateInfoType>;
@@ -145,6 +147,8 @@ export interface AnimalTransactionType extends Partial<Animal>, PrivateInfoType 
   eventImg?: Img | Img[];
   /** PDF documents uploaded specifically for this event. */
   eventPdfs?: PdfMetadata[];
+  /** Applicant profile involved in adoption/return events, when known. */
+  applicantId?: string;
   changes?: {
     before?: beforeAfterType;
     after?: beforeAfterType;
@@ -182,7 +186,8 @@ export type AuditLogType =
   | 'config'
   | 'sponsor'
   | 'carousel'
-  | 'form';
+  | 'form'
+  | 'applicant';
 
 /**
  * Actions that can be performed on entities
@@ -286,6 +291,8 @@ export interface CollectionsType {
     | 'config'
     | 'googleForms'
     | 'googleFormComments'
+    | 'applicantProfiles'
+    | 'applicantContactIndex'
     | 'seguimientoMatches';
 }
 
@@ -373,6 +380,211 @@ export interface GoogleFormEntry {
   // Approved animal reference (does NOT auto-execute adoption)
   approvedAnimalId?: string;
   approvedAnimalName?: string;
+  // Applicant profile linkage (added by the identity resolution pipeline)
+  applicantId?: string;
+  identityResolution?: IdentityResolution;
+  /**
+   * When the applicant profile processing (ficha + contact index) ran for this
+   * form. Set by the client-side pipeline when staff opens the form; `null`
+   * or missing means it is still pending.
+   */
+  identityProcessedAt?: string | null;
+  // Human decision details shown in the applicant history
+  decisionReason?: string;
+  decisionAt?: string;
+  decisionBy?: string;
+  // Lifecycle of the AI evaluation; distinguishes "not run yet" from "skipped"
+  evaluationState?:
+    | 'pending'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'skipped_blacklist'
+    | 'skipped_error';
+}
+
+/**
+ * Result of resolving which applicant profile a form belongs to.
+ *
+ * - `created`: a brand new profile was created for this submission.
+ * - `matched`: exactly one existing profile was found via its contacts.
+ * - `ambiguous`: different contacts pointed to different profiles; needs review.
+ * - `unresolved`: no reliable contact was present to build identity on.
+ * - `manually_linked`: an admin linked the form by hand.
+ */
+export type IdentityMatchStatus =
+  | 'created'
+  | 'matched'
+  | 'ambiguous'
+  | 'unresolved'
+  | 'manually_linked';
+
+export interface IdentityResolution {
+  status: IdentityMatchStatus;
+  matchedContactTypes: ('email' | 'phone')[];
+  /** Profiles that were candidates when the outcome was ambiguous. */
+  candidateApplicantIds?: string[];
+  /**
+   * Legacy: contacts that already belonged to another applicant profile when
+   * the old pipeline ran. New processing does not populate it because only the
+   * automatic Google email is used, and a shared anchor email leaves the form
+   * unresolved.
+   */
+  sharedContacts?: SharedContact[];
+  resolvedAt: string;
+  resolvedBy: 'system' | string;
+}
+
+/** A contact from a submission that is also used by other applicant profiles. */
+export interface SharedContact {
+  type: 'email' | 'phone';
+  /** Normalized contact value, e.g. `92194030` or `juan@pp.com`. */
+  value: string;
+  /** Every applicant profile that has this contact (at processing time). */
+  applicantIds: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Applicant profiles (fichas de postulantes)
+// ---------------------------------------------------------------------------
+
+/** Activation state and audit trail of the applicant blacklist. */
+export interface ApplicantBlacklist {
+  active: boolean;
+  reason: string | null;
+  activatedAt: string | null;
+  activatedBy: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+/** Why an applicant profile was flagged for identity review. */
+export type ApplicantReviewReason = 'blacklist_merge' | 'manual';
+
+/**
+ * Canonical, stable record of a person applying to adopt ("ficha de postulante").
+ * The document ID is a UUID generated server-side and never changes even when
+ * the person's contacts change. Contacts are stored inline in the profile; the
+ * automatic Google email is indexed automatically, while phone numbers are
+ * indexed only after staff confirms them in `applicantContactIndex`.
+ */
+export interface ApplicantProfile {
+  id: string;
+  canonicalName: string;
+  /** Lowercase, accent-free canonical name used for prefix search. */
+  searchName?: string;
+  nameAliases: string[];
+  /** All known contacts, stored inline (small, bounded list per person). */
+  contacts: ApplicantContact[];
+  blacklist: ApplicantBlacklist;
+  /** Number of linked googleForms (denormalized counter). */
+  formsCount: number;
+  /** Number of confirmed adoption transactions (denormalized counter). */
+  adoptionCount: number;
+  /** Number of return transactions (denormalized counter). */
+  returnCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /**
+   * Identity lifecycle state of the profile.
+   * - `active`: the profile is operational and usable.
+   * - `needs_review`: there is insufficient info or an identity conflict.
+   * - `merged`: the profile was merged into another (see `mergedInto`).
+   */
+  identityStatus: 'active' | 'needs_review' | 'merged';
+  /** Why the profile is in `needs_review`. */
+  identityReviewReason?: ApplicantReviewReason | null;
+  /** When staff resolved the review and set the profile back to active. */
+  identityReviewedAt?: string | null;
+  identityReviewedBy?: string | null;
+  /** Optional note left by the reviewer. */
+  identityReviewNote?: string | null;
+  /**
+   * When a profile is merged into another, this points to the surviving
+   * profile. The merged profile is kept (never deleted) so history is
+   * recoverable and links do not break.
+   */
+  mergedInto?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** General inline notes (no subcollections per project decision). */
+  notes?: ApplicantNote[];
+}
+
+/** A free-form note left by staff on an applicant profile. */
+export interface ApplicantNote {
+  text: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+/**
+ * Human review state of a contact extracted from a form.
+ *
+ * - `pending`: the value is shown to staff but not indexed nor used to match.
+ * - `confirmed`: staff reviewed it; it is indexed for coincidence detection.
+ * - `discarded`: staff rejected it; it is kept for history only.
+ *
+ * Legacy records may not have this field; see `getApplicantContactStatus`.
+ */
+export type ApplicantContactStatus = 'pending' | 'confirmed' | 'discarded';
+
+/** User-facing kind of an applicant contact (mirrors private info contacts). */
+export type ApplicantContactKind = 'celular' | 'email' | 'other';
+
+/** A contact stored inline in the applicant profile's `contacts` array. */
+export interface ApplicantContact {
+  /** Identity channel used for normalization and indexing. */
+  type: 'email' | 'phone';
+  /** User-facing kind shown in the UI. Missing on legacy records. */
+  kind?: ApplicantContactKind;
+  /** Optional user-facing label, e.g. "Pareja". */
+  label?: string;
+  /** Raw value as entered, for display purposes. */
+  value: string;
+  /**
+   * Normalized value used for matching. Only set for confirmed, indexable
+   * contacts; pending contacts and `other` contacts keep the raw value only.
+   */
+  normalizedValue?: string;
+  /** Human review state (missing on legacy records). */
+  confirmationStatus?: ApplicantContactStatus;
+  /** Staff member who confirmed the contact (or `system` for the Google email). */
+  confirmedBy?: string | null;
+  confirmedAt?: string | null;
+  /** Staff member who discarded the contact. */
+  discardedBy?: string | null;
+  discardedAt?: string | null;
+  /** Source field(s) the value came from, e.g. ['applicantEmail']. */
+  labels: string[];
+  /** Forms where this contact was seen. */
+  sourceFormIds: string[];
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+/**
+ * Reverse index: normalized contact -> applicant profiles that use it.
+ *
+ * The document ID is `${type}:${normalizedValue}` (e.g. `email:juan@pp.com`,
+ * `phone:92194030`), so authenticated staff can look up a contact from the
+ * client without a server secret. Access is controlled by Firestore rules.
+ *
+ * The automatic Google email and phone numbers explicitly confirmed by staff
+ * are written here.
+ *
+ * Several profiles can share a contact (family phone, recycled numbers); those
+ * cases are appended to `applicantIds` and flagged with `conflict`, and the UI
+ * warns about them instead of merging automatically.
+ */
+export interface ApplicantContactIndexEntry {
+  id: string;
+  type: 'email' | 'phone';
+  applicantIds: string[];
+  conflict: boolean;
+  firstSeenAt: string;
+  lastSeenAt: string;
 }
 
 /**

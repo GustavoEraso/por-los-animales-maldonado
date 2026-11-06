@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/firebase';
 import { logger } from '@/lib/logger';
-import { prepareEvaluationData, runFullEvaluation } from '@/lib/evaluation/shared';
 import { FIELD_MAP_V2, normalizeQuestion } from '@/lib/googleForms/formSchemas';
+import { normalizeEmail } from '@/lib/applicants/contacts';
+import { processApplicantSubmission } from '@/lib/applicants/submission';
 
 /**
  * Normalizes the v2 form payload into canonical Firestore fields using the
@@ -37,14 +36,6 @@ function cleanRawData(data: Record<string, string | string[]>): Record<string, s
   );
 }
 
-function normalizeEmail(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed === '' ? undefined : trimmed.toLowerCase();
-}
-
-const EVALUATION_TIMEOUT_MS = 9500;
-
 /**
  * POST /api/google-forms/v2
  *
@@ -54,36 +45,55 @@ const EVALUATION_TIMEOUT_MS = 9500;
  * evaluation.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-  if (token !== process.env.GOOGLE_FORMS_V2_API_SECRET) {
+  // Fail closed: a missing server secret must never authorize a request.
+  const expectedSecret = process.env.GOOGLE_FORMS_V2_API_SECRET;
+  if (!expectedSecret) {
+    logger({
+      level: 'error',
+      code: 'MISSING_ENDPOINT_SECRET',
+      message: 'GOOGLE_FORMS_V2_API_SECRET is not configured; rejecting request',
+    });
+    return NextResponse.json({ error: 'Service misconfigured' }, { status: 500 });
+  }
+
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+  if (!token || token !== expectedSecret) {
     logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid v2 token' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
+  let data: unknown;
+  try {
+    data = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
   const dataRecord = data as Record<string, string | string[]>;
 
   const mappedData = normalizeFormData(dataRecord);
   const cleanedData = cleanRawData(dataRecord);
-  const evaluationData = prepareEvaluationData(mappedData);
 
   // Store the applicant Google Account email independently (never merged).
   // The legacy "Mail" question is no longer part of the form, so rawData is the
   // only place where an applicant-provided email may appear if the sheet kept it.
   const googleAccountEmail = normalizeEmail(mappedData.googleAccountEmail);
 
-  const formDoc = {
-    ...mappedData,
-    formVersion: 'v2',
-    rawData: cleanedData,
-    evaluation: null,
-    createdAt: new Date().toISOString(),
-    ...(googleAccountEmail ? { googleAccountEmail } : {}),
-  };
-
-  let docRef;
+  let result: Awaited<ReturnType<typeof processApplicantSubmission>>;
   try {
-    docRef = await addDoc(collection(db, 'googleForms'), formDoc);
+    result = await processApplicantSubmission({
+      canonicalData: mappedData,
+      evaluationProfile: 'v2',
+      extraFields: {
+        formVersion: 'v2',
+        // Firestore rejects undefined values, so only write the email when present.
+        ...(googleAccountEmail ? { googleAccountEmail } : {}),
+        rawData: cleanedData,
+      },
+    });
   } catch (err) {
     logger({
       level: 'error',
@@ -96,17 +106,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  // Always run the v2 evaluation profile.
-  const evaluationPromise = runFullEvaluation(docRef.id, evaluationData, 'v2');
-
-  const evaluation = await Promise.race([
-    evaluationPromise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), EVALUATION_TIMEOUT_MS)),
-  ]);
-
-  if (evaluation) {
-    return NextResponse.json({ id: docRef.id, evaluation }, { status: 201 });
+  if (result.evaluation) {
+    return NextResponse.json({ id: result.formId, evaluation: result.evaluation }, { status: 201 });
   }
 
-  return NextResponse.json({ id: docRef.id, status: 'pending' }, { status: 201 });
+  // The evaluation timed out or failed — the UI offers a manual retry.
+  return NextResponse.json({ id: result.formId, status: 'failed' }, { status: 201 });
 }

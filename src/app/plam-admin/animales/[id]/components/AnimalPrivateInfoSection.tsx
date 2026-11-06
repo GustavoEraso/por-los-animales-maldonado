@@ -1,12 +1,20 @@
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Animal, AnimalTransactionType, PrivateInfoType, UserType } from '@/types';
+import {
+  Animal,
+  AnimalTransactionType,
+  ApplicantProfile,
+  PrivateInfoType,
+  UserType,
+} from '@/types';
 import { auth } from '@/firebase';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
 import { handlePromiseToast } from '@/lib/handleToast';
 import { postNewAnimalNote } from '@/lib/firebase/postAnimalNote';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import { getApplicantContactKind, getApplicantContactStatus } from '@/lib/applicants/contacts';
 import { Modal } from '@/components/Modal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditContactModal from './EditContactModal';
@@ -258,6 +266,64 @@ export default function AnimalPrivateInfoSection({
   } = privateInfo;
 
   const { status } = animal;
+
+  /**
+   * While the animal is adopted, the adopter's contacts live on their ficha.
+   * Private info only keeps a snapshot for history/consumers; the UI reads the
+   * ficha so it is the source of truth.
+   */
+  const [adopterProfile, setAdopterProfile] = useState<ApplicantProfile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const adopterApplicantId = privateInfo.currentAdopterApplicantId;
+
+    const loadAdopterProfile = async (): Promise<void> => {
+      if (!adopterApplicantId) {
+        setAdopterProfile(null);
+        return;
+      }
+
+      try {
+        const profile = await getFirestoreDocById<ApplicantProfile>({
+          currentCollection: 'applicantProfiles',
+          id: adopterApplicantId,
+        });
+        if (!cancelled) {
+          // getFirestoreDocById returns the document data without its id.
+          setAdopterProfile(profile ? { ...profile, id: adopterApplicantId } : null);
+        }
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'FETCH_ADOPTER_PROFILE_ERROR',
+          message: 'Error fetching adopter applicant profile:',
+          data: error,
+        });
+        if (!cancelled) setAdopterProfile(null);
+      }
+    };
+
+    loadAdopterProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [privateInfo.currentAdopterApplicantId]);
+
+  const showAdopterContacts = Boolean(privateInfo.currentAdopterApplicantId && adopterProfile);
+  const adopterContacts = (adopterProfile?.contacts ?? []).filter(
+    (contact) => getApplicantContactStatus(contact) === 'confirmed'
+  );
+  const displayedContacts = showAdopterContacts
+    ? adopterContacts.map((contact) => ({
+        type: getApplicantContactKind(contact),
+        value: contact.value,
+        label: contact.label,
+      }))
+    : contacts;
+  const displayedContactName = showAdopterContacts
+    ? (adopterProfile?.canonicalName ?? contactName)
+    : contactName;
 
   /** Toggle note editing and save changes on toggle off */
   const handleNoteEditToggle = async (index: number, isEditing: boolean): Promise<void> => {
@@ -578,10 +644,14 @@ export default function AnimalPrivateInfoSection({
           )}
           <li className="text-xl font-semibold">
             <span>{contactLabelMap[status]}</span>:{' '}
-            <span className="font-normal">{contactName}</span>
+            <span className="font-normal">{displayedContactName}</span>
           </li>
-          {contacts &&
-            contacts.map((contact, index) => (
+          {showAdopterContacts && (
+            <li className="text-sm text-gray-500">Contactos del adoptante (desde su ficha).</li>
+          )}
+          {displayedContacts &&
+            displayedContacts.length > 0 &&
+            displayedContacts.map((contact, index) => (
               <li key={`${index}-${contact.value}`} className="text-xl font-semibold capitalize">
                 {contact.label ? (
                   <>
@@ -596,6 +666,16 @@ export default function AnimalPrivateInfoSection({
                 : <span className="font-normal">{contact.value}</span>
               </li>
             ))}
+          {showAdopterContacts && privateInfo.currentAdopterApplicantId && (
+            <li>
+              <Link
+                href={`/plam-admin/postulantes/${privateInfo.currentAdopterApplicantId}`}
+                className="text-green-600 hover:text-green-800 underline font-normal"
+              >
+                Ver ficha del adoptante →
+              </Link>
+            </li>
+          )}
           {privateInfo.address && (
             <li className="text-xl font-semibold">
               Dirección: <span className="font-normal">{privateInfo.address}</span>
@@ -607,6 +687,7 @@ export default function AnimalPrivateInfoSection({
               privateInfo={privateInfo}
               setPrivateInfo={setPrivateInfo}
               setAllAnimalTransactions={setAllAnimalTransactions}
+              hideContacts={showAdopterContacts}
             />
           </li>
           <li className="text-xl font-semibold">

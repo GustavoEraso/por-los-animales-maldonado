@@ -1,0 +1,188 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ───── Helpers ───── */
+
+    // Helper function to get role hierarchy level
+    function getRoleLevel(role) {
+      return role == 'superadmin' ? 4 :
+             role == 'admin' ? 3 :
+             role == 'rescatista' ? 2 :
+             role == 'user' ? 1 : 0;
+    }
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to get user role safely
+    function getUserRole() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/authorizedEmails/$(request.auth.token.email))
+        ? get(/databases/$(database)/documents/authorizedEmails/$(request.auth.token.email)).data.role
+        : null;
+    }
+
+    function isSuperadmin() {
+      return isAuthenticated() && getRoleLevel(getUserRole()) >= 4;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRoleLevel(getUserRole()) >= 3;
+    }
+
+    function isRescuer() {
+      return isAuthenticated() && getRoleLevel(getUserRole()) >= 2;
+    }
+
+    /* ───── 1) animals ───── */
+    match /animals/{id} {
+      allow read: if true;
+      allow write: if isRescuer();
+    }
+
+    /* ───── 2) contacts ───── */
+    match /contacts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 3) animalPrivateInfo ───── */
+    match /animalPrivateInfo/{id} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 4) animalTransactions ───── */
+    match /animalTransactions/{id} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 5) systemAuditLog ───── */
+    match /systemAuditLog/{logId} {
+
+      allow read: if isAdmin();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll(['type', 'action', 'entityId', 'modifiedBy', 'date'])
+        && request.resource.data.type in ['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form', 'applicant']
+        && request.resource.data.action in ['create', 'update', 'delete']
+        && request.resource.data.entityId is string
+        && request.resource.data.modifiedBy is string
+        && request.resource.data.date is number
+        && request.resource.data.date > 0;
+
+      allow update, delete: if false;
+    }
+
+    /* ───── 6) authorizedEmails ───── */
+    match /authorizedEmails/{emailId} {
+
+      allow read: if true;
+
+      function isPrivilegedRole(role) {
+        return role in ['admin', 'superadmin'];
+      }
+
+      allow create: if isAuthenticated() && (
+        isSuperadmin() ||
+        (isAdmin() && !isPrivilegedRole(request.resource.data.role))
+      )
+      && request.resource.data.keys().hasAll(['email', 'name', 'role'])
+      && request.resource.data.email == emailId;
+
+      allow update: if isAuthenticated()
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.email == emailId
+        && (
+          isSuperadmin() ||
+          (
+            isAdmin() &&
+            !isPrivilegedRole(resource.data.role) &&
+            !isPrivilegedRole(request.resource.data.role)
+          )
+        );
+
+      allow delete: if isSuperadmin();
+    }
+
+    /* ───── 7) banners ───── */
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 8) dashboardAnalytics ───── */
+    match /dashboardAnalytics/{docId} {
+      allow read: if true;
+      allow write: if isRescuer();
+    }
+
+    /* ───── 9) sponsors ───── */
+    match /sponsors/{sponsorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 10) carousels ───── */
+    match /carousels/{carouselId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ───── 11) config ───── */
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isRescuer();
+    }
+
+    /* ───── 12) googleForms ───── */
+    match /googleForms/{formId} {
+      allow read: if isRescuer();
+      allow write: if true;
+    }
+
+    /* ───── 13) googleFormComments ───── */
+    match /googleFormComments/{commentId} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 14) logs ───── */
+    match /logs/{logId} {
+      allow read: if isSuperadmin();
+      allow write: if true;
+    }
+
+    /* ───── 15) seguimientoMatches ───── */
+    match /seguimientoMatches/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ───── 16) applicantProfiles ─────
+       Applicant profiles (fichas) contain PII, so reads and writes are
+       restricted to staff. The identity pipeline runs from the signed-in
+       staff session (client-side), so no server/anonymous access is needed.
+    ───── */
+    match /applicantProfiles/{applicantId} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 17) applicantContactIndex ─────
+       Reverse contact index (`email:...` / `phone:...` -> applicant ids).
+       Same staff-only access as the profiles.
+    ───── */
+    match /applicantContactIndex/{contactId} {
+      allow read, write: if isRescuer();
+    }
+
+    /* ───── 18) dailyTransactionAggregates ─────
+       Daily transaction aggregates for the timeline dashboard. Staff read
+       them from the client, and the adoption/return flows write them.
+    ───── */
+    match /dailyTransactionAggregates/{dayKey} {
+      allow read, write: if isRescuer();
+    }
+
+  }
+}

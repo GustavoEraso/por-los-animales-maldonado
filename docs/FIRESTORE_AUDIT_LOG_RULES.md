@@ -77,7 +77,7 @@ service cloud.firestore {
 
       allow create: if isAuthenticated()
         && request.resource.data.keys().hasAll(['type', 'action', 'entityId', 'modifiedBy', 'date'])
-        && request.resource.data.type in ['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form']
+        && request.resource.data.type in ['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form', 'applicant']
         && request.resource.data.action in ['create', 'update', 'delete']
         && request.resource.data.entityId is string
         && request.resource.data.modifiedBy is string
@@ -170,6 +170,27 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    /* ───── 16) applicantProfiles ─────
+       TEMPORARY TRANSITION RULE — public read/write.
+       The server-side REST/AppScript ingestion calls use the Client SDK without
+       a Firebase-Admin identity, so they need anonymous access. This exposes the
+       profiles (which contain PII) to any client. It is an ACCEPTED RISK until
+       Firebase Admin is integrated in a following phase; then these must be
+       locked to `isRescuer()` (reads) + server-only writes.
+    ───── */
+    match /applicantProfiles/{applicantId} {
+      allow read, write: if true;
+    }
+
+    /* ───── 17) applicantContactIndex ─────
+       TEMPORARY TRANSITION RULE — public read/write for the same reason as
+       applicantProfiles. Contains no raw PII (HMAC-hashed IDs), but is still
+       open; lock it down together with applicantProfiles in the Admin phase.
+    ───── */
+    match /applicantContactIndex/{contactId} {
+      allow read, write: if true;
+    }
+
   }
 }
 ```
@@ -224,7 +245,7 @@ Shorthand functions that combine `isAuthenticated()` and `getRoleLevel()` to che
 - **Create**: Any authenticated user (validated structure)
 - **Update/Delete**: Always denied (immutable)
 - Validates required fields: `type`, `action`, `entityId`, `modifiedBy`, `date`
-- Validates `type` ∈ `['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form']`
+- Validates `type` ∈ `['user', 'banner', 'contact', 'animal', 'config', 'sponsor', 'carousel', 'form', 'applicant']`
 - Validates `action` ∈ `['create', 'update', 'delete']`
 
 ### 6. `authorizedEmails` — User management
@@ -278,6 +299,13 @@ Shorthand functions that combine `isAuthenticated()` and `getRoleLevel()` to che
 ### 15. `seguimientoMatches` — CSV import match data
 
 - **Read/Write**: Admin or higher
+
+### 16-17. `applicantProfiles` & `applicantContactIndex` — Applicant fichas (TEMPORARY)
+
+- **Read/Write**: Public — **TEMPORARY**, accepted risk until Firebase Admin is integrated.
+- The server-sided form ingestion runs on the Client SDK with no Firebase identity, so it needs anonymous access to the reverse-contact index and profiles.
+- `applicantProfiles` contains PII (names, contacts), so keeping it public is only acceptable while the feature ships privately; **tighten this in the Admin phase**.
+- **Recommended final rules:** `allow read: if isRescuer(); allow write: if <server identity>;`
 
 ## Testing
 

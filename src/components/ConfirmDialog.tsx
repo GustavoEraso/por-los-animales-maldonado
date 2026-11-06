@@ -18,6 +18,9 @@ interface ConfirmDialogProps {
   cancelText?: string;
   /** Confirm button style variant */
   variant?: 'danger' | 'warning' | 'primary';
+  /** Optional extra content rendered between the message and the action buttons
+   * (e.g. an input or textarea whose state is kept by the caller). */
+  children?: React.ReactNode;
   /** Callback when user confirms */
   onConfirm: () => void;
   /** Callback when user cancels (optional - if not provided, cancel button won't render) */
@@ -52,6 +55,7 @@ export default function ConfirmDialog({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   variant = 'primary',
+  children,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -120,6 +124,7 @@ export default function ConfirmDialog({
         {/* Content */}
         <div className="px-6 py-4">
           <p className="text-gray-700 whitespace-pre-line">{message}</p>
+          {children && <div className="mt-3">{children}</div>}
         </div>
 
         {/* Actions */}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Loader from '@/components/Loader';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -16,7 +17,12 @@ import {
   RESPONSIBLE_OWNERSHIP_ALERT_STYLES,
 } from '@/lib/googleForms/alerts';
 import FormChat from '@/components/FormChat';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import EvaluationMissingCard from '@/components/EvaluationMissingCard';
+import ApplicantProfileButton from '@/components/ApplicantProfileButton';
+import ContactConflictBanner from '@/components/ContactConflictBanner';
+import { useRetryEvaluation } from '@/hooks/useRetryEvaluation';
+import { useEnsureApplicantProfile } from '@/hooks/useEnsureApplicantProfile';
 import { downloadFormPdf } from '@/lib/generateFormPdf';
 import { logger } from '@/lib/logger';
 
@@ -91,9 +97,49 @@ export default function FormularioDetailContent({
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
   const [showApprovalOptions, setShowApprovalOptions] = useState(false);
   const [showAnimalPicker, setShowAnimalPicker] = useState(false);
+  const [showRejectReason, setShowRejectReason] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [animals] = useState<Animal[]>(initialAnimals);
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showBlacklistEvalConfirm, setShowBlacklistEvalConfirm] = useState(false);
+  const [blacklistOverrideReason, setBlacklistOverrideReason] = useState('');
+  const { overrideBlacklistedEvaluation, isRetrying } = useRetryEvaluation();
+  const { isProcessing: isProcessingFicha } = useEnsureApplicantProfile({
+    form,
+    onProcessed: (result) => {
+      setForm((previous) =>
+        previous
+          ? {
+              ...previous,
+              applicantId: result.applicantId,
+              identityResolution: result.resolution ?? previous.identityResolution,
+              identityProcessedAt: new Date().toISOString(),
+            }
+          : previous
+      );
+    },
+  });
+
+  /**
+   * Manually evaluates a form that was skipped because the applicant is on the
+   * blacklist. The override only fills the AI evaluation; it does not change
+   * the applicant's blacklist status nor the form's adoption status.
+   */
+  const handleEvaluateBlacklisted = async () => {
+    if (!form) return;
+    setShowBlacklistEvalConfirm(false);
+    const evaluation = await overrideBlacklistedEvaluation(
+      form.id,
+      form.fullName,
+      form as unknown as Record<string, unknown>,
+      blacklistOverrideReason || undefined
+    );
+    setBlacklistOverrideReason('');
+    if (evaluation) {
+      setForm((prev) => (prev ? { ...prev, evaluation, evaluationState: 'completed' } : prev));
+    }
+  };
 
   const handleDownloadPdf = async () => {
     if (!form) return;
@@ -132,17 +178,39 @@ export default function FormularioDetailContent({
 
   const handleStatusChange = async (
     newStatus: GoogleFormStatus,
-    approvedAnimal?: { id: string; name: string }
+    approvedAnimal?: { id: string; name: string },
+    reason?: string
   ) => {
     if (!form || !currentUser) return;
 
     const previous = resolvedStatus(form);
-    if (previous === newStatus && !approvedAnimal && !form.approvedAnimalId) return;
+
+    const hasApprovalData = approvedAnimal !== undefined || form.approvedAnimalId !== undefined;
+    const reasonChanged = reason !== undefined && reason.trim() !== (form.decisionReason ?? '');
+
+    // Re-running the exact same status with no new data is a no-op. Allowing the
+    // case where a reason is being added or corrected lets an already-rejected
+    // form be edited (previously the early return swallowed the new reason).
+    if (previous === newStatus && !hasApprovalData && !reasonChanged) return;
 
     setUpdatingStatus(true);
 
     const updateData: Partial<GoogleFormEntry> = { status: newStatus };
     const changesAfter: Record<string, unknown> = { status: newStatus };
+
+    const decisionTimestamp = new Date().toISOString();
+    updateData.decisionAt = decisionTimestamp;
+    updateData.decisionBy = currentUser.id;
+    changesAfter.decisionAt = decisionTimestamp;
+    changesAfter.decisionBy = currentUser.id;
+
+    // Only overwrite the reason when an explicit one is provided. Clearing it
+    // to '' on every non-rejected transition would destroy the decision history
+    // (plan §11: "the history must not be destroyed").
+    if (reason !== undefined && reason.trim()) {
+      updateData.decisionReason = reason.trim();
+      changesAfter.decisionReason = reason.trim();
+    }
 
     if (newStatus === 'approved') {
       if (approvedAnimal) {
@@ -196,9 +264,9 @@ export default function FormularioDetailContent({
         success: { title: 'Estado actualizado', text: `Nuevo estado: ${STATUS_LABELS[newStatus]}` },
         error: { title: 'Error', text: 'No se pudo actualizar el estado.' },
       },
+    }).finally(() => {
+      setUpdatingStatus(false);
     });
-
-    setUpdatingStatus(false);
   };
 
   const filteredAnimals = animals.filter((a) =>
@@ -274,55 +342,63 @@ export default function FormularioDetailContent({
               <h1 className="text-2xl font-bold text-gray-900 leading-tight">
                 {form.fullName ?? '—'}
               </h1>
-              <button
-                onClick={handleDownloadPdf}
-                disabled={downloadingPdf}
-                className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                title="Descargar formulario como PDF"
-              >
-                {downloadingPdf ? (
-                  <>
-                    <svg
-                      className="animate-spin h-3.5 w-3.5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
+              <div className="flex gap-2 shrink-0">
+                <ApplicantProfileButton
+                  applicantId={form.applicantId}
+                  isProcessing={isProcessingFicha}
+                  hasBeenProcessed={Boolean(form.identityProcessedAt)}
+                  variant="link"
+                />
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  title="Descargar formulario como PDF"
+                >
+                  {downloadingPdf ? (
+                    <>
+                      <svg
+                        className="animate-spin h-3.5 w-3.5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      PDF...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
                         stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    PDF...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    PDF
-                  </>
-                )}
-              </button>
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      PDF
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
             {form.selectedPet && (
               <p className="text-sm text-gray-500 mt-0.5">Mascota: {form.selectedPet}</p>
@@ -370,8 +446,69 @@ export default function FormularioDetailContent({
           </div>
         )}
 
+        {/* Shared contacts warning (contact already on another applicant) */}
+        <ContactConflictBanner sharedContacts={form.identityResolution?.sharedContacts} />
+
         {/* AI Evaluation card */}
-        {!evaluation ? (
+        {form.evaluationState === 'skipped_blacklist' ? (
+          <div className="border border-red-200 bg-red-50 rounded-xl p-4 flex items-start gap-3">
+            <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+              🚫
+            </span>
+            <div className="flex flex-col gap-2 flex-1">
+              <p className="text-sm font-semibold text-red-800">
+                Evaluación omitida por lista negra
+              </p>
+              <p className="text-xs text-red-700 leading-relaxed">
+                La ficha asociada está en lista negra, por lo que este formulario debe ser revisado
+                únicamente por personal autorizado.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                {form.applicantId && (
+                  <PostulanteLink
+                    applicantId={form.applicantId}
+                    className="text-red-800 bg-white border-red-300 hover:bg-red-100"
+                  />
+                )}
+                {currentUser && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBlacklistEvalConfirm(true)}
+                    disabled={isRetrying}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isRetrying ? 'Evaluando...' : 'Evaluar de todos modos'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : form.evaluationState === 'skipped_error' ? (
+          <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex items-start gap-3">
+            <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+              ⚠
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-amber-800">Evaluación omitida</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                No se pudo verificar la identidad del postulante, por lo que la evaluación
+                automática quedó en pausa por seguridad.
+              </p>
+            </div>
+          </div>
+        ) : form.evaluationState === 'running' ? (
+          <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 flex items-start gap-3">
+            <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+              ⏳
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-blue-800">Evaluación en progreso</p>
+              <p className="text-xs text-blue-700 leading-relaxed">
+                sof-IA está analizando este formulario. Los resultados aparecerán automáticamente.
+              </p>
+            </div>
+          </div>
+        ) : !evaluation && form.evaluationState !== 'completed' ? (
           <EvaluationMissingCard
             formId={form.id}
             formName={form.fullName}
@@ -382,91 +519,102 @@ export default function FormularioDetailContent({
           />
         ) : (
           <div className="border border-gray-200 shadow rounded-xl  bg-gray-50  p-5 flex flex-col gap-4 ">
-            <h2 className="font-semibold text-gray-800">
-              Evaluación de{' '}
-              <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">sof-IA</span>
-            </h2>
+            {(() => {
+              const ev = evaluation as NonNullable<typeof evaluation>;
+              return (
+                <>
+                  <h2 className="font-semibold text-gray-800">
+                    Evaluación de{' '}
+                    <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">
+                      sof-IA
+                    </span>
+                  </h2>
 
-            {/* Score + recommendation */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div
-                className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(evaluation.score)}`}
-              >
-                {evaluation.score}
-              </div>
-              <span
-                className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[evaluation.recommendation]}`}
-              >
-                {RECOMMENDATION_LABELS[evaluation.recommendation] ?? evaluation.recommendation}
-              </span>
-            </div>
+                  {/* Score + recommendation */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div
+                      className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(ev.score)}`}
+                    >
+                      {ev.score}
+                    </div>
+                    <span
+                      className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[ev.recommendation]}`}
+                    >
+                      {RECOMMENDATION_LABELS[ev.recommendation] ?? ev.recommendation}
+                    </span>
+                  </div>
 
-            {/* Summary */}
-            {evaluation.summary && (
-              <p className="text-sm text-gray-600 leading-relaxed">{evaluation.summary}</p>
-            )}
+                  {/* Summary */}
+                  {ev.summary && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{ev.summary}</p>
+                  )}
 
-            {/* Strengths */}
-            {evaluation.strengths.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
-                <ul className="flex flex-col gap-1">
-                  {evaluation.strengths.map((s, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-700">
-                      <span className="text-green-600 mt-0.5 shrink-0">•</span>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                  {/* Strengths */}
+                  {ev.strengths.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
+                      <ul className="flex flex-col gap-1">
+                        {ev.strengths.map((s, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-gray-700">
+                            <span className="text-green-600 mt-0.5 shrink-0">•</span>
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-            {/* Concerns */}
-            {evaluation.concerns.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
-                <ul className="flex flex-col gap-1">
-                  {evaluation.concerns.map((c, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-700">
-                      <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                  {/* Concerns */}
+                  {ev.concerns.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
+                      <ul className="flex flex-col gap-1">
+                        {ev.concerns.map((c, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-gray-700">
+                            <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-            {/* Missing info */}
-            {evaluation.missingInformation.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1">Información faltante</p>
-                <ul className="flex flex-col gap-1">
-                  {evaluation.missingInformation.map((m, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-500">
-                      <span className="mt-0.5 shrink-0">•</span>
-                      {m}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                  {/* Missing info */}
+                  {ev.missingInformation.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">
+                        Información faltante
+                      </p>
+                      <ul className="flex flex-col gap-1">
+                        {ev.missingInformation.map((m, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-gray-500">
+                            <span className="mt-0.5 shrink-0">•</span>
+                            {m}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-            {/* Preferences */}
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Preferencias del hogar</p>
-              <div className="flex gap-2 flex-wrap">
-                <PreferenceBadge label={`Especie: ${evaluation.preferences.species}`} />
-                <PreferenceBadge label={`Tamaño: ${evaluation.preferences.size}`} />
-                {evaluation.preferences.hasYard && <PreferenceBadge label="Tiene patio" />}
-                {evaluation.preferences.hasKids && <PreferenceBadge label="Convive con niños" />}
-                {evaluation.preferences.hasOtherDogs && (
-                  <PreferenceBadge label="Convive con perros" />
-                )}
-                {evaluation.preferences.hasOtherCats && (
-                  <PreferenceBadge label="Convive con gatos" />
-                )}
-              </div>
-            </div>
+                  {/* Preferences */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                      Preferencias del hogar
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <PreferenceBadge label={`Especie: ${ev.preferences.species}`} />
+                      <PreferenceBadge label={`Tamaño: ${ev.preferences.size}`} />
+                      {ev.preferences.hasYard && <PreferenceBadge label="Tiene patio" />}
+                      {ev.preferences.hasKids && <PreferenceBadge label="Convive con niños" />}
+                      {ev.preferences.hasOtherDogs && (
+                        <PreferenceBadge label="Convive con perros" />
+                      )}
+                      {ev.preferences.hasOtherCats && <PreferenceBadge label="Convive con gatos" />}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -502,7 +650,13 @@ export default function FormularioDetailContent({
                   onClick={() => {
                     setShowApprovalOptions(false);
                     setShowAnimalPicker(false);
-                    handleStatusChange(s);
+                    if (s === 'rejected') {
+                      setShowRejectReason(true);
+                      setRejectReason('');
+                    } else {
+                      setShowRejectReason(false);
+                      handleStatusChange(s);
+                    }
                   }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
                     isActive
@@ -540,6 +694,39 @@ export default function FormularioDetailContent({
                     setShowApprovalOptions(false);
                     setShowAnimalPicker(false);
                   }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Reject reason sub-options */}
+          {showRejectReason && (
+            <div className="border border-red-200 bg-red-50 rounded-xl p-3 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-red-800">Motivo del rechazo</p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Ingresá el motivo (opcional, se guarda en el historial)..."
+                aria-label="Motivo del rechazo"
+                rows={2}
+                className="px-3 py-2 text-sm border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    setShowRejectReason(false);
+                    handleStatusChange('rejected', undefined, rejectReason);
+                  }}
+                  disabled={updatingStatus}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+                <button
+                  onClick={() => setShowRejectReason(false)}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   Cancelar
@@ -646,6 +833,36 @@ export default function FormularioDetailContent({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showBlacklistEvalConfirm}
+        title="Evaluar de todos modos"
+        message={
+          'La evaluación de este formulario se omitió automáticamente porque el postulante está en lista negra.\n\nSolo corrés sof-IA: esto no saca al postulante de la lista negra ni cambia el estado del formulario.'
+        }
+        confirmText="Evaluar"
+        cancelText="Cancelar"
+        variant="warning"
+        onConfirm={handleEvaluateBlacklisted}
+        onCancel={() => {
+          setShowBlacklistEvalConfirm(false);
+          setBlacklistOverrideReason('');
+        }}
+      >
+        <label
+          htmlFor="blacklist-override-reason"
+          className="block text-xs font-semibold text-gray-600 mb-1"
+        >
+          Motivo (opcional)
+        </label>
+        <textarea
+          id="blacklist-override-reason"
+          className="w-full h-20 p-2 border border-gray-300 rounded-lg text-sm field-sizing-content"
+          placeholder="Ej.: salió de la lista negra, revisión especial..."
+          value={blacklistOverrideReason}
+          onChange={(e) => setBlacklistOverrideReason(e.target.value)}
+        />
+      </ConfirmDialog>
     </ProtectedRoute>
   );
 }
@@ -662,5 +879,41 @@ function PreferenceBadge({ label }: { label: string }) {
     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
       {label}
     </span>
+  );
+}
+
+/**
+ * Link to the applicant profile (ficha) associated with a form. Only rendered
+ * when the identity pipeline resolved an `applicantId` for the submission.
+ *
+ * @param applicantId - The linked applicant profile document id
+ * @param className - Optional overrides for the button look (e.g. dark theme)
+ * @example
+ * <PostulanteLink applicantId="ca0f311b-..." />
+ */
+function PostulanteLink({ applicantId, className }: { applicantId: string; className?: string }) {
+  return (
+    <Link
+      href={`/plam-admin/postulantes/${applicantId}`}
+      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+        className ?? 'text-green-forest bg-green-50 border-green-300 hover:bg-green-100'
+      }`}
+    >
+      <svg
+        className="w-3.5 h-3.5 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
+      Ficha del postulante
+    </Link>
   );
 }

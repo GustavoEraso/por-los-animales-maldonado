@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { increment } from 'firebase/firestore';
 import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
-import { auth } from '@/firebase';
+import type { ApplicantProfile } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { processApplicantProfileWithFeedback } from '@/lib/applicants/processFormWithFeedback';
+import { syncApplicantContactsFromTransaction } from '@/lib/applicants/applicantService';
+import { getApplicantContactKind, getApplicantContactStatus } from '@/lib/applicants/contacts';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
+import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { postTransactionData } from '@/lib/firebase/dashboardAnalytics';
-import { handlePromiseToast } from '@/lib/handleToast';
+import { handlePromiseToast, handleToast } from '@/lib/handleToast';
 import { revalidateAnimalCache } from '@/lib/revalidateCache';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { Modal } from '@/components/Modal';
@@ -49,11 +55,12 @@ export default function AdoptionModal({
   setPrivateInfo,
   setAllAnimalTransactions,
 }: AnimalActionModalProps): React.ReactElement {
+  const { currentUser } = useAuth();
   const [adoptionModalOpen, setAdoptionModalOpen] = useState<boolean>(false);
   const [adoptionData, setAdoptionData] = useState<AdoptionFormData>({
     ...DEFAULT_ADOPTION_DATA,
     newStatus: undefined,
-    followUpManager: auth.currentUser?.email ?? '',
+    followUpManager: currentUser?.id ?? '',
   });
 
   // Form selector state
@@ -154,13 +161,66 @@ export default function AdoptionModal({
     fetchOtherForms();
   }, [viewMode, otherFormsDateFrom, otherFormsDateTo, animal.id]);
 
-  const selectForm = (form: GoogleFormEntry) => {
+  const selectForm = async (form: GoogleFormEntry): Promise<void> => {
+    // Make sure the applicant ficha exists before using its id (the form may
+    // never have been opened, so identity processing has not run yet).
+    let applicantId = form.applicantId;
+    if (!form.identityProcessedAt && currentUser) {
+      const result = await processApplicantProfileWithFeedback({
+        formId: form.id,
+        actor: { id: currentUser.id, name: currentUser.name },
+      });
+      applicantId = result?.applicantId ?? applicantId;
+    }
+
+    // Block selection if the applicant profile linked to the form is blacklisted.
+    // Also use the ficha as the source of truth for the contact prefill.
+    let matchedProfile: ApplicantProfile | null = null;
+    if (applicantId) {
+      try {
+        const profile = await getFirestoreDocById<ApplicantProfile>({
+          currentCollection: 'applicantProfiles',
+          id: applicantId,
+        });
+        if (profile?.blacklist?.active) {
+          handleToast({
+            type: 'error',
+            title: 'Ficha en lista negra',
+            text: 'Este postulante está en lista negra y no puede ser seleccionado para una adopción.',
+          });
+          return;
+        }
+        matchedProfile = profile;
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'FETCH_APPLICANT_FOR_ADOPTION_ERROR',
+          message: 'Error checking blacklist for adoption form',
+          data: error,
+        });
+      }
+    }
+
+    const confirmedContacts = (matchedProfile?.contacts ?? [])
+      .filter((contact) => getApplicantContactStatus(contact) === 'confirmed')
+      .map((contact) => ({
+        type: getApplicantContactKind(contact),
+        value: contact.value,
+        label: contact.label,
+      }));
+
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
+      contacts:
+        confirmedContacts.length > 0
+          ? confirmedContacts
+          : form.phone
+            ? [{ type: 'celular' as const, value: form.phone }]
+            : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
+      selectedFormApplicantId: applicantId,
     }));
     setViewMode('main');
   };
@@ -170,10 +230,43 @@ export default function AdoptionModal({
       ...prev,
       selectedFormId: undefined,
       selectedFormName: undefined,
+      selectedFormApplicantId: undefined,
     }));
   };
 
   const handleAdoption = async (): Promise<void> => {
+    // Re-check blacklist at submit time to prevent TOCTOU race condition.
+    if (adoptionData.selectedFormApplicantId) {
+      try {
+        const profile = await getFirestoreDocById<{ blacklist?: { active?: boolean } }>({
+          currentCollection: 'applicantProfiles',
+          id: adoptionData.selectedFormApplicantId,
+        });
+        if (profile?.blacklist?.active) {
+          handleToast({
+            type: 'error',
+            title: 'Ficha en lista negra',
+            text: 'Este postulante fue incluido en lista negra mientras se completaba el formulario. No se puede registrar la adopción.',
+          });
+          return;
+        }
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'ADOPTION_BLACKLIST_RECHECK_ERROR',
+          message: 'Error re-checking blacklist at adoption submit time',
+          data: error,
+        });
+        // Fail closed: if we can't verify the blacklist, block the adoption.
+        handleToast({
+          type: 'error',
+          title: 'Error de verificación',
+          text: 'No se pudo verificar el estado de lista negra. Intentá de nuevo.',
+        });
+        return;
+      }
+    }
+
     setAdoptionModalOpen(false);
 
     const notePrefix = '[Nota de adopción] - ';
@@ -193,6 +286,9 @@ export default function AdoptionModal({
             adoptionFormName: adoptionData.selectedFormName,
           }
         : {}),
+      ...(adoptionData.selectedFormApplicantId
+        ? { currentAdopterApplicantId: adoptionData.selectedFormApplicantId }
+        : { currentAdopterApplicantId: '' }),
       // ─── Seguimiento denormalized fields ───
       species: animal.species,
       mainImageUrl: animal.images?.[0]?.imgUrl ?? '',
@@ -201,8 +297,8 @@ export default function AdoptionModal({
       followUpStatus: 'active',
       followUpManager: adoptionData.followUpManager
         ? [adoptionData.followUpManager]
-        : auth.currentUser?.email
-          ? [auth.currentUser.email]
+        : currentUser?.id
+          ? [currentUser.id]
           : [],
       adoptionDate: now,
       nextFollowUpDate: now + adoptionData.nextFollowUpDays * 24 * 60 * 60 * 1000,
@@ -227,13 +323,16 @@ export default function AdoptionModal({
       img: animal.images?.[0],
       transactionType: 'adoption',
       date: now,
-      modifiedBy: auth.currentUser?.email || 'system',
+      modifiedBy: currentUser?.id || 'system',
       since: now,
       status: 'adoptado',
       isAvailable: false,
       isVisible: false,
       contactName: adoptionData.contactName,
       contacts: adoptionData.contacts.filter((c) => c.value.trim() !== ''),
+      ...(adoptionData.selectedFormApplicantId
+        ? { applicantId: adoptionData.selectedFormApplicantId }
+        : {}),
       changes: {
         before: {
           status: animal.status,
@@ -272,7 +371,7 @@ export default function AdoptionModal({
         action: 'update',
         entityId: privateInfo.id,
         entityName: privateInfo.name || animal.name,
-        modifiedBy: auth.currentUser?.email || 'system',
+        modifiedBy: currentUser?.id || 'system',
         changes: newTransactionData.changes as {
           before?: Record<string, unknown>;
           after?: Record<string, unknown>;
@@ -293,6 +392,17 @@ export default function AdoptionModal({
           postTransactionData({
             data: newTransactionData,
           }),
+          // Denormalize adoption count on the applicant profile so the ficha
+          // can display it without scanning all transactions.
+          ...(adoptionData.selectedFormApplicantId
+            ? [
+                postFirestoreData({
+                  data: { adoptionCount: increment(1) },
+                  currentCollection: 'applicantProfiles',
+                  id: adoptionData.selectedFormApplicantId,
+                }),
+              ]
+            : []),
         ]),
         {
           messages: {
@@ -302,6 +412,33 @@ export default function AdoptionModal({
           },
         }
       );
+
+      // The ficha is the source of truth for the adopter contacts while the
+      // animal is adopted. Copy the reviewed form contacts to it.
+      if (adoptionData.selectedFormApplicantId) {
+        try {
+          await syncApplicantContactsFromTransaction({
+            applicantId: adoptionData.selectedFormApplicantId,
+            contacts: adoptionData.contacts.filter((contact) => contact.value.trim() !== ''),
+            actor: currentUser
+              ? { id: currentUser.id, name: currentUser.name }
+              : { id: 'system', name: 'System' },
+            formId: adoptionData.selectedFormId,
+          });
+        } catch (syncError) {
+          logger({
+            level: 'error',
+            code: 'ADOPTION_CONTACT_SYNC_FAILED',
+            message: 'Could not sync adoption contacts to the applicant ficha',
+            data: syncError,
+          });
+          handleToast({
+            type: 'warning',
+            title: 'Contactos no sincronizados',
+            text: 'La adopción se guardó, pero no se pudieron copiar los contactos a la ficha del adoptante.',
+          });
+        }
+      }
 
       await revalidateAnimalCache(animal.id);
 

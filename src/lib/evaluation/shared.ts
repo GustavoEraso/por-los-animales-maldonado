@@ -8,10 +8,32 @@ import { GoogleGenAI } from '@google/genai';
 // AI client singletons
 // ---------------------------------------------------------------------------
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const googleAi = new GoogleGenAI({
-  apiKey: process.env['GEMINI_FORMS_API_KEY'],
-});
+// AI clients are created lazily so importing this module never fails when the
+// API keys are missing (e.g. local/dev environments that do not run AI).
+let groqClient: Groq | null = null;
+let googleAiClient: GoogleGenAI | null = null;
+
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY is missing — required to run AI evaluation');
+    }
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
+
+function getGoogleAiClient(): GoogleGenAI {
+  if (!googleAiClient) {
+    const apiKey = process.env['GEMINI_FORMS_API_KEY'];
+    if (!apiKey) {
+      throw new Error('GEMINI_FORMS_API_KEY is missing — required to run AI evaluation');
+    }
+    googleAiClient = new GoogleGenAI({ apiKey });
+  }
+  return googleAiClient;
+}
 
 const googleModels = ['gemini-3.1-flash-lite', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it'];
 const GROQ_MODEL = 'openai/gpt-oss-120b';
@@ -472,7 +494,7 @@ async function evaluateWithGoogleAI(
 ): Promise<FormEvaluation | null> {
   for (const model of googleModels) {
     try {
-      const response = await googleAi.models.generateContent({
+      const response = await getGoogleAiClient().models.generateContent({
         model,
         config: {
           systemInstruction: systemPrompt,
@@ -523,7 +545,7 @@ async function evaluateWithGroq(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroqClient().chat.completions.create({
         model: GROQ_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -820,6 +842,19 @@ export async function runFullEvaluation(
   const systemPromptGoogle = profile === 'v2' ? SYSTEM_PROMPT_GOOGLE_V2 : SYSTEM_PROMPT_GOOGLE;
   const systemPromptGroq = profile === 'v2' ? SYSTEM_PROMPT_GROQ_V2 : SYSTEM_PROMPT_GROQ;
 
+  // Mark the form as being evaluated so the UI can show a "running" indicator.
+  try {
+    await setDoc(doc(db, 'googleForms', docId), { evaluationState: 'running' }, { merge: true });
+  } catch (err) {
+    logger({
+      level: 'error',
+      code: 'FIRESTORE_MERGE_FAILED',
+      errorType: 'Firestore',
+      message: `${docId} (running state)`,
+      data: err,
+    });
+  }
+
   let evaluation = await evaluateWithGoogleAI(evaluationData, systemPromptGoogle);
 
   if (!evaluation) {
@@ -828,13 +863,31 @@ export async function runFullEvaluation(
 
   if (evaluation) {
     try {
-      await setDoc(doc(db, 'googleForms', docId), { evaluation }, { merge: true });
+      await setDoc(
+        doc(db, 'googleForms', docId),
+        { evaluation, evaluationState: 'completed' },
+        { merge: true }
+      );
     } catch (err) {
       logger({
         level: 'error',
         code: 'FIRESTORE_MERGE_FAILED',
         errorType: 'Firestore',
         message: docId,
+        data: err,
+      });
+    }
+  } else {
+    // All AI providers failed; record the failure so the UI can show it and
+    // allow a manual retry later.
+    try {
+      await setDoc(doc(db, 'googleForms', docId), { evaluationState: 'failed' }, { merge: true });
+    } catch (err) {
+      logger({
+        level: 'error',
+        code: 'FIRESTORE_MERGE_FAILED',
+        errorType: 'Firestore',
+        message: `${docId} (failed state)`,
         data: err,
       });
     }

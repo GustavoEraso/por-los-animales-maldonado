@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/firebase';
 import { logger } from '@/lib/logger';
-import { prepareEvaluationData, runFullEvaluation } from '@/lib/evaluation/shared';
+import { processApplicantSubmission } from '@/lib/applicants/submission';
 
 // Maps Google Form question text to short Firestore field names.
 // Key: exact question text from the form. Value: field name to use in Firestore.
@@ -96,28 +94,45 @@ export async function GET() {
   return NextResponse.json({ message: 'Hello from Google Forms API route!' });
 }
 
-const EVALUATION_TIMEOUT_MS = 9500;
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-  if (token !== process.env.GOOGLE_FORMS_API_SECRET) {
+  // Fail closed: a missing server secret must never authorize a request.
+  const expectedSecret = process.env.GOOGLE_FORMS_API_SECRET;
+  if (!expectedSecret) {
+    logger({
+      level: 'error',
+      code: 'MISSING_ENDPOINT_SECRET',
+      message: 'GOOGLE_FORMS_API_SECRET is not configured; rejecting request',
+    });
+    return NextResponse.json({ error: 'Service misconfigured' }, { status: 500 });
+  }
+
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+  if (!token || token !== expectedSecret) {
     logger({ level: 'warn', code: 'UNAUTHORIZED', message: 'Invalid token' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
+  let data: unknown;
+  try {
+    data = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
   const mappedData = normalizeFormData(data as Record<string, string[]>);
   const cleanedData = cleanRawData(data as Record<string, string[]>);
-  const evaluationData = prepareEvaluationData(mappedData);
 
-  let docRef;
+  let result: Awaited<ReturnType<typeof processApplicantSubmission>>;
   try {
-    docRef = await addDoc(collection(db, 'googleForms'), {
-      ...mappedData,
-      formVersion: 'legacy',
-      rawData: cleanedData,
-      evaluation: null,
-      createdAt: new Date().toISOString(),
+    result = await processApplicantSubmission({
+      canonicalData: mappedData,
+      extraFields: {
+        formVersion: 'legacy',
+        rawData: cleanedData,
+      },
     });
   } catch (err) {
     logger({
@@ -131,16 +146,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  const evaluationPromise = runFullEvaluation(docRef.id, evaluationData);
-
-  const evaluation = await Promise.race([
-    evaluationPromise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), EVALUATION_TIMEOUT_MS)),
-  ]);
-
-  if (evaluation) {
-    return NextResponse.json({ id: docRef.id, evaluation }, { status: 201 });
+  if (result.evaluation) {
+    return NextResponse.json({ id: result.formId, evaluation: result.evaluation }, { status: 201 });
   }
 
-  return NextResponse.json({ id: docRef.id, status: 'pending' }, { status: 201 });
+  // The evaluation timed out or failed — the UI offers a manual retry.
+  return NextResponse.json({ id: result.formId, status: 'failed' }, { status: 201 });
 }
