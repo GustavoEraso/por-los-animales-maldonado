@@ -106,26 +106,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  if (result.status === 'skipped_blacklist') {
-    return NextResponse.json({ id: result.formId, status: 'skipped_blacklist' }, { status: 201 });
-  }
-
-  if (result.status === 'skipped_error') {
-    return NextResponse.json(
-      {
-        id: result.formId,
-        status: 'skipped_error',
-        skippedReason: result.identity.skippedReason,
-      },
-      { status: 201 }
-    );
-  }
-
   if (result.evaluation) {
     return NextResponse.json({ id: result.formId, evaluation: result.evaluation }, { status: 201 });
   }
 
-  // The evaluation timed out or failed — mark as failed so the UI shows a
-  // retry option instead of leaving the form in an ambiguous pending state.
-  return NextResponse.json({ id: result.formId, status: 'pending' }, { status: 201 });
+  // The evaluation timed out or failed — the UI offers a manual retry.
+  return NextResponse.json({ id: result.formId, status: 'failed' }, { status: 201 });
 }

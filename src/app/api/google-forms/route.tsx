@@ -146,42 +146,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  // A blacklisted applicant never triggers a new AI evaluation; the form is
-  // kept for history but reviewed by humans only.
-  if (result.status === 'skipped_blacklist') {
-    logger({
-      level: 'warn',
-      code: 'BLACKLISTED_APPLICANT',
-      message: 'Legacy form received from a blacklisted applicant; evaluation skipped',
-      data: { formId: result.formId },
-    });
-    return NextResponse.json({ id: result.formId, status: 'skipped_blacklist' }, { status: 201 });
-  }
-
-  // If the identity layer could not verify the blacklist, avoid evaluating the
-  // submission at all rather than risking a bypass.
-  if (result.status === 'skipped_error') {
-    logger({
-      level: 'warn',
-      code: 'EVALUATION_SKIPPED',
-      message: 'Evaluation skipped because identity could not be verified',
-      data: { formId: result.formId, skippedReason: result.identity.skippedReason },
-    });
-    return NextResponse.json(
-      {
-        id: result.formId,
-        status: 'skipped_error',
-        skippedReason: result.identity.skippedReason,
-      },
-      { status: 201 }
-    );
-  }
-
   if (result.evaluation) {
     return NextResponse.json({ id: result.formId, evaluation: result.evaluation }, { status: 201 });
   }
 
-  // The evaluation timed out or failed — mark as failed so the UI shows a
-  // retry option instead of leaving the form in an ambiguous pending state.
-  return NextResponse.json({ id: result.formId, status: 'pending' }, { status: 201 });
+  // The evaluation timed out or failed — the UI offers a manual retry.
+  return NextResponse.json({ id: result.formId, status: 'failed' }, { status: 201 });
 }
