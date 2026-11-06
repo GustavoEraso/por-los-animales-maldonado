@@ -8,10 +8,32 @@ import { GoogleGenAI } from '@google/genai';
 // AI client singletons
 // ---------------------------------------------------------------------------
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const googleAi = new GoogleGenAI({
-  apiKey: process.env['GEMINI_FORMS_API_KEY'],
-});
+// AI clients are created lazily so importing this module never fails when the
+// API keys are missing (e.g. local/dev environments that do not run AI).
+let groqClient: Groq | null = null;
+let googleAiClient: GoogleGenAI | null = null;
+
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY is missing — required to run AI evaluation');
+    }
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
+
+function getGoogleAiClient(): GoogleGenAI {
+  if (!googleAiClient) {
+    const apiKey = process.env['GEMINI_FORMS_API_KEY'];
+    if (!apiKey) {
+      throw new Error('GEMINI_FORMS_API_KEY is missing — required to run AI evaluation');
+    }
+    googleAiClient = new GoogleGenAI({ apiKey });
+  }
+  return googleAiClient;
+}
 
 const googleModels = ['gemini-3.1-flash-lite', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it'];
 const GROQ_MODEL = 'openai/gpt-oss-120b';
@@ -472,7 +494,7 @@ async function evaluateWithGoogleAI(
 ): Promise<FormEvaluation | null> {
   for (const model of googleModels) {
     try {
-      const response = await googleAi.models.generateContent({
+      const response = await getGoogleAiClient().models.generateContent({
         model,
         config: {
           systemInstruction: systemPrompt,
@@ -523,7 +545,7 @@ async function evaluateWithGroq(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroqClient().chat.completions.create({
         model: GROQ_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
