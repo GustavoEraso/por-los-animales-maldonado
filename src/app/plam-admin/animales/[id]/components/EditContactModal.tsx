@@ -16,6 +16,11 @@ interface EditContactModalProps {
   privateInfo: AnimalActionModalProps['privateInfo'];
   setPrivateInfo: AnimalActionModalProps['setPrivateInfo'];
   setAllAnimalTransactions: AnimalActionModalProps['setAllAnimalTransactions'];
+  /**
+   * Hide the contacts editor when the adopter is linked to a ficha (the ficha
+   * is the source of truth for contacts while the animal is adopted).
+   */
+  hideContacts?: boolean;
 }
 
 interface FormContact {
@@ -48,6 +53,7 @@ export default function EditContactModal({
   privateInfo,
   setPrivateInfo,
   setAllAnimalTransactions,
+  hideContacts = false,
 }: EditContactModalProps): React.ReactElement {
   const [open, setOpen] = useState<boolean>(false);
   const [data, setData] = useState<EditContactData>(DEFAULT_DATA);
@@ -202,87 +208,89 @@ export default function EditContactModal({
             />
           </div>
 
-          <div>
-            <label className="block text-green-dark font-semibold mb-2">Contactos</label>
-            <datalist id="contact-label-suggestions">
-              <option value="Familiar" />
-              <option value="Pareja" />
-              <option value="Vecino/a" />
-              <option value="Veterinario/a" />
-              <option value="Trabajo" />
-              <option value="Amigo/a" />
-              <option value="Rescatista" />
-            </datalist>
-            {data.contacts.map((contact, index) => (
-              <div key={index} className="flex flex-wrap gap-2 mb-2">
-                <select
-                  className="p-2 border-2 border-green-dark bg-white rounded-lg"
-                  value={contact.type}
-                  onChange={(e) => {
-                    const newContacts = [...data.contacts];
-                    newContacts[index].type = e.target.value as 'celular' | 'email' | 'other';
-                    setData((prev) => ({ ...prev, contacts: newContacts }));
-                  }}
-                >
-                  <option value="celular">Celular</option>
-                  <option value="email">Email</option>
-                  <option value="other">Otro</option>
-                </select>
-                <input
-                  type="text"
-                  className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
-                  placeholder="Etiqueta"
-                  list="contact-label-suggestions"
-                  value={contact.label || ''}
-                  onChange={(e) => {
-                    const newContacts = [...data.contacts];
-                    newContacts[index].label = e.target.value || undefined;
-                    setData((prev) => ({ ...prev, contacts: newContacts }));
-                  }}
-                />
-                <input
-                  type="text"
-                  className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
-                  placeholder="Valor del contacto"
-                  value={contact.value}
-                  onChange={(e) => {
-                    const newContacts = [...data.contacts];
-                    newContacts[index].value = e.target.value;
-                    setData((prev) => ({ ...prev, contacts: newContacts }));
-                  }}
-                />
-                <button
-                  className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
-                  onClick={() => {
-                    setData((prev) => ({
-                      ...prev,
-                      contacts: prev.contacts.filter((_, i) => i !== index),
-                    }));
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-            <p className="text-xs text-gray-500 mt-1 mb-2">
-              Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto (ej:
-              familiar, pareja).
-            </p>
-            <button
-              className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
-              onClick={() => {
-                setData((prev) => ({
-                  ...prev,
-                  contacts: [
-                    ...prev.contacts,
-                    { type: 'celular' as const, value: '', label: undefined },
-                  ],
-                }));
-              }}
-            >
-              + Agregar Contacto
-            </button>
-          </div>
+          {!hideContacts && (
+            <div>
+              <label className="block text-green-dark font-semibold mb-2">Contactos</label>
+              <datalist id="contact-label-suggestions">
+                <option value="Familiar" />
+                <option value="Pareja" />
+                <option value="Vecino/a" />
+                <option value="Veterinario/a" />
+                <option value="Trabajo" />
+                <option value="Amigo/a" />
+                <option value="Rescatista" />
+              </datalist>
+              {data.contacts.map((contact, index) => (
+                <div key={index} className="flex flex-wrap gap-2 mb-2">
+                  <select
+                    className="p-2 border-2 border-green-dark bg-white rounded-lg"
+                    value={contact.type}
+                    onChange={(e) => {
+                      const newContacts = [...data.contacts];
+                      newContacts[index].type = e.target.value as 'celular' | 'email' | 'other';
+                      setData((prev) => ({ ...prev, contacts: newContacts }));
+                    }}
+                  >
+                    <option value="celular">Celular</option>
+                    <option value="email">Email</option>
+                    <option value="other">Otro</option>
+                  </select>
+                  <input
+                    type="text"
+                    className="p-2 border-2 border-green-dark bg-white rounded-lg w-28"
+                    placeholder="Etiqueta"
+                    list="contact-label-suggestions"
+                    value={contact.label || ''}
+                    onChange={(e) => {
+                      const newContacts = [...data.contacts];
+                      newContacts[index].label = e.target.value || undefined;
+                      setData((prev) => ({ ...prev, contacts: newContacts }));
+                    }}
+                  />
+                  <input
+                    type="text"
+                    className="flex-1 min-w-[120px] p-2 border-2 border-green-dark bg-white rounded-lg"
+                    placeholder="Valor del contacto"
+                    value={contact.value}
+                    onChange={(e) => {
+                      const newContacts = [...data.contacts];
+                      newContacts[index].value = e.target.value;
+                      setData((prev) => ({ ...prev, contacts: newContacts }));
+                    }}
+                  />
+                  <button
+                    className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600"
+                    onClick={() => {
+                      setData((prev) => ({
+                        ...prev,
+                        contacts: prev.contacts.filter((_, i) => i !== index),
+                      }));
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <p className="text-xs text-gray-500 mt-1 mb-2">
+                Las etiquetas son opcionales. Sirven para identificar de quién es cada contacto (ej:
+                familiar, pareja).
+              </p>
+              <button
+                className="bg-green-dark text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300 mt-2"
+                onClick={() => {
+                  setData((prev) => ({
+                    ...prev,
+                    contacts: [
+                      ...prev.contacts,
+                      { type: 'celular' as const, value: '', label: undefined },
+                    ],
+                  }));
+                }}
+              >
+                + Agregar Contacto
+              </button>
+            </div>
+          )}
 
           <div>
             <label className="block text-green-dark font-semibold mb-2">Dirección</label>

@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { increment } from 'firebase/firestore';
 import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
+import type { ApplicantProfile } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { processApplicantProfileWithFeedback } from '@/lib/applicants/processFormWithFeedback';
+import { syncApplicantContactsFromTransaction } from '@/lib/applicants/applicantService';
+import { getApplicantContactKind, getApplicantContactStatus } from '@/lib/applicants/contacts';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -123,6 +127,49 @@ export default function ReturnModal({
     fetchUsers();
   }, [returnModalOpen, animal.id]);
 
+  // While the animal is adopted, prefill the return contacts from the current
+  // adopter's ficha (source of truth). A new form selection overrides them.
+  useEffect(() => {
+    const adopterApplicantId = privateInfo.currentAdopterApplicantId;
+    if (!returnModalOpen || !adopterApplicantId) return;
+
+    let cancelled = false;
+
+    const prefillFromAdopter = async (): Promise<void> => {
+      try {
+        const profile = await getFirestoreDocById<ApplicantProfile>({
+          currentCollection: 'applicantProfiles',
+          id: adopterApplicantId,
+        });
+        if (cancelled || !profile) return;
+
+        const confirmedContacts = (profile.contacts ?? [])
+          .filter((contact) => getApplicantContactStatus(contact) === 'confirmed')
+          .map((contact) => ({
+            type: getApplicantContactKind(contact),
+            value: contact.value,
+            label: contact.label,
+          }));
+
+        if (confirmedContacts.length > 0) {
+          setAdoptionData((prev) => ({ ...prev, contacts: confirmedContacts }));
+        }
+      } catch (error) {
+        logger({
+          level: 'error',
+          code: 'PREFILL_ADOPTER_CONTACTS_ERROR',
+          message: 'Error fetching adopter contacts for return:',
+          data: error,
+        });
+      }
+    };
+
+    prefillFromAdopter();
+    return () => {
+      cancelled = true;
+    };
+  }, [returnModalOpen, privateInfo.currentAdopterApplicantId]);
+
   // Fetch other approved forms when entering search view or changing date range
   useEffect(() => {
     if (viewMode !== 'search') return;
@@ -157,12 +204,25 @@ export default function ReturnModal({
   }, [viewMode, otherFormsDateFrom, otherFormsDateTo, animal.id]);
 
   const selectForm = async (form: GoogleFormEntry): Promise<void> => {
+    // Make sure the applicant ficha exists before using its id (the form may
+    // never have been opened, so identity processing has not run yet).
+    let applicantId = form.applicantId;
+    if (!form.identityProcessedAt && currentUser) {
+      const result = await processApplicantProfileWithFeedback({
+        formId: form.id,
+        actor: { id: currentUser.id, name: currentUser.name },
+      });
+      applicantId = result?.applicantId ?? applicantId;
+    }
+
     // Block selection if the applicant profile linked to the form is blacklisted.
-    if (form.applicantId) {
+    // Also use the ficha as the source of truth for the contact prefill.
+    let matchedProfile: ApplicantProfile | null = null;
+    if (applicantId) {
       try {
-        const profile = await getFirestoreDocById<{ blacklist?: { active?: boolean } }>({
+        const profile = await getFirestoreDocById<ApplicantProfile>({
           currentCollection: 'applicantProfiles',
-          id: form.applicantId,
+          id: applicantId,
         });
         if (profile?.blacklist?.active) {
           handleToast({
@@ -172,6 +232,7 @@ export default function ReturnModal({
           });
           return;
         }
+        matchedProfile = profile;
       } catch (error) {
         logger({
           level: 'error',
@@ -182,13 +243,26 @@ export default function ReturnModal({
       }
     }
 
+    const confirmedContacts = (matchedProfile?.contacts ?? [])
+      .filter((contact) => getApplicantContactStatus(contact) === 'confirmed')
+      .map((contact) => ({
+        type: getApplicantContactKind(contact),
+        value: contact.value,
+        label: contact.label,
+      }));
+
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
+      contacts:
+        confirmedContacts.length > 0
+          ? confirmedContacts
+          : form.phone
+            ? [{ type: 'celular' as const, value: form.phone }]
+            : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
-      selectedFormApplicantId: form.applicantId,
+      selectedFormApplicantId: applicantId,
     }));
     setViewMode('main');
   };
@@ -428,6 +502,37 @@ export default function ReturnModal({
           },
         }
       );
+
+      // Copy the reviewed contacts to the adopter's ficha. For a return to
+      // transit, the returning adopter keeps the contacts as history; for a
+      // re-adoption, the new adopter becomes the current source.
+      const contactApplicantId = isGoingToNewAdopter
+        ? adoptionData.selectedFormApplicantId
+        : privateInfo.currentAdopterApplicantId;
+      if (contactApplicantId) {
+        try {
+          await syncApplicantContactsFromTransaction({
+            applicantId: contactApplicantId,
+            contacts: adoptionData.contacts.filter((contact) => contact.value.trim() !== ''),
+            actor: currentUser
+              ? { id: currentUser.id, name: currentUser.name }
+              : { id: 'system', name: 'System' },
+            formId: isGoingToNewAdopter ? adoptionData.selectedFormId : undefined,
+          });
+        } catch (syncError) {
+          logger({
+            level: 'error',
+            code: 'RETURN_CONTACT_SYNC_FAILED',
+            message: 'Could not sync return contacts to the applicant ficha',
+            data: syncError,
+          });
+          handleToast({
+            type: 'warning',
+            title: 'Contactos no sincronizados',
+            text: 'El retorno se guardó, pero no se pudieron copiar los contactos a la ficha.',
+          });
+        }
+      }
 
       await revalidateAnimalCache(animal.id);
 

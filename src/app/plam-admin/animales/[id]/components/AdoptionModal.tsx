@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { increment } from 'firebase/firestore';
 import { Animal, AnimalTransactionType, GoogleFormEntry, PrivateInfoType, UserType } from '@/types';
+import type { ApplicantProfile } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { processApplicantProfileWithFeedback } from '@/lib/applicants/processFormWithFeedback';
+import { syncApplicantContactsFromTransaction } from '@/lib/applicants/applicantService';
+import { getApplicantContactKind, getApplicantContactStatus } from '@/lib/applicants/contacts';
 import { getFirestoreData } from '@/lib/firebase/getFirestoreData';
 import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
@@ -158,12 +162,25 @@ export default function AdoptionModal({
   }, [viewMode, otherFormsDateFrom, otherFormsDateTo, animal.id]);
 
   const selectForm = async (form: GoogleFormEntry): Promise<void> => {
+    // Make sure the applicant ficha exists before using its id (the form may
+    // never have been opened, so identity processing has not run yet).
+    let applicantId = form.applicantId;
+    if (!form.identityProcessedAt && currentUser) {
+      const result = await processApplicantProfileWithFeedback({
+        formId: form.id,
+        actor: { id: currentUser.id, name: currentUser.name },
+      });
+      applicantId = result?.applicantId ?? applicantId;
+    }
+
     // Block selection if the applicant profile linked to the form is blacklisted.
-    if (form.applicantId) {
+    // Also use the ficha as the source of truth for the contact prefill.
+    let matchedProfile: ApplicantProfile | null = null;
+    if (applicantId) {
       try {
-        const profile = await getFirestoreDocById<{ blacklist?: { active?: boolean } }>({
+        const profile = await getFirestoreDocById<ApplicantProfile>({
           currentCollection: 'applicantProfiles',
-          id: form.applicantId,
+          id: applicantId,
         });
         if (profile?.blacklist?.active) {
           handleToast({
@@ -173,6 +190,7 @@ export default function AdoptionModal({
           });
           return;
         }
+        matchedProfile = profile;
       } catch (error) {
         logger({
           level: 'error',
@@ -183,13 +201,26 @@ export default function AdoptionModal({
       }
     }
 
+    const confirmedContacts = (matchedProfile?.contacts ?? [])
+      .filter((contact) => getApplicantContactStatus(contact) === 'confirmed')
+      .map((contact) => ({
+        type: getApplicantContactKind(contact),
+        value: contact.value,
+        label: contact.label,
+      }));
+
     setAdoptionData((prev) => ({
       ...prev,
       contactName: form.fullName || prev.contactName,
-      contacts: form.phone ? [{ type: 'celular' as const, value: form.phone }] : prev.contacts,
+      contacts:
+        confirmedContacts.length > 0
+          ? confirmedContacts
+          : form.phone
+            ? [{ type: 'celular' as const, value: form.phone }]
+            : prev.contacts,
       selectedFormId: form.id,
       selectedFormName: form.fullName || form.id,
-      selectedFormApplicantId: form.applicantId,
+      selectedFormApplicantId: applicantId,
     }));
     setViewMode('main');
   };
@@ -381,6 +412,33 @@ export default function AdoptionModal({
           },
         }
       );
+
+      // The ficha is the source of truth for the adopter contacts while the
+      // animal is adopted. Copy the reviewed form contacts to it.
+      if (adoptionData.selectedFormApplicantId) {
+        try {
+          await syncApplicantContactsFromTransaction({
+            applicantId: adoptionData.selectedFormApplicantId,
+            contacts: adoptionData.contacts.filter((contact) => contact.value.trim() !== ''),
+            actor: currentUser
+              ? { id: currentUser.id, name: currentUser.name }
+              : { id: 'system', name: 'System' },
+            formId: adoptionData.selectedFormId,
+          });
+        } catch (syncError) {
+          logger({
+            level: 'error',
+            code: 'ADOPTION_CONTACT_SYNC_FAILED',
+            message: 'Could not sync adoption contacts to the applicant ficha',
+            data: syncError,
+          });
+          handleToast({
+            type: 'warning',
+            title: 'Contactos no sincronizados',
+            text: 'La adopción se guardó, pero no se pudieron copiar los contactos a la ficha del adoptante.',
+          });
+        }
+      }
 
       await revalidateAnimalCache(animal.id);
 
