@@ -1,65 +1,79 @@
-import { createHmac, randomUUID } from 'node:crypto';
 import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { logger } from '@/lib/logger';
-import { ContactInput, extractContacts } from '@/lib/applicants/contacts';
+import { createAuditLog } from '@/lib/firebase/createAuditLog';
+import {
+  contactIndexDocId,
+  extractPendingPhoneContacts,
+  getApplicantContactStatus,
+  normalizeApplicantSearchName,
+  normalizeContactValue,
+  normalizeEmail,
+} from '@/lib/applicants/contacts';
+import { parseFormDate } from '@/lib/applicants/formDates';
+import type { ContactInput, DeclaredContactInput } from '@/lib/applicants/contacts';
 import type {
   ApplicantContact,
   ApplicantContactIndexEntry,
   ApplicantProfile,
+  GoogleFormEntry,
   IdentityResolution,
+  SharedContact,
 } from '@/types';
 
 /**
- * Applicant identity resolution (server-only).
+ * Applicant profile processing (isomorphic, runs with the signed-in staff
+ * session from the client).
  *
- * Given the contacts found in a form submission, this module decides which
- * applicant profile (ficha) the submission belongs to and performs the
- * corresponding writes atomically inside a Firestore transaction:
+ * When a form arrives, the ingestion API only stores it and runs the AI
+ * evaluation. The applicant ficha is built later, the first time staff opens
+ * the form (or selects it for an adoption), so the ingress endpoint stays fast
+ * and no server credentials are needed.
  *
- * - Creates a new profile (UUID) when the contacts are new.
- * - Links to the existing profile when contacts resolve to exactly one.
- * - Returns an `ambiguous` outcome without linking when contacts within the
- *   same submission point to different profiles (reviewed by a human).
+ * Identity rules:
+ * - `googleAccountEmail` is the only valid email: Google adds it automatically
+ *   and the applicant cannot edit it. It is the identity anchor, always
+ *   confirmed and indexed automatically.
+ * - The email typed by the applicant (`applicantEmail`) is legacy and no longer
+ *   requested; it is ignored by this pipeline.
+ * - Phone numbers are ambiguous free text: they are stored on the profile as
+ *   `pending` and are neither indexed nor used for coincidences until staff
+ *   confirms them from the ficha.
  *
- * Profiles store their contacts inline (`contacts` array). The reverse index
- * `applicantContactIndex` is keyed by an HMAC of the normalized contact value,
- * so no raw emails or phone numbers are used as document IDs.
- *
- * NOTE: this module uses Node's crypto and Firestore transactions; it must
- * only run on the server (API routes / server actions).
+ * Every write is idempotent: the form is flagged with `identityProcessedAt`
+ * inside the same transaction, so opening the form twice (or two staff members
+ * opening it at once) cannot create duplicate profiles.
  */
-
-export interface IdentityResolutionOutcome {
-  /** Present when the outcome produced a profile link, undefined on ambiguity. */
-  applicantId?: string;
-  resolution: IdentityResolution;
-  /** Whether the resolved profile is blacklisted (evaluation must be skipped). */
-  blacklisted: boolean;
-  /** Set when identity resolution could not run (e.g. missing secret). */
-  skippedReason?: string;
-}
 
 const APPLICANT_PROFILES_COLLECTION = 'applicantProfiles';
 const APPLICANT_CONTACT_INDEX_COLLECTION = 'applicantContactIndex';
 
-function getIndexSecret(): string {
-  return process.env.APPLICANT_INDEX_SECRET ?? '';
+/** Outcome of processing a form's applicant identity. */
+export type EnsureApplicantProfileStatus =
+  | 'created'
+  | 'matched'
+  | 'unresolved'
+  | 'already_processed';
+
+/** Result of `ensureApplicantProfile`. */
+export interface EnsureApplicantProfileResult {
+  status: EnsureApplicantProfileStatus;
+  /** Linked/created profile id, absent when the outcome is unresolved. */
+  applicantId?: string;
+  resolution?: IdentityResolution;
+  /**
+   * Legacy field kept for compatibility. Emails are no longer compared beyond
+   * the anchor, and phones require staff confirmation, so it is always empty.
+   */
+  sharedContacts: SharedContact[];
 }
 
-/**
- * Computes the deterministic (HMAC) document ID for a normalized contact.
- *
- * @param contact - Normalized contact information
- * @returns The opaque document ID for `applicantContactIndex`
- */
-export function contactIndexId(contact: ContactInput): string {
-  return createHmac('sha256', getIndexSecret())
-    .update(`${contact.type}:${contact.normalizedValue}`)
-    .digest('hex');
-}
-
-function toProfileContact(contact: ContactInput, nowIso: string, formId: string): ApplicantContact {
+function toConfirmedContact(
+  contact: ContactInput,
+  nowIso: string,
+  formId: string,
+  confirmedBy: string
+): ApplicantContact {
   return {
     type: contact.type,
     value: contact.rawValue,
@@ -68,33 +82,64 @@ function toProfileContact(contact: ContactInput, nowIso: string, formId: string)
     sourceFormIds: [formId],
     firstSeenAt: nowIso,
     lastSeenAt: nowIso,
+    confirmationStatus: 'confirmed',
+    confirmedBy,
+    confirmedAt: nowIso,
   };
 }
 
-function mergeContactIntoList(
+function toPendingContact(
+  contact: DeclaredContactInput,
+  nowIso: string,
+  formId: string
+): ApplicantContact {
+  return {
+    type: contact.type,
+    value: contact.rawValue,
+    labels: [contact.label],
+    sourceFormIds: [formId],
+    firstSeenAt: nowIso,
+    lastSeenAt: nowIso,
+    confirmationStatus: 'pending',
+  };
+}
+
+function mergeContactSources(
+  existing: ApplicantContact,
+  incoming: ApplicantContact
+): ApplicantContact {
+  return {
+    ...existing,
+    labels: [...new Set([...(existing.labels ?? []), ...(incoming.labels ?? [])])],
+    sourceFormIds: [
+      ...new Set([...(existing.sourceFormIds ?? []), ...(incoming.sourceFormIds ?? [])]),
+    ],
+    lastSeenAt: incoming.lastSeenAt,
+  };
+}
+
+function upsertConfirmedContact(
   existing: ApplicantContact[],
-  contact: ContactInput,
-  formId: string,
-  nowIso: string
+  incoming: ApplicantContact
 ): ApplicantContact[] {
   const matchIndex = existing.findIndex(
-    (entry) => entry.type === contact.type && entry.normalizedValue === contact.normalizedValue
+    (entry) =>
+      getApplicantContactStatus(entry) === 'confirmed' &&
+      entry.type === incoming.type &&
+      entry.normalizedValue === incoming.normalizedValue
   );
 
   if (matchIndex === -1) {
-    return [...existing, toProfileContact(contact, nowIso, formId)];
+    return [...existing, incoming];
   }
 
   const current = existing[matchIndex];
   const updated: ApplicantContact = {
-    ...current,
-    labels: current.labels.includes(contact.label)
-      ? current.labels
-      : [...current.labels, contact.label],
-    sourceFormIds: current.sourceFormIds.includes(formId)
-      ? current.sourceFormIds
-      : [...current.sourceFormIds, formId],
-    lastSeenAt: nowIso,
+    ...mergeContactSources(current, incoming),
+    normalizedValue: incoming.normalizedValue,
+    confirmationStatus: 'confirmed',
+    confirmedBy: current.confirmedBy ?? incoming.confirmedBy,
+    confirmedAt: current.confirmedAt ?? incoming.confirmedAt,
   };
 
   const result = [...existing];
@@ -102,279 +147,329 @@ function mergeContactIntoList(
   return result;
 }
 
-/**
- * Resolves or creates the applicant profile for a form submission.
- *
- * Runs inside a Firestore transaction so two concurrent submissions with the
- * same contact cannot create two separate profiles; the second transaction
- * retries and finds the profile already linked to the contact.
- *
- * @param params.contacts - Normalized contacts extracted from the form
- * @param params.displayName - Applicant's name, to fill the profile label
- * @param params.formId - The form document ID (recorded as contact source)
- * @param params.nowIso - Timestamp reused across all writes for consistency
- * @returns The resolution outcome (profile link, ambiguity, or skip reason)
- */
-export async function resolveApplicantForSubmission(params: {
-  contacts: ContactInput[];
-  displayName: string;
-  formId: string;
-  nowIso: string;
-}): Promise<IdentityResolutionOutcome> {
-  const { contacts, displayName, formId, nowIso } = params;
+function upsertPendingContact(
+  existing: ApplicantContact[],
+  incoming: ApplicantContact
+): ApplicantContact[] {
+  // If the same phone was already confirmed (e.g. a manual contact), do not
+  // add a duplicate pending row.
+  const normalizedIncoming = normalizeContactValue(incoming.type, incoming.value);
+  const alreadyConfirmed = existing.some(
+    (entry) =>
+      getApplicantContactStatus(entry) === 'confirmed' &&
+      entry.type === incoming.type &&
+      Boolean(normalizedIncoming) &&
+      entry.normalizedValue === normalizedIncoming
+  );
+  if (alreadyConfirmed) return existing;
 
-  if (!getIndexSecret()) {
-    // Fail closed: without the HMAC secret we cannot look up any contact index,
-    // so we must assume the applicant could be blacklisted and block evaluation.
-    return {
-      resolution: {
-        status: 'unresolved',
-        matchedContactTypes: [],
-        resolvedAt: nowIso,
-        resolvedBy: 'system',
-      },
-      blacklisted: true,
-      skippedReason: 'missing_index_secret',
-    };
+  const matchIndex = existing.findIndex(
+    (entry) =>
+      entry.type === incoming.type &&
+      getApplicantContactStatus(entry) !== 'confirmed' &&
+      entry.value.trim().toLowerCase() === incoming.value.trim().toLowerCase()
+  );
+
+  if (matchIndex === -1) {
+    return [...existing, incoming];
   }
 
-  if (contacts.length === 0) {
-    // Fail closed: without contacts we cannot identify the person, so we must
-    // assume they could be blacklisted and block evaluation.
-    return {
-      resolution: {
-        status: 'unresolved',
-        matchedContactTypes: [],
-        resolvedAt: nowIso,
-        resolvedBy: 'system',
-      },
-      blacklisted: true,
-      skippedReason: 'no_usable_contact',
-    };
-  }
-
-  return runTransaction(db, async (transaction) => {
-    // -------------------------------------------------------------------
-    // Read every contact index doc first
-    // -------------------------------------------------------------------
-    const indexRefs = contacts.map((contact) =>
-      doc(db, APPLICANT_CONTACT_INDEX_COLLECTION, contactIndexId(contact))
-    );
-    const indexSnapshots = await Promise.all(indexRefs.map((ref) => transaction.get(ref)));
-
-    // Collect every candidate applicant id found across all contacts
-    const candidateIds = new Set<string>();
-    const matchedContactTypes = new Set<'email' | 'phone'>();
-
-    indexSnapshots.forEach((snapshot, position) => {
-      if (!snapshot.exists()) return;
-      const entry = snapshot.data() as Omit<ApplicantContactIndexEntry, 'id'>;
-      entry.applicantIds.forEach((id) => candidateIds.add(id));
-      if (entry.applicantIds.length > 0) {
-        matchedContactTypes.add(contacts[position].type);
-      }
-    });
-
-    // -------------------------------------------------------------------
-    // More than one candidate => ambiguous, link nothing, human review
-    // -------------------------------------------------------------------
-    if (candidateIds.size > 1) {
-      const candidateList = [...candidateIds].sort();
-
-      // Fail closed on ambiguity: if any candidate profile is blacklisted, the
-      // submission must NOT be evaluated, because one of the possible matches
-      // would otherwise bypass the blacklist.
-      const candidateRefs = candidateList.map((id) => doc(db, APPLICANT_PROFILES_COLLECTION, id));
-      const candidateSnapshots = await Promise.all(
-        candidateRefs.map((ref) => transaction.get(ref))
-      );
-      const blacklisted =
-        candidateSnapshots.some(
-          (snapshot) => snapshot.exists() && (snapshot.data() as ApplicantProfile).blacklist?.active
-        ) ?? false;
-
-      logger({
-        level: 'warn',
-        code: 'IDENTITY_AMBIGUOUS',
-        message: 'Form contacts point to multiple applicant profiles; left unlinked.',
-        data: { candidateApplicantIds: candidateList, blacklisted },
-      });
-      return {
-        resolution: {
-          status: 'ambiguous',
-          matchedContactTypes: [...matchedContactTypes],
-          candidateApplicantIds: candidateList,
-          resolvedAt: nowIso,
-          resolvedBy: 'system',
-        },
-        blacklisted,
-      };
-    }
-
-    // -------------------------------------------------------------------
-    // Exactly one candidate => existing profile; attach new contacts if any
-    // -------------------------------------------------------------------
-    if (candidateIds.size === 1) {
-      const applicantId = [...candidateIds][0];
-      const profileRef = doc(db, APPLICANT_PROFILES_COLLECTION, applicantId);
-      const profileSnap = await transaction.get(profileRef);
-      if (!profileSnap.exists()) {
-        // Fail closed: the index points to a profile that no longer exists. We
-        // cannot determine whether the missing profile was blacklisted, so we
-        // block evaluation instead of allowing a potential bypass.
-        throw new Error(`applicantProfiles/${applicantId} referenced but missing`);
-      }
-      const profile = profileSnap.data() as ApplicantProfile;
-      const profileContacts = profile.contacts ?? [];
-
-      // Register new contacts in the reverse index AND in the profile itself
-      let nextContacts = profileContacts;
-      for (const contact of contacts) {
-        const indexSnapshot = indexSnapshots.find(
-          (snapshot, position) =>
-            contacts[position].normalizedValue === contact.normalizedValue &&
-            contacts[position].type === contact.type
-        );
-        const indexLinksThisProfile =
-          indexSnapshot?.exists() &&
-          (indexSnapshot.data() as Omit<ApplicantContactIndexEntry, 'id'>).applicantIds.includes(
-            applicantId
-          );
-
-        if (!indexLinksThisProfile) {
-          transaction.set(
-            doc(db, APPLICANT_CONTACT_INDEX_COLLECTION, contactIndexId(contact)),
-            {
-              type: contact.type,
-              applicantIds: [applicantId],
-              conflict: false,
-              firstSeenAt: nowIso,
-              lastSeenAt: nowIso,
-            },
-            { merge: true }
-          );
-        }
-
-        nextContacts = mergeContactIntoList(nextContacts, contact, formId, nowIso);
-      }
-
-      const currentNameAliases = profile.nameAliases ?? [];
-      const knownAliases = new Set(currentNameAliases);
-      const updatedAliases =
-        displayName && !knownAliases.has(displayName)
-          ? [...currentNameAliases, displayName]
-          : currentNameAliases;
-
-      transaction.update(profileRef, {
-        nameAliases: updatedAliases,
-        contacts: nextContacts,
-        formsCount: (profile.formsCount ?? 0) + 1,
-        lastSeenAt: nowIso,
-        updatedAt: nowIso,
-      });
-
-      return {
-        applicantId,
-        resolution: {
-          status: 'matched',
-          matchedContactTypes: [...matchedContactTypes],
-          resolvedAt: nowIso,
-          resolvedBy: 'system',
-        },
-        blacklisted: profile.blacklist?.active ?? false,
-      };
-    }
-
-    // -------------------------------------------------------------------
-    // No candidates => create a fresh profile (UUID) and link everything
-    // -------------------------------------------------------------------
-    const applicantId = randomUUID();
-    const profileRef = doc(db, APPLICANT_PROFILES_COLLECTION, applicantId);
-
-    transaction.set(profileRef, {
-      canonicalName: displayName || 'Postulante sin nombre',
-      nameAliases: displayName ? [displayName] : [],
-      contacts: contacts.map((contact) => toProfileContact(contact, nowIso, formId)),
-      blacklist: {
-        active: false,
-        reason: null,
-        activatedAt: null,
-        activatedBy: null,
-      },
-      formsCount: 1,
-      adoptionCount: 0,
-      returnCount: 0,
-      identityStatus: 'active',
-      firstSeenAt: nowIso,
-      lastSeenAt: nowIso,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    } satisfies Omit<ApplicantProfile, 'id'>);
-
-    for (const contact of contacts) {
-      transaction.set(doc(db, APPLICANT_CONTACT_INDEX_COLLECTION, contactIndexId(contact)), {
-        type: contact.type,
-        applicantIds: [applicantId],
-        conflict: false,
-        firstSeenAt: nowIso,
-        lastSeenAt: nowIso,
-      } satisfies Omit<ApplicantContactIndexEntry, 'id'>);
-    }
-
-    return {
-      applicantId,
-      resolution: {
-        status: 'created',
-        matchedContactTypes: contacts.map((contact) => contact.type),
-        resolvedAt: nowIso,
-        resolvedBy: 'system',
-      },
-      blacklisted: false,
-    };
-  });
+  const result = [...existing];
+  result[matchIndex] = mergeContactSources(result[matchIndex], incoming);
+  return result;
 }
 
 /**
- * Convenience wrapper used by the form ingestion routes: extracts the
- * contacts from the mapped (canonical) form fields and resolves the identity,
- * never throwing — failures degrade to an `unresolved` outcome and are logged,
- * so a broken identity layer never blocks form ingestion.
+ * Processes the applicant identity for a form, creating the ficha and indexing
+ * the automatic Google email when needed. Safe to call on every form open: it
+ * is a no-op when `identityProcessedAt` is already set.
  *
- * @param params.mappedData - Canonical form fields (after FIELD_MAP mapping)
- * @param params.formId - Document ID the form will be saved with
- * @param params.nowIso - Timestamp shared with the form document
+ * @param params.formId - The googleForms document ID to process
+ * @param params.actor - Staff member that triggered the processing (audit)
+ * @returns The processing outcome (created, matched, unresolved or no-op)
+ *
+ * @example
+ * const result = await ensureApplicantProfile({ formId: form.id, actor: currentUser });
  */
-export async function resolveIdentityForForm(params: {
-  mappedData: Record<string, unknown>;
+export async function ensureApplicantProfile(params: {
   formId: string;
-  nowIso: string;
-}): Promise<IdentityResolutionOutcome> {
-  const { mappedData, formId, nowIso } = params;
+  actor: { id: string; name: string };
+}): Promise<EnsureApplicantProfileResult> {
+  const { formId, actor } = params;
+  const nowIso = new Date().toISOString();
 
-  try {
-    const contacts = extractContacts(mappedData);
-    const displayName = typeof mappedData.fullName === 'string' ? mappedData.fullName.trim() : '';
+  const result = await runTransaction(db, async (transaction) => {
+    const formRef = doc(db, 'googleForms', formId);
+    const formSnapshot = await transaction.get(formRef);
+    if (!formSnapshot.exists()) {
+      throw new Error(`googleForms/${formId} not found`);
+    }
 
-    return await resolveApplicantForSubmission({ contacts, displayName, formId, nowIso });
-  } catch (error) {
-    // Fail closed: if resolution throws we cannot determine the applicant's
-    // identity or blacklist status, so we must block evaluation to prevent a
-    // possible blacklist bypass.
-    logger({
-      level: 'error',
-      code: 'IDENTITY_RESOLUTION_FAILED',
-      message: 'Identity resolution failed; form saved without applicant link',
-      data: error,
-    });
-    return {
-      resolution: {
+    const formData = formSnapshot.data() as GoogleFormEntry;
+    if (formData.identityProcessedAt) {
+      return {
+        status: 'already_processed' as const,
+        applicantId: formData.applicantId,
+        resolution: formData.identityResolution,
+        sharedContacts: formData.identityResolution?.sharedContacts ?? [],
+      };
+    }
+
+    const anchorEmail = normalizeEmail(formData.googleAccountEmail);
+    const anchorRawEmail =
+      typeof formData.googleAccountEmail === 'string'
+        ? formData.googleAccountEmail.trim()
+        : (anchorEmail ?? '');
+    const displayName = typeof formData.fullName === 'string' ? formData.fullName.trim() : '';
+    const phoneContacts = extractPendingPhoneContacts(
+      formData as unknown as Record<string, unknown>
+    );
+    const formActivityTime = parseFormDate(formData.submittedAt || formData.createdAt);
+    const formActivityIso =
+      formActivityTime !== null ? new Date(formActivityTime).toISOString() : nowIso;
+
+    const markFormProcessed = (applicantId: string | undefined, resolution: IdentityResolution) => {
+      transaction.update(formRef, {
+        ...(applicantId ? { applicantId } : {}),
+        identityResolution: resolution,
+        identityProcessedAt: nowIso,
+      });
+    };
+
+    // Without the automatic Google email there is no reliable anchor (legacy
+    // forms); the form is marked as processed so it is not retried forever and
+    // staff can associate it manually later.
+    if (!anchorEmail) {
+      const resolution: IdentityResolution = {
         status: 'unresolved',
         matchedContactTypes: [],
         resolvedAt: nowIso,
-        resolvedBy: 'system',
+        resolvedBy: actor.id,
+      };
+      markFormProcessed(undefined, resolution);
+      return { status: 'unresolved' as const, resolution, sharedContacts: [] };
+    }
+
+    const anchorRef = doc(
+      db,
+      APPLICANT_CONTACT_INDEX_COLLECTION,
+      contactIndexDocId({ type: 'email', normalizedValue: anchorEmail })
+    );
+    const anchorSnapshot = await transaction.get(anchorRef);
+    const anchorIndex = anchorSnapshot.exists()
+      ? (anchorSnapshot.data() as Omit<ApplicantContactIndexEntry, 'id'>)
+      : null;
+
+    // A shared Google email cannot identify a single person; leave the form
+    // unlinked so a human decides.
+    if (anchorIndex && (anchorIndex.applicantIds?.length ?? 0) > 1) {
+      const resolution: IdentityResolution = {
+        status: 'unresolved',
+        matchedContactTypes: ['email'],
+        candidateApplicantIds: anchorIndex.applicantIds,
+        resolvedAt: nowIso,
+        resolvedBy: actor.id,
+      };
+      markFormProcessed(undefined, resolution);
+      return { status: 'unresolved' as const, resolution, sharedContacts: [] };
+    }
+
+    // Resolve the profile: existing one from the anchor email, or a new one.
+    let applicantId: string;
+    let createdProfile = false;
+    let profile: ApplicantProfile | null = null;
+    let profileRef = null as ReturnType<typeof doc> | null;
+
+    if (anchorIndex && (anchorIndex.applicantIds?.length ?? 0) === 1) {
+      applicantId = anchorIndex.applicantIds[0];
+      profileRef = doc(db, APPLICANT_PROFILES_COLLECTION, applicantId);
+      const profileSnapshot = await transaction.get(profileRef);
+      if (!profileSnapshot.exists()) {
+        // Stale index pointing to a missing profile: fail closed.
+        const resolution: IdentityResolution = {
+          status: 'unresolved',
+          matchedContactTypes: ['email'],
+          candidateApplicantIds: [applicantId],
+          resolvedAt: nowIso,
+          resolvedBy: actor.id,
+        };
+        markFormProcessed(undefined, resolution);
+        return { status: 'unresolved' as const, resolution, sharedContacts: [] };
+      }
+      profile = profileSnapshot.data() as ApplicantProfile;
+    } else if (formData.applicantId) {
+      // Defensive: a form linked by a previous pipeline keeps its profile
+      // instead of creating a duplicate.
+      const linkedRef = doc(db, APPLICANT_PROFILES_COLLECTION, formData.applicantId);
+      const linkedSnapshot = await transaction.get(linkedRef);
+      if (linkedSnapshot.exists()) {
+        applicantId = formData.applicantId;
+        profileRef = linkedRef;
+        profile = linkedSnapshot.data() as ApplicantProfile;
+      } else {
+        applicantId = crypto.randomUUID();
+        createdProfile = true;
+        profileRef = doc(db, APPLICANT_PROFILES_COLLECTION, applicantId);
+      }
+    } else {
+      applicantId = crypto.randomUUID();
+      createdProfile = true;
+      profileRef = doc(db, APPLICANT_PROFILES_COLLECTION, applicantId);
+    }
+
+    const anchorContact = toConfirmedContact(
+      {
+        type: 'email',
+        rawValue: anchorRawEmail || anchorEmail,
+        normalizedValue: anchorEmail,
+        label: 'googleAccountEmail',
       },
-      blacklisted: true,
-      skippedReason: 'resolution_error',
+      nowIso,
+      formId,
+      'system'
+    );
+    const pendingPhoneContacts = phoneContacts.map((contact) =>
+      toPendingContact(contact, nowIso, formId)
+    );
+
+    if (createdProfile && profileRef) {
+      const contacts = pendingPhoneContacts.reduce(
+        (accumulator, contact) => upsertPendingContact(accumulator, contact),
+        [anchorContact]
+      );
+
+      transaction.set(profileRef, {
+        canonicalName: displayName || 'Postulante sin nombre',
+        searchName: normalizeApplicantSearchName(displayName),
+        nameAliases: displayName ? [displayName] : [],
+        contacts,
+        blacklist: {
+          active: false,
+          reason: null,
+          activatedAt: null,
+          activatedBy: null,
+        },
+        formsCount: 1,
+        adoptionCount: 0,
+        returnCount: 0,
+        identityStatus: 'active',
+        firstSeenAt: formActivityIso,
+        lastSeenAt: formActivityIso,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      } satisfies Omit<ApplicantProfile, 'id'>);
+    } else if (profile && profileRef) {
+      const currentAliases = profile.nameAliases ?? [];
+      const knownAliases = new Set(currentAliases);
+      const updatedAliases =
+        displayName && !knownAliases.has(displayName)
+          ? [...currentAliases, displayName]
+          : currentAliases;
+
+      const contacts = pendingPhoneContacts.reduce(
+        (accumulator, contact) => upsertPendingContact(accumulator, contact),
+        upsertConfirmedContact(profile.contacts ?? [], anchorContact)
+      );
+
+      const currentFirstTime = profile.firstSeenAt ? new Date(profile.firstSeenAt).getTime() : null;
+      const currentLastTime = profile.lastSeenAt ? new Date(profile.lastSeenAt).getTime() : null;
+      const validCurrentFirstTime =
+        currentFirstTime !== null && !Number.isNaN(currentFirstTime) ? currentFirstTime : null;
+      const validCurrentLastTime =
+        currentLastTime !== null && !Number.isNaN(currentLastTime) ? currentLastTime : null;
+      const nextFirstTime =
+        validCurrentFirstTime !== null && formActivityTime !== null
+          ? Math.min(validCurrentFirstTime, formActivityTime)
+          : (validCurrentFirstTime ?? formActivityTime);
+      const nextLastTime =
+        validCurrentLastTime !== null && formActivityTime !== null
+          ? Math.max(validCurrentLastTime, formActivityTime)
+          : (validCurrentLastTime ?? formActivityTime);
+      const nextFirstIso = nextFirstTime !== null ? new Date(nextFirstTime).toISOString() : null;
+      const nextLastIso = nextLastTime !== null ? new Date(nextLastTime).toISOString() : null;
+
+      transaction.update(profileRef, {
+        nameAliases: updatedAliases,
+        searchName: normalizeApplicantSearchName(displayName || profile.canonicalName || ''),
+        contacts,
+        formsCount: (profile.formsCount ?? 0) + 1,
+        ...(nextFirstIso ? { firstSeenAt: nextFirstIso } : {}),
+        ...(nextLastIso ? { lastSeenAt: nextLastIso } : {}),
+        updatedAt: nowIso,
+      });
+    } else {
+      throw new Error('Could not resolve an applicant profile reference');
+    }
+
+    // The automatic Google email is the only automatic index entry. Phones
+    // stay unindexed until staff confirms them from the ficha.
+    const currentIds = anchorIndex?.applicantIds ?? [];
+    const nextIds = currentIds.includes(applicantId) ? currentIds : [...currentIds, applicantId];
+
+    transaction.set(
+      anchorRef,
+      {
+        type: 'email',
+        applicantIds: nextIds,
+        conflict: nextIds.length > 1,
+        firstSeenAt: anchorIndex?.firstSeenAt ?? nowIso,
+        lastSeenAt: nowIso,
+      },
+      { merge: true }
+    );
+
+    const resolution: IdentityResolution = {
+      status: createdProfile ? 'created' : 'matched',
+      matchedContactTypes: ['email'],
+      resolvedAt: nowIso,
+      resolvedBy: actor.id,
     };
+    markFormProcessed(applicantId, resolution);
+
+    return {
+      status: createdProfile ? ('created' as const) : ('matched' as const),
+      applicantId,
+      resolution,
+      sharedContacts: [],
+    };
+  });
+
+  // Audit log after the transaction (best-effort): record which applicant was
+  // created/linked and from which form, for staff-triggered processing.
+  if (result.status === 'created' || result.status === 'matched') {
+    try {
+      await createAuditLog({
+        type: 'applicant',
+        action: result.status === 'created' ? 'create' : 'update',
+        entityId: result.applicantId ?? formId,
+        entityName: result.applicantId ?? formId,
+        modifiedBy: actor.id,
+        modifiedByName: actor.name,
+        metadata: {
+          formId,
+          identityStatus: result.status,
+          autoIndexedContacts: ['email'],
+        },
+      });
+    } catch (error) {
+      logger({
+        level: 'error',
+        code: 'APPLICANT_AUDIT_LOG_FAILED',
+        message: `Could not write the audit log for form ${formId}`,
+        data: error,
+      });
+    }
   }
+
+  logger({
+    level: 'info',
+    code: 'APPLICANT_IDENTITY_PROCESSED',
+    message: `Applicant identity processed for form ${formId}`,
+    data: {
+      status: result.status,
+      applicantId: result.applicantId ?? null,
+    },
+  });
+
+  return result;
 }

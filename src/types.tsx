@@ -383,6 +383,12 @@ export interface GoogleFormEntry {
   // Applicant profile linkage (added by the identity resolution pipeline)
   applicantId?: string;
   identityResolution?: IdentityResolution;
+  /**
+   * When the applicant profile processing (ficha + contact index) ran for this
+   * form. Set by the client-side pipeline when staff opens the form; `null`
+   * or missing means it is still pending.
+   */
+  identityProcessedAt?: string | null;
   // Human decision details shown in the applicant history
   decisionReason?: string;
   decisionAt?: string;
@@ -418,8 +424,24 @@ export interface IdentityResolution {
   matchedContactTypes: ('email' | 'phone')[];
   /** Profiles that were candidates when the outcome was ambiguous. */
   candidateApplicantIds?: string[];
+  /**
+   * Legacy: contacts that already belonged to another applicant profile when
+   * the old pipeline ran. New processing does not populate it because only the
+   * automatic Google email is used, and a shared anchor email leaves the form
+   * unresolved.
+   */
+  sharedContacts?: SharedContact[];
   resolvedAt: string;
   resolvedBy: 'system' | string;
+}
+
+/** A contact from a submission that is also used by other applicant profiles. */
+export interface SharedContact {
+  type: 'email' | 'phone';
+  /** Normalized contact value, e.g. `92194030` or `juan@pp.com`. */
+  value: string;
+  /** Every applicant profile that has this contact (at processing time). */
+  applicantIds: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -436,15 +458,21 @@ export interface ApplicantBlacklist {
   updatedBy?: string | null;
 }
 
+/** Why an applicant profile was flagged for identity review. */
+export type ApplicantReviewReason = 'blacklist_merge' | 'manual';
+
 /**
  * Canonical, stable record of a person applying to adopt ("ficha de postulante").
  * The document ID is a UUID generated server-side and never changes even when
- * the person's contacts change. Contacts are stored inline in the profile
- * and indexed in the reverse-lookup collection `applicantContactIndex`.
+ * the person's contacts change. Contacts are stored inline in the profile; the
+ * automatic Google email is indexed automatically, while phone numbers are
+ * indexed only after staff confirms them in `applicantContactIndex`.
  */
 export interface ApplicantProfile {
   id: string;
   canonicalName: string;
+  /** Lowercase, accent-free canonical name used for prefix search. */
+  searchName?: string;
   nameAliases: string[];
   /** All known contacts, stored inline (small, bounded list per person). */
   contacts: ApplicantContact[];
@@ -464,6 +492,13 @@ export interface ApplicantProfile {
    * - `merged`: the profile was merged into another (see `mergedInto`).
    */
   identityStatus: 'active' | 'needs_review' | 'merged';
+  /** Why the profile is in `needs_review`. */
+  identityReviewReason?: ApplicantReviewReason | null;
+  /** When staff resolved the review and set the profile back to active. */
+  identityReviewedAt?: string | null;
+  identityReviewedBy?: string | null;
+  /** Optional note left by the reviewer. */
+  identityReviewNote?: string | null;
   /**
    * When a profile is merged into another, this points to the surviving
    * profile. The merged profile is kept (never deleted) so history is
@@ -484,13 +519,43 @@ export interface ApplicantNote {
   createdAt: string;
 }
 
+/**
+ * Human review state of a contact extracted from a form.
+ *
+ * - `pending`: the value is shown to staff but not indexed nor used to match.
+ * - `confirmed`: staff reviewed it; it is indexed for coincidence detection.
+ * - `discarded`: staff rejected it; it is kept for history only.
+ *
+ * Legacy records may not have this field; see `getApplicantContactStatus`.
+ */
+export type ApplicantContactStatus = 'pending' | 'confirmed' | 'discarded';
+
+/** User-facing kind of an applicant contact (mirrors private info contacts). */
+export type ApplicantContactKind = 'celular' | 'email' | 'other';
+
 /** A contact stored inline in the applicant profile's `contacts` array. */
 export interface ApplicantContact {
+  /** Identity channel used for normalization and indexing. */
   type: 'email' | 'phone';
+  /** User-facing kind shown in the UI. Missing on legacy records. */
+  kind?: ApplicantContactKind;
+  /** Optional user-facing label, e.g. "Pareja". */
+  label?: string;
   /** Raw value as entered, for display purposes. */
   value: string;
-  /** Normalized value used for matching. */
-  normalizedValue: string;
+  /**
+   * Normalized value used for matching. Only set for confirmed, indexable
+   * contacts; pending contacts and `other` contacts keep the raw value only.
+   */
+  normalizedValue?: string;
+  /** Human review state (missing on legacy records). */
+  confirmationStatus?: ApplicantContactStatus;
+  /** Staff member who confirmed the contact (or `system` for the Google email). */
+  confirmedBy?: string | null;
+  confirmedAt?: string | null;
+  /** Staff member who discarded the contact. */
+  discardedBy?: string | null;
+  discardedAt?: string | null;
   /** Source field(s) the value came from, e.g. ['applicantEmail']. */
   labels: string[];
   /** Forms where this contact was seen. */
@@ -500,10 +565,18 @@ export interface ApplicantContact {
 }
 
 /**
- * Reverse index: normalized contact (HMAC-hashed as the document ID) ->
- * candidate profiles. Several profiles can share a contact (family phone,
- * recycled numbers); those cases are flagged with `conflict` and reviewed
- * by humans instead of auto-merged.
+ * Reverse index: normalized contact -> applicant profiles that use it.
+ *
+ * The document ID is `${type}:${normalizedValue}` (e.g. `email:juan@pp.com`,
+ * `phone:92194030`), so authenticated staff can look up a contact from the
+ * client without a server secret. Access is controlled by Firestore rules.
+ *
+ * The automatic Google email and phone numbers explicitly confirmed by staff
+ * are written here.
+ *
+ * Several profiles can share a contact (family phone, recycled numbers); those
+ * cases are appended to `applicantIds` and flagged with `conflict`, and the UI
+ * warns about them instead of merging automatically.
  */
 export interface ApplicantContactIndexEntry {
   id: string;
