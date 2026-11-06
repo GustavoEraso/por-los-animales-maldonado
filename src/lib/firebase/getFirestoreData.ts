@@ -3,8 +3,12 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   getDocs,
   type QueryConstraint,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import {
@@ -60,7 +64,10 @@ type FirestoreContainsFilter = [
 ];
 
 // Unión de todos los tipos de filtro
-type FirestoreFilter = FirestoreSimpleFilter | FirestoreArrayFilter | FirestoreContainsFilter;
+export type FirestoreFilter =
+  | FirestoreSimpleFilter
+  | FirestoreArrayFilter
+  | FirestoreContainsFilter;
 
 const collectionsWithTrash = new Set<keyof CollectionsMap>(['animals']);
 
@@ -170,6 +177,81 @@ export async function getFirestoreData<C extends keyof CollectionsMap>({
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (CollectionsMap[C] & {
     id: string;
   })[];
+}
+
+export interface GetFirestorePageParams<C extends keyof CollectionsMap> {
+  currentCollection: C;
+  filter?: FirestoreFilter[];
+  orderBy?: keyof CollectionsMap[C];
+  direction?: 'asc' | 'desc';
+  pageSize?: number;
+  startAfterDoc?: QueryDocumentSnapshot<DocumentData> | null;
+}
+
+export interface FirestorePage<C extends keyof CollectionsMap> {
+  items: (CollectionsMap[C] & { id: string })[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
+
+/**
+ * Retrieves one page of a Firestore collection.
+ *
+ * It requests `pageSize + 1` documents to know whether more results exist
+ * without an extra count query. Use `startAfterDoc` with the `lastDoc` from the
+ * previous page to load the next one.
+ *
+ * @param params.currentCollection - Collection to query
+ * @param params.filter - Optional Firestore filters
+ * @param params.orderBy - Field used to order the page
+ * @param params.direction - Sort direction
+ * @param params.pageSize - Maximum number of items in the page
+ * @param params.startAfterDoc - Cursor returned by the previous page
+ * @returns The page items, the cursor and whether more results exist
+ */
+export async function getFirestorePage<C extends keyof CollectionsMap>({
+  currentCollection,
+  filter = [],
+  orderBy: orderKey,
+  direction = 'asc',
+  pageSize = 25,
+  startAfterDoc = null,
+}: GetFirestorePageParams<C>): Promise<FirestorePage<C>> {
+  const baseRef = collection(db, currentCollection);
+  const constraints: QueryConstraint[] = [];
+
+  if (collectionsWithTrash.has(currentCollection)) {
+    constraints.push(where('isDeleted', '==', false));
+  }
+
+  for (const f of filter) {
+    if (!Array.isArray(f) || f.length !== 3) {
+      throw new Error(`Filtro inválido: ${JSON.stringify(f)}`);
+    }
+    const [field, op, value] = f;
+    constraints.push(where(field, op, value));
+  }
+
+  if (orderKey) {
+    constraints.push(orderBy(orderKey as string, direction));
+  }
+
+  constraints.push(limit(pageSize + 1));
+  if (startAfterDoc) {
+    constraints.push(startAfter(startAfterDoc));
+  }
+
+  const snap = await getDocs(query(baseRef, ...constraints));
+  const hasMore = snap.docs.length > pageSize;
+  const pageDocs = hasMore ? snap.docs.slice(0, pageSize) : snap.docs;
+
+  return {
+    items: pageDocs.map((d) => ({ id: d.id, ...d.data() })) as (CollectionsMap[C] & {
+      id: string;
+    })[],
+    lastDoc: pageDocs.length > 0 ? pageDocs[pageDocs.length - 1] : null,
+    hasMore,
+  };
 }
 
 /* ─────────────────────────  USAGE EXAMPLES  ──────────────────────────
