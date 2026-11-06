@@ -14,7 +14,13 @@ import { handlePromiseToast } from '@/lib/handleToast';
 import type { Animal, GoogleFormEntry, GoogleFormStatus, UserType } from '@/types';
 import { logger } from '@/lib/logger';
 import FormChat from '@/components/FormChat';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import EvaluationMissingCard from '@/components/EvaluationMissingCard';
+import ApplicantProfileButton from '@/components/ApplicantProfileButton';
+import ContactConflictBanner from '@/components/ContactConflictBanner';
+import PostulanteDetailContent from '@/app/plam-admin/postulantes/[id]/PostulanteDetailContent';
+import { useRetryEvaluation } from '@/hooks/useRetryEvaluation';
+import { useEnsureApplicantProfile } from '@/hooks/useEnsureApplicantProfile';
 import { downloadFormPdf } from '@/lib/generateFormPdf';
 import { getFormFieldDefinitions, resolveFormVersion } from '@/lib/googleForms/formPresentation';
 import {
@@ -680,6 +686,7 @@ const DetailPanel = memo(function DetailPanel({
 }: DetailPanelProps) {
   const evaluation = form.evaluation;
   const status = resolvedStatus(form);
+  const { currentUser } = useAuth();
 
   const [showApprovalOptions, setShowApprovalOptions] = useState(false);
   const [showAnimalPicker, setShowAnimalPicker] = useState(false);
@@ -688,6 +695,45 @@ const DetailPanel = memo(function DetailPanel({
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [rejectReason, setRejectReason] = useState(form.decisionReason ?? '');
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [showApplicant, setShowApplicant] = useState(false);
+  const [showBlacklistEvalConfirm, setShowBlacklistEvalConfirm] = useState(false);
+  const [blacklistOverrideReason, setBlacklistOverrideReason] = useState('');
+  const { overrideBlacklistedEvaluation, isRetrying } = useRetryEvaluation();
+  const { isProcessing: isProcessingFicha } = useEnsureApplicantProfile({
+    form,
+    onProcessed: (result) => {
+      onFormUpdate({
+        ...form,
+        applicantId: result.applicantId,
+        identityResolution: result.resolution ?? form.identityResolution,
+        identityProcessedAt: new Date().toISOString(),
+      });
+    },
+  });
+
+  // Reset the embedded applicant view when the user switches forms in the list.
+  useEffect(() => {
+    setShowApplicant(false);
+  }, [form.id]);
+
+  /**
+   * Manually evaluates a form that was skipped because the applicant is on the
+   * blacklist. The override only fills the AI evaluation; it does not change
+   * the applicant's blacklist status nor the form's adoption status.
+   */
+  const handleEvaluateBlacklisted = async () => {
+    setShowBlacklistEvalConfirm(false);
+    const newEvaluation = await overrideBlacklistedEvaluation(
+      form.id,
+      form.fullName,
+      form as unknown as Record<string, unknown>,
+      blacklistOverrideReason || undefined
+    );
+    setBlacklistOverrideReason('');
+    if (newEvaluation) {
+      onFormUpdate({ ...form, evaluation: newEvaluation, evaluationState: 'completed' });
+    }
+  };
 
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
@@ -737,457 +783,548 @@ const DetailPanel = memo(function DetailPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Name + date */}
-      <div>
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+      {/* Embebbed applicant profile (ficha) view, no navigation away */}
+      {showApplicant && form.applicantId ? (
+        <div className="flex flex-col gap-4">
           <button
-            onClick={handleDownloadPdf}
-            disabled={downloadingPdf}
-            className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-            title="Descargar formulario como PDF"
+            onClick={() => setShowApplicant(false)}
+            className="self-start flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors"
           >
-            {downloadingPdf ? (
-              <>
-                <svg
-                  className="animate-spin h-3.5 w-3.5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                PDF...
-              </>
-            ) : (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                PDF
-              </>
-            )}
-          </button>
-        </div>
-        {form.selectedPet && (
-          <p className="text-sm text-gray-500 mt-0.5">Mascota: {form.selectedPet}</p>
-        )}
-        {form.createdAt && (
-          <p className="text-xs text-gray-400 mt-0.5">
-            {new Date(form.createdAt).toLocaleDateString('es-UY', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
-        )}
-
-        {/* Form version indicator */}
-        <div>
-          <span
-            className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-              version === 'v2' ? 'bg-green-forest text-white' : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            {version === 'v2' ? 'Formulario nuevo' : 'Formulario anterior'}
-          </span>
-        </div>
-
-        {/* Responsible ownership alert */}
-        {alertStyles && ownershipAlert.category !== 'none' && (
-          <div
-            className={`border rounded-xl p-3 flex items-start gap-3 ${alertStyles.container}`}
-            role="alert"
-          >
-            <span
-              className={`inline-block w-3 h-3 rounded-full shrink-0 mt-1.5 ${
-                ownershipAlert.category === 'red'
-                  ? 'bg-red-600'
-                  : ownershipAlert.category === 'amber'
-                    ? 'bg-amber-500'
-                    : 'bg-yellow-500'
-              }`}
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
               aria-hidden="true"
-            />
-            <p className="text-sm text-gray-800 leading-relaxed">{ownershipAlert.message}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Evaluation */}
-      {form.evaluationState === 'skipped_blacklist' ? (
-        <div className="border border-red-200 bg-red-50 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            🚫
-          </span>
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-red-800">Evaluación omitida por lista negra</p>
-            <p className="text-xs text-red-700 leading-relaxed">
-              La ficha asociada está en lista negra, por lo que este formulario debe ser revisado
-              únicamente por personal autorizado.
-            </p>
-          </div>
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            Volver al formulario
+          </button>
+          <PostulanteDetailContent applicantId={form.applicantId} />
         </div>
-      ) : form.evaluationState === 'skipped_error' ? (
-        <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            ⚠
-          </span>
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-amber-800">Evaluación omitida</p>
-            <p className="text-xs text-amber-700 leading-relaxed">
-              No se pudo verificar la identidad del postulante, por lo que la evaluación automática
-              quedó en pausa por seguridad.
-            </p>
-          </div>
-        </div>
-      ) : form.evaluationState === 'running' ? (
-        <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            ⏳
-          </span>
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-blue-800">Evaluación en progreso</p>
-            <p className="text-xs text-blue-700 leading-relaxed">
-              sof-IA está analizando este formulario. Los resultados aparecerán automáticamente.
-            </p>
-          </div>
-        </div>
-      ) : !evaluation && form.evaluationState !== 'completed' ? (
-        <EvaluationMissingCard
-          formId={form.id}
-          formName={form.fullName}
-          rawFormData={form as unknown as Record<string, unknown>}
-          onEvaluationComplete={(newEval) => {
-            onFormUpdate({ ...form, evaluation: newEval });
-          }}
-        />
       ) : (
         <>
-          {/* Score + recommendation */}
-          {(() => {
-            const ev = evaluation as NonNullable<typeof evaluation>;
-            return (
-              <>
-                <h2 className="font-semibold text-gray-800">
-                  Evaluación de{' '}
-                  <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">
-                    sof-IA
-                  </span>
-                </h2>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div
-                    className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(ev.score)}`}
-                  >
-                    {ev.score}
-                  </div>
-                  <span
-                    className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[ev.recommendation]}`}
-                  >
-                    {RECOMMENDATION_LABELS[ev.recommendation] ?? ev.recommendation}
-                  </span>
-                </div>
-
-                {/* Summary */}
-                {ev.summary && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{ev.summary}</p>
-                )}
-
-                {/* Strengths */}
-                {ev.strengths.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
-                    <ul className="flex flex-col gap-1">
-                      {ev.strengths.map((s, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-gray-700">
-                          <span className="text-green-600 mt-0.5 shrink-0">•</span>
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Concerns */}
-                {ev.concerns.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
-                    <ul className="flex flex-col gap-1">
-                      {ev.concerns.map((c, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-gray-700">
-                          <span className="text-red-500 mt-0.5 shrink-0">•</span>
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Missing info */}
-                {ev.missingInformation.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Información faltante</p>
-                    <ul className="flex flex-col gap-1">
-                      {ev.missingInformation.map((m, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-gray-500">
-                          <span className="mt-0.5 shrink-0">•</span>
-                          {m}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </>
-      )}
-
-      {/* Status selector */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Estado</p>
-        <div className="flex gap-2 flex-wrap">
-          {(Object.keys(STATUS_LABELS) as GoogleFormStatus[]).map((s) => {
-            const isActive = status === s;
-            const isApproved = s === 'approved';
-
-            if (isApproved) {
-              return (
+          {/* Name + date */}
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-xl font-bold text-gray-900">{form.fullName ?? '—'}</h2>
+              <div className="flex gap-2 shrink-0">
+                <ApplicantProfileButton
+                  applicantId={form.applicantId}
+                  isProcessing={isProcessingFicha}
+                  hasBeenProcessed={Boolean(form.identityProcessedAt)}
+                  variant="button"
+                  onView={() => setShowApplicant(true)}
+                />
                 <button
-                  key={s}
-                  disabled={updatingStatus}
-                  onClick={handleApprovedClick}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                    isActive
-                      ? `${STATUS_COLORS[s]} border-transparent`
-                      : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  className="shrink-0 px-3 py-1.5 text-xs font-medium text-green-forest bg-green-50 border border-green-300 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  title="Descargar formulario como PDF"
                 >
-                  {STATUS_LABELS[s]}
+                  {downloadingPdf ? (
+                    <>
+                      <svg
+                        className="animate-spin h-3.5 w-3.5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      PDF...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      PDF
+                    </>
+                  )}
                 </button>
-              );
-            }
-
-            return (
-              <button
-                key={s}
-                disabled={updatingStatus}
-                onClick={() => {
-                  setShowApprovalOptions(false);
-                  setShowAnimalPicker(false);
-                  if (s === 'rejected') {
-                    setShowRejectInput((prev) => !prev);
-                  } else {
-                    setShowRejectInput(false);
-                    onStatusChange(s);
-                  }
-                }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                  isActive
-                    ? `${STATUS_COLORS[s]} border-transparent`
-                    : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {STATUS_LABELS[s]}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Reject reason input */}
-        {showRejectInput && (
-          <div className="mt-3 border border-red-200 bg-red-50 rounded-xl p-3 flex flex-col gap-2">
-            <p className="text-xs font-semibold text-red-800">Motivo del rechazo (opcional)</p>
-            <textarea
-              className="w-full h-20 p-2 border border-red-300 rounded-lg text-sm bg-white field-sizing-content"
-              placeholder="Escribe el motivo del rechazo..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  onStatusChange('rejected', undefined, rejectReason);
-                  setShowRejectInput(false);
-                }}
-                disabled={updatingStatus}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                Confirmar rechazo
-              </button>
-              <button
-                onClick={() => {
-                  setShowRejectInput(false);
-                  setRejectReason(form.decisionReason ?? '');
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Cancelar
-              </button>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Existing decision reason */}
-        {!showRejectInput && form.decisionReason && (
-          <div className="mt-3 border border-gray-200 bg-gray-50 rounded-xl p-3">
-            <p className="text-xs font-semibold text-gray-600 mb-1">Motivo de decisión</p>
-            <p className="text-sm text-gray-800">{form.decisionReason}</p>
-            {form.decisionBy && (
-              <p className="text-xs text-gray-500 mt-1">
-                Registrado por {form.decisionBy}
-                {form.decisionAt && ` el ${new Date(form.decisionAt).toLocaleDateString('es-UY')}`}
+            {form.selectedPet && (
+              <p className="text-sm text-gray-500 mt-0.5">Mascota: {form.selectedPet}</p>
+            )}
+            {form.createdAt && (
+              <p className="text-xs text-gray-400 mt-0.5">
+                {new Date(form.createdAt).toLocaleDateString('es-UY', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </p>
             )}
-          </div>
-        )}
 
-        {/* Approval sub-options */}
-        {showApprovalOptions && (
-          <div className="mt-3 border border-green-200 bg-green-50 rounded-xl p-3 flex flex-col gap-2">
-            <p className="text-xs font-semibold text-green-800">¿Cómo querés aprobarlo?</p>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={handleSoloApproved}
-                disabled={updatingStatus}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+            {/* Form version indicator */}
+            <div>
+              <span
+                className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+                  version === 'v2' ? 'bg-green-forest text-white' : 'bg-gray-200 text-gray-600'
+                }`}
               >
-                Solo aprobado
-              </button>
-              <button
-                onClick={() => setShowAnimalPicker(true)}
-                disabled={updatingStatus}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
-              >
-                Aprobado para...
-              </button>
-              <button
-                onClick={() => {
-                  setShowApprovalOptions(false);
-                  setShowAnimalPicker(false);
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Cancelar
-              </button>
+                {version === 'v2' ? 'Formulario nuevo' : 'Formulario anterior'}
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* Animal picker */}
-        {showAnimalPicker && (
-          <div className="mt-3 border border-green-200 bg-white rounded-xl p-3 flex flex-col gap-2">
-            <p className="text-xs font-semibold text-gray-700">Seleccionar animal</p>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar animal..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              autoFocus
-            />
-            <div className="max-h-48 overflow-y-auto flex flex-col gap-1">
-              {filteredAnimals.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-2">
-                  {searchTerm ? 'Sin resultados' : 'No hay animales disponibles'}
+            {/* Responsible ownership alert */}
+            {alertStyles && ownershipAlert.category !== 'none' && (
+              <div
+                className={`border rounded-xl p-3 flex items-start gap-3 ${alertStyles.container}`}
+                role="alert"
+              >
+                <span
+                  className={`inline-block w-3 h-3 rounded-full shrink-0 mt-1.5 ${
+                    ownershipAlert.category === 'red'
+                      ? 'bg-red-600'
+                      : ownershipAlert.category === 'amber'
+                        ? 'bg-amber-500'
+                        : 'bg-yellow-500'
+                  }`}
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-gray-800 leading-relaxed">{ownershipAlert.message}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Shared contacts warning (contact already on another applicant) */}
+          <ContactConflictBanner sharedContacts={form.identityResolution?.sharedContacts} />
+
+          {/* Evaluation */}
+          {form.evaluationState === 'skipped_blacklist' ? (
+            <div className="border border-red-200 bg-red-50 rounded-xl p-4 flex items-start gap-3">
+              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+                🚫
+              </span>
+              <div className="flex flex-col gap-1 flex-1">
+                <p className="text-sm font-semibold text-red-800">
+                  Evaluación omitida por lista negra
                 </p>
-              ) : (
-                filteredAnimals.map((animal) => (
+                <p className="text-xs text-red-700 leading-relaxed">
+                  La ficha asociada está en lista negra, por lo que este formulario debe ser
+                  revisado únicamente por personal autorizado.
+                </p>
+                {currentUser && (
                   <button
-                    key={animal.id}
-                    onClick={() => handleApprovedForAnimal(animal)}
-                    disabled={updatingStatus}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                    type="button"
+                    onClick={() => setShowBlacklistEvalConfirm(true)}
+                    disabled={isRetrying}
+                    className="self-start mt-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {animal.images?.[0]?.imgUrl ? (
-                      <img
-                        src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
-                        alt={animal.images?.[0]?.imgAlt || animal.name}
-                        className="w-8 h-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 shrink-0">
-                        {animal.name.charAt(0).toUpperCase()}
+                    {isRetrying ? 'Evaluando...' : 'Evaluar de todos modos'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : form.evaluationState === 'skipped_error' ? (
+            <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex items-start gap-3">
+              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+                ⚠
+              </span>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold text-amber-800">Evaluación omitida</p>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  No se pudo verificar la identidad del postulante, por lo que la evaluación
+                  automática quedó en pausa por seguridad.
+                </p>
+              </div>
+            </div>
+          ) : form.evaluationState === 'running' ? (
+            <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 flex items-start gap-3">
+              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+                ⏳
+              </span>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold text-blue-800">Evaluación en progreso</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  sof-IA está analizando este formulario. Los resultados aparecerán automáticamente.
+                </p>
+              </div>
+            </div>
+          ) : !evaluation && form.evaluationState !== 'completed' ? (
+            <EvaluationMissingCard
+              formId={form.id}
+              formName={form.fullName}
+              rawFormData={form as unknown as Record<string, unknown>}
+              onEvaluationComplete={(newEval) => {
+                onFormUpdate({ ...form, evaluation: newEval });
+              }}
+            />
+          ) : (
+            <>
+              {/* Score + recommendation */}
+              {(() => {
+                const ev = evaluation as NonNullable<typeof evaluation>;
+                return (
+                  <>
+                    <h2 className="font-semibold text-gray-800">
+                      Evaluación de{' '}
+                      <span className="text-cream-light bg-caramel-deep rounded-2xl px-2 py-1">
+                        sof-IA
                       </span>
+                    </h2>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div
+                        className={`text-3xl font-black px-4 py-2 rounded-xl ${SCORE_COLOR(ev.score)}`}
+                      >
+                        {ev.score}
+                      </div>
+                      <span
+                        className={`text-sm font-medium px-3 py-1 rounded-full ${RECOMMENDATION_COLORS[ev.recommendation]}`}
+                      >
+                        {RECOMMENDATION_LABELS[ev.recommendation] ?? ev.recommendation}
+                      </span>
+                    </div>
+
+                    {/* Summary */}
+                    {ev.summary && (
+                      <p className="text-sm text-gray-600 leading-relaxed">{ev.summary}</p>
                     )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{animal.name}</p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {animal.species} · {animal.size} · {animal.status}
+
+                    {/* Strengths */}
+                    {ev.strengths.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Fortalezas</p>
+                        <ul className="flex flex-col gap-1">
+                          {ev.strengths.map((s, i) => (
+                            <li key={i} className="flex gap-2 text-sm text-gray-700">
+                              <span className="text-green-600 mt-0.5 shrink-0">•</span>
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Concerns */}
+                    {ev.concerns.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Riesgos</p>
+                        <ul className="flex flex-col gap-1">
+                          {ev.concerns.map((c, i) => (
+                            <li key={i} className="flex gap-2 text-sm text-gray-700">
+                              <span className="text-red-500 mt-0.5 shrink-0">•</span>
+                              {c}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Missing info */}
+                    {ev.missingInformation.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">
+                          Información faltante
+                        </p>
+                        <ul className="flex flex-col gap-1">
+                          {ev.missingInformation.map((m, i) => (
+                            <li key={i} className="flex gap-2 text-sm text-gray-500">
+                              <span className="mt-0.5 shrink-0">•</span>
+                              {m}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {/* Status selector */}
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Estado</p>
+            <div className="flex gap-2 flex-wrap">
+              {(Object.keys(STATUS_LABELS) as GoogleFormStatus[]).map((s) => {
+                const isActive = status === s;
+                const isApproved = s === 'approved';
+
+                if (isApproved) {
+                  return (
+                    <button
+                      key={s}
+                      disabled={updatingStatus}
+                      onClick={handleApprovedClick}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                        isActive
+                          ? `${STATUS_COLORS[s]} border-transparent`
+                          : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    key={s}
+                    disabled={updatingStatus}
+                    onClick={() => {
+                      setShowApprovalOptions(false);
+                      setShowAnimalPicker(false);
+                      if (s === 'rejected') {
+                        setShowRejectInput((prev) => !prev);
+                      } else {
+                        setShowRejectInput(false);
+                        onStatusChange(s);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                      isActive
+                        ? `${STATUS_COLORS[s]} border-transparent`
+                        : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {STATUS_LABELS[s]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Reject reason input */}
+            {showRejectInput && (
+              <div className="mt-3 border border-red-200 bg-red-50 rounded-xl p-3 flex flex-col gap-2">
+                <p className="text-xs font-semibold text-red-800">Motivo del rechazo (opcional)</p>
+                <textarea
+                  className="w-full h-20 p-2 border border-red-300 rounded-lg text-sm bg-white field-sizing-content"
+                  placeholder="Escribe el motivo del rechazo..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      onStatusChange('rejected', undefined, rejectReason);
+                      setShowRejectInput(false);
+                    }}
+                    disabled={updatingStatus}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    Confirmar rechazo
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowRejectInput(false);
+                      setRejectReason(form.decisionReason ?? '');
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Existing decision reason */}
+            {!showRejectInput && form.decisionReason && (
+              <div className="mt-3 border border-gray-200 bg-gray-50 rounded-xl p-3">
+                <p className="text-xs font-semibold text-gray-600 mb-1">Motivo de decisión</p>
+                <p className="text-sm text-gray-800">{form.decisionReason}</p>
+                {form.decisionBy && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Registrado por {form.decisionBy}
+                    {form.decisionAt &&
+                      ` el ${new Date(form.decisionAt).toLocaleDateString('es-UY')}`}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Approval sub-options */}
+            {showApprovalOptions && (
+              <div className="mt-3 border border-green-200 bg-green-50 rounded-xl p-3 flex flex-col gap-2">
+                <p className="text-xs font-semibold text-green-800">¿Cómo querés aprobarlo?</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={handleSoloApproved}
+                    disabled={updatingStatus}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+                  >
+                    Solo aprobado
+                  </button>
+                  <button
+                    onClick={() => setShowAnimalPicker(true)}
+                    disabled={updatingStatus}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-green-300 text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+                  >
+                    Aprobado para...
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowApprovalOptions(false);
+                      setShowAnimalPicker(false);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Animal picker */}
+            {showAnimalPicker && (
+              <div className="mt-3 border border-green-200 bg-white rounded-xl p-3 flex flex-col gap-2">
+                <p className="text-xs font-semibold text-gray-700">Seleccionar animal</p>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar animal..."
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  autoFocus
+                />
+                <div className="max-h-48 overflow-y-auto flex flex-col gap-1">
+                  {filteredAnimals.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-2">
+                      {searchTerm ? 'Sin resultados' : 'No hay animales disponibles'}
+                    </p>
+                  ) : (
+                    filteredAnimals.map((animal) => (
+                      <button
+                        key={animal.id}
+                        onClick={() => handleApprovedForAnimal(animal)}
+                        disabled={updatingStatus}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                      >
+                        {animal.images?.[0]?.imgUrl ? (
+                          <img
+                            src={animal.images?.[0]?.imgUrl ?? '/logo300.webp'}
+                            alt={animal.images?.[0]?.imgAlt || animal.name}
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500 shrink-0">
+                            {animal.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{animal.name}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {animal.species} · {animal.size} · {animal.status}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Assigned animal info */}
+            {status === 'approved' && form.approvedAnimalName && !showApprovalOptions && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <span className="font-medium">✓ Aprobado para:</span>
+                <span className="font-semibold">{form.approvedAnimalName}</span>
+                <button
+                  onClick={handleRemoveAnimal}
+                  disabled={updatingStatus}
+                  className="ml-auto text-xs text-red-600 hover:text-red-800 underline disabled:opacity-50"
+                >
+                  Quitar
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Internal discussion */}
+          <FormChat formId={form.id} userIds={userIds} formName={form.fullName} />
+
+          {/* Raw answers */}
+          <div className="flex flex-col gap-3">
+            <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
+            {rawAnswers.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {fieldDefinitions.map(({ field, label }) => {
+                  const rawValue = form[field];
+                  const value = typeof rawValue === 'string' ? rawValue : undefined;
+                  if (!value || !value.trim()) return null;
+
+                  return (
+                    <div
+                      key={field}
+                      className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow"
+                    >
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        {label}
+                      </p>
+                      <p className="text-sm text-gray-800 leading-relaxed">
+                        {value.trim() || 'Sin respuesta'}
                       </p>
                     </div>
-                  </button>
-                ))
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Assigned animal info */}
-        {status === 'approved' && form.approvedAnimalName && !showApprovalOptions && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <span className="font-medium">✓ Aprobado para:</span>
-            <span className="font-semibold">{form.approvedAnimalName}</span>
-            <button
-              onClick={handleRemoveAnimal}
-              disabled={updatingStatus}
-              className="ml-auto text-xs text-red-600 hover:text-red-800 underline disabled:opacity-50"
+          <ConfirmDialog
+            isOpen={showBlacklistEvalConfirm}
+            title="Evaluar de todos modos"
+            message={
+              'La evaluación de este formulario se omitió automáticamente porque el postulante está en lista negra.\n\nSolo corrés sof-IA: esto no saca al postulante de la lista negra ni cambia el estado del formulario.'
+            }
+            confirmText="Evaluar"
+            cancelText="Cancelar"
+            variant="warning"
+            onConfirm={handleEvaluateBlacklisted}
+            onCancel={() => {
+              setShowBlacklistEvalConfirm(false);
+              setBlacklistOverrideReason('');
+            }}
+          >
+            <label
+              htmlFor="blacklist-override-reason-desktop"
+              className="block text-xs font-semibold text-gray-600 mb-1"
             >
-              Quitar
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Internal discussion */}
-      <FormChat formId={form.id} userIds={userIds} formName={form.fullName} />
-
-      {/* Raw answers */}
-      <div className="flex flex-col gap-3">
-        <h2 className="font-semibold text-gray-800">Respuestas completas</h2>
-        {rawAnswers.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Sin respuestas disponibles.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {fieldDefinitions.map(({ field, label }) => {
-              const rawValue = form[field];
-              const value = typeof rawValue === 'string' ? rawValue : undefined;
-              if (!value || !value.trim()) return null;
-
-              return (
-                <div
-                  key={field}
-                  className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow"
-                >
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    {label}
-                  </p>
-                  <p className="text-sm text-gray-800 leading-relaxed">
-                    {value.trim() || 'Sin respuesta'}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              Motivo (opcional)
+            </label>
+            <textarea
+              id="blacklist-override-reason-desktop"
+              className="w-full h-20 p-2 border border-gray-300 rounded-lg text-sm field-sizing-content"
+              placeholder="Ej.: salió de la lista negra, revisión especial..."
+              value={blacklistOverrideReason}
+              onChange={(e) => setBlacklistOverrideReason(e.target.value)}
+            />
+          </ConfirmDialog>
+        </>
+      )}
     </div>
   );
 });
