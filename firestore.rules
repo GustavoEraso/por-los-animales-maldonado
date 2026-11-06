@@ -160,24 +160,20 @@ service cloud.firestore {
     }
 
     /* ───── 16) applicantProfiles ─────
-       TEMPORARY TRANSITION RULE — public read/write.
-       The server-side REST/AppScript ingestion calls use the Client SDK without
-       a Firebase-Admin identity, so they need anonymous access. This exposes the
-       profiles (which contain PII) to any client. It is an ACCEPTED RISK until
-       Firebase Admin is integrated in a following phase; then these must be
-       locked to `isRescuer()` (reads) + server-only writes.
+       Applicant profiles (fichas) contain PII, so reads and writes are
+       restricted to staff. The identity pipeline runs from the signed-in
+       staff session (client-side), so no server/anonymous access is needed.
     ───── */
     match /applicantProfiles/{applicantId} {
-      allow read, write: if true;
+      allow read, write: if isRescuer();
     }
 
     /* ───── 17) applicantContactIndex ─────
-       TEMPORARY TRANSITION RULE — public read/write for the same reason as
-       applicantProfiles. Contains no raw PII (HMAC-hashed IDs), but is still
-       open; lock it down together with applicantProfiles in the Admin phase.
+       Reverse contact index (`email:...` / `phone:...` -> applicant ids).
+       Same staff-only access as the profiles.
     ───── */
     match /applicantContactIndex/{contactId} {
-      allow read, write: if true;
+      allow read, write: if isRescuer();
     }
 
   }
