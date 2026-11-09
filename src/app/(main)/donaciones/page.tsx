@@ -11,6 +11,8 @@ import PayPalProvider from '@/components/PaypalProvider';
 import { ArrowUpRightIcon, LanguageIcon, ShieldIcon, WhatsAppIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
 import LogoCarousel from '@/components/LogoCarousel';
+import SponsorCard from '@/components/SponsorCard';
+import { hasSponsorCardContent } from '@/lib/sponsorCard';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { SponsorType } from '@/types';
 import { SITE_URL } from '@/lib/site';
@@ -46,6 +48,7 @@ export default async function Donaciones() {
     getCarouselsForPlace('donaciones'),
   ]);
   const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
+  const cardSponsors = sponsors.filter(hasSponsorCardContent);
 
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
@@ -188,6 +191,21 @@ export default async function Donaciones() {
             </footer>
           </article>
         </section>
+
+        {/* COLLABORATOR CARDS */}
+        {cardSponsors.length > 0 && (
+          <section className="w-full max-w-7xl px-3 py-6">
+            <h3 className="text-3xl font-bold text-green-dark text-center">
+              NUESTROS COLABORADORES
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 w-full py-6 gap-4">
+              {cardSponsors.map((sponsor) => (
+                <SponsorCard key={sponsor.id} sponsor={sponsor} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* APORTES ECONOMICOS */}
         <h3 id="aportes-economicos" className="text-3xl font-bold text-green-dark text-center">
           APORTES ECONOMICOS

@@ -270,7 +270,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </section>
         </section>
-        <section className=" flex justify-center w-full overflow-x-scroll bg-cream-light ">
+        <section className="flex justify-center w-full overflow-x-clip bg-cream-light">
           {children}
         </section>
       </section>

@@ -611,12 +611,73 @@ export interface BannerType {
 }
 
 /**
- * Sponsor entity representing a partner organization displayed in the homepage carousel.
+ * Link configuration shared by sponsors and section buttons.
  */
-export interface SponsorType {
+export interface SponsorLinkConfig {
+  /** Link mode. Defaults to 'url'. */
+  linkType?: 'url' | 'whatsapp';
+  /** Uruguayan phone number without country code or leading zero. */
+  whatsappNumber?: string;
+}
+
+/**
+ * Link rendered as a button inside a sponsor card section.
+ */
+export interface SponsorButton extends SponsorLinkConfig {
+  id: string;
+  label: string;
+  href: string;
+  /** Visual style of the button. Defaults to 'primary'. */
+  variant?: 'primary' | 'secondary';
+}
+
+/**
+ * Editable section rendered inside a sponsor collaborator card.
+ * Sections allow adding extra titles, descriptions and buttons while
+ * preserving the card's visual identity.
+ */
+export interface SponsorSection {
+  id: string;
+  title?: string;
+  /** Short callout rendered as a green rounded pill, e.g. "1 compra = 1 kg de comida". */
+  badge?: string;
+  description?: string;
+  /** Uses the cream background to highlight the section body. */
+  highlight?: boolean;
+  buttons?: SponsorButton[];
+}
+
+/**
+ * Sponsor entity representing a partner organization displayed in logo
+ * carousels and collaborator cards.
+ */
+export interface SponsorType extends SponsorLinkConfig {
   id: string;
   name: string;
+  /** Sponsor link used by logo carousels. */
   href?: string;
+  /**
+   * Optional legacy description. New sponsors should use `sections` instead.
+   * @deprecated Use `sections` instead.
+   */
+  description?: string;
+  /**
+   * Optional legacy main button label. New sponsors should use section buttons.
+   * @deprecated Use section buttons instead.
+   */
+  linkLabel?: string;
+  /**
+   * Logo layout used on the collaborator card.
+   * @deprecated Use `logoWidth` for new sponsors.
+   */
+  logoAspect?: 'auto' | 'square' | 'wide';
+  /**
+   * Logo width as a percentage of the card content width (20-100).
+   * When set, it takes precedence over `logoAspect`.
+   */
+  logoWidth?: number;
+  /** Card content sections, rendered in order below the sponsor name. */
+  sections?: SponsorSection[];
   image: Img;
 }
 

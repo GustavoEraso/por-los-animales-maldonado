@@ -16,7 +16,11 @@ interface UploadImagesProps {
   maxFiles?: number;
   /** Current folder in Cloudinary to upload images to */
   currentFolder?: 'animals' | 'banners' | 'others' | 'sponsor' | 'follow_up';
-  /** Enable interactive cropping before upload (forces single-file mode) */
+  /**
+   * Enable interactive cropping before upload (forces single-file mode).
+   * The upload preset must include an incoming `c_crop,g_custom`
+   * transformation so Cloudinary stores the selected crop region.
+   */
   enableCropping?: boolean;
 }
 
