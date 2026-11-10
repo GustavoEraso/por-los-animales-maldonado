@@ -1,4 +1,4 @@
-import { SponsorLinkConfig } from '@/types';
+import type { SponsorLinkConfig } from '@/types';
 
 /** Fixed country code for Uruguayan phone numbers. */
 export const URUGUAY_COUNTRY_CODE = '598';

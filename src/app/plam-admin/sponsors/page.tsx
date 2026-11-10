@@ -18,7 +18,7 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { revalidateCache } from '@/lib/revalidateCache';
 import { logger } from '@/lib/logger';
-import { hasSponsorCardContent } from '@/lib/sponsorCard';
+import { hasSponsorCardContent, isSponsorShownInDonations } from '@/lib/sponsorCard';
 
 /**
  * Admin page for managing sponsors and carousels.
@@ -547,9 +547,14 @@ export default function PlamAdminSponsors() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-green-dark truncate">{sponsor.name}</p>
-                        {hasSponsorCardContent(sponsor) && (
+                        {isSponsorShownInDonations(sponsor) && hasSponsorCardContent(sponsor) && (
                           <span className="inline-flex items-center rounded-full bg-green-forest/10 px-2 py-0.5 text-xs font-medium text-green-dark">
                             Tarjeta en Donaciones
+                          </span>
+                        )}
+                        {sponsor.showInDonations === false && (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                            Oculta en Donaciones
                           </span>
                         )}
                       </div>

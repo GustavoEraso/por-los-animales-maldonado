@@ -631,19 +631,98 @@ export interface SponsorButton extends SponsorLinkConfig {
   variant?: 'primary' | 'secondary';
 }
 
+/** Title block inside a sponsor card section. */
+export interface SponsorTitleBlock {
+  id: string;
+  type: 'title';
+  text: string;
+}
+
+/** Badge block rendered as a rounded pill. */
+export interface SponsorBadgeBlock {
+  id: string;
+  type: 'badge';
+  text: string;
+  /** Background tone for the badge pill. Defaults to forest. */
+  highlightTone?: SponsorHighlightTone;
+}
+
+/** Predefined background tones available for card content. */
+export type SponsorHighlightTone = 'none' | 'cream' | 'amber' | 'caramel' | 'forest' | 'dark';
+
+/** Paragraph block inside a sponsor card section. */
+export interface SponsorDescriptionBlock {
+  id: string;
+  type: 'description';
+  text: string;
+  /** Background tone for this text block. */
+  highlightTone?: SponsorHighlightTone;
+  /** Legacy cream background flag. Defaults to cream when no tone is set. */
+  highlight?: boolean;
+}
+
+/** Button block inside a sponsor card section. */
+export interface SponsorButtonBlock extends SponsorButton {
+  type: 'button';
+}
+
+/** Block that can be placed directly inside a section or inside a group. */
+export type SponsorLeafBlock =
+  | SponsorTitleBlock
+  | SponsorBadgeBlock
+  | SponsorDescriptionBlock
+  | SponsorButtonBlock;
+
+/** Group block that can wrap a set of leaf blocks with an optional cream background. */
+export interface SponsorGroupBlock {
+  id: string;
+  type: 'group';
+  /** Background tone around the group's blocks. */
+  highlightTone?: SponsorHighlightTone;
+  /** Legacy cream background flag. Defaults to cream when no tone is set. */
+  highlight?: boolean;
+  blocks: SponsorLeafBlock[];
+}
+
+/** Ordered content block inside a sponsor card section. */
+export type SponsorBlock = SponsorLeafBlock | SponsorGroupBlock;
+
 /**
  * Editable section rendered inside a sponsor collaborator card.
- * Sections allow adding extra titles, descriptions and buttons while
- * preserving the card's visual identity.
+ * New sections use ordered blocks. Legacy fields are kept for backwards
+ * compatibility and are migrated to blocks when editing.
  */
 export interface SponsorSection {
   id: string;
+  /** Ordered blocks that make up the section content. */
+  blocks?: SponsorBlock[];
+  /**
+   * Legacy section title.
+   * @deprecated Use a title block instead.
+   */
   title?: string;
-  /** Short callout rendered as a green rounded pill, e.g. "1 compra = 1 kg de comida". */
+  /**
+   * Legacy green pill text.
+   * @deprecated Use a badge block instead.
+   */
   badge?: string;
+  /**
+   * Legacy section description.
+   * @deprecated Use a description block instead.
+   */
   description?: string;
-  /** Uses the cream background to highlight the section body. */
+  /**
+   * Background tone around the whole section.
+   */
+  highlightTone?: SponsorHighlightTone;
+  /**
+   * Legacy cream background flag. Defaults to cream when no tone is set.
+   */
   highlight?: boolean;
+  /**
+   * Legacy button list.
+   * @deprecated Use individual button blocks instead.
+   */
   buttons?: SponsorButton[];
 }
 
@@ -676,6 +755,11 @@ export interface SponsorType extends SponsorLinkConfig {
    * When set, it takes precedence over `logoAspect`.
    */
   logoWidth?: number;
+  /**
+   * Whether the collaborator card is shown on the donations page.
+   * When undefined, legacy content detection is used.
+   */
+  showInDonations?: boolean;
   /** Card content sections, rendered in order below the sponsor name. */
   sections?: SponsorSection[];
   image: Img;

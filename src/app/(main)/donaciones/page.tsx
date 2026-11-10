@@ -8,11 +8,11 @@ import ShareButton from '@/elements/ShareButton';
 import PayPalDonationButton from '@/elements/PayPalDonationButton';
 
 import PayPalProvider from '@/components/PaypalProvider';
-import { ArrowUpRightIcon, LanguageIcon, ShieldIcon, WhatsAppIcon } from '@/components/Icons';
+import { ShieldIcon, WhatsAppIcon } from '@/components/Icons';
 import ImpactoBanner from '@/components/ImpactoBanner';
 import LogoCarousel from '@/components/LogoCarousel';
 import SponsorCard from '@/components/SponsorCard';
-import { hasSponsorCardContent } from '@/lib/sponsorCard';
+import { hasSponsorCardContent, isSponsorShownInDonations } from '@/lib/sponsorCard';
 import { getSponsorsData, getCarouselsForPlace } from '@/lib/data/sponsors';
 import { SponsorType } from '@/types';
 import { SITE_URL } from '@/lib/site';
@@ -48,7 +48,9 @@ export default async function Donaciones() {
     getCarouselsForPlace('donaciones'),
   ]);
   const sponsorMap = new Map<string, SponsorType>(sponsors.map((s) => [s.id, s]));
-  const cardSponsors = sponsors.filter(hasSponsorCardContent);
+  const cardSponsors = sponsors.filter(
+    (sponsor) => isSponsorShownInDonations(sponsor) && hasSponsorCardContent(sponsor)
+  );
 
   return (
     <div className="flex flex-col items-center gap-8 w-full min-h-screen bg-white">
@@ -63,140 +65,12 @@ export default async function Donaciones() {
       </section>
       <section className=" w-full flex flex-col items-center justify-center  bg-cream-light py-6">
         <ImpactoBanner />
-        {/* MENSIONES */}
-        <h3 id="mensiones" className="mt-4 text-2xl font-bold text-green-dark text-center">
-          MENCIONANOS Y AYUDANOS!!!
-        </h3>
-        <section className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-7xl py-6 px-3 gap-4 text-green-dark">
-          <article className="flex flex-col items-center justify-between bg-white rounded-lg shadow-lg w-full py-8 px-4 gap-6">
-            {/* Header */}
-            <header className="flex flex-col items-center gap-4 w-full">
-              <h3 className="font-bold text-2xl text-center text-balance text-green-dark">
-                Mencionanos en Costa Mascotas
-              </h3>
-              <Image
-                className="rounded-xl"
-                src="/logo_costa_mascotas.webp"
-                alt="logo costa mascotas"
-                width={300}
-                height={80}
-              />
-              <mark className="bg-green-forest text-white px-6 py-3 rounded-full">
-                <p className="font-extrabold text-xl text-center lg:text-2xl">
-                  1 COMPRA = 1KG DE COMIDA
-                </p>
-              </mark>
-            </header>
 
-            {/* Instrucciones */}
-            <main className="w-full max-w-md flex flex-col gap-6 py-4">
-              <h3 className="font-extrabold text-2xl text-center text-green-dark">¿Cómo ayudo?</h3>
-
-              {/* Por la web */}
-              <section className="flex flex-col items-center justify-center bg-cream-light p-4 rounded-lg">
-                <h4 className="font-extrabold text-xl text-green-dark mb-3 flex items-center gap-2">
-                  <LanguageIcon size={24} color="currentColor" /> Por la web
-                </h4>
-                <p className="text-base mb-2">
-                  Comprá en la web de Costa Mascotas usando el código de descuento:
-                </p>
-                <mark className="bg-amber-sunset text-white px-4 py-2 rounded-md text-center font-bold text-xl my-3 block">
-                  PLAM1K
-                </mark>
-                <SmartLink
-                  href="https://www.costamascotas.uy"
-                  className="text-caramel-deep hover:text-amber-sunset font-bold text-lg underline flex justify-center"
-                >
-                  <ArrowUpRightIcon size={24} color="currentColor" /> costamascotas.uy
-                </SmartLink>
-              </section>
-
-              {/* Por WhatsApp */}
-              <section className="flex flex-col items-center justify-center bg-cream-light p-4 rounded-lg">
-                <h4 className="font-extrabold text-xl text-green-dark mb-3 flex items-center gap-2">
-                  <WhatsAppIcon size={24} color="currentColor" /> Por WhatsApp
-                </h4>
-                <p className="text-base mb-2">
-                  Deciles que vas de parte de{' '}
-                  <strong className="text-green-dark">Por los Animales Maldonado</strong>
-                </p>
-                <SmartLink
-                  href="https://wa.me/59899530841"
-                  className="flex items-center gap-2 max-w-fit bg-green-500 hover:bg-green-600 text-white font-bold text-lg px-4 py-2 rounded-md mt-2"
-                >
-                  <WhatsAppIcon size={20} color="white" /> 099 530 841
-                </SmartLink>
-              </section>
-            </main>
-
-            {/* Footer explicativo */}
-            <footer className="bg-green-forest/10 p-6 rounded-lg text-center max-w-md">
-              <p className="text-lg font-semibold text-green-dark">
-                Tu ayuda es muy importante. Por cada compra con el código{' '}
-                <strong className="font-bold text-amber-sunset">PLAM1K</strong>, se dona 1kg de
-                comida para nuestros rescatados
-              </p>
-            </footer>
-          </article>
-
-          <article className="flex flex-col items-center justify-between bg-white rounded-lg shadow-lg w-full py-8 px-4 gap-6">
-            {/* Header */}
-            <header className="flex flex-col items-center gap-4 w-full">
-              <h3 className="font-bold text-2xl text-center text-balance text-green-dark">
-                Mencionanos en Consentidos
-              </h3>
-              <Image
-                className="rounded-xl"
-                src="/consentidos_logo.webp"
-                alt="logo consentidos"
-                width={300}
-                height={80}
-              />
-              <mark className="bg-green-forest text-white px-6 py-3 rounded-full">
-                <p className="font-extrabold text-xl text-center lg:text-2xl">
-                  1 COMPRA = 1KG DE COMIDA
-                </p>
-              </mark>
-            </header>
-
-            {/* Instrucciones */}
-            <main className="w-full max-w-md flex flex-col gap-6 py-4">
-              <h3 className="font-extrabold text-2xl text-center text-green-dark">¿Cómo ayudo?</h3>
-
-              {/* Por WhatsApp */}
-              <section className="flex flex-col items-center justify-center bg-cream-light p-4 rounded-lg">
-                <h4 className="font-extrabold text-xl text-green-dark mb-3 flex items-center gap-2">
-                  <WhatsAppIcon size={24} color="currentColor" /> Por WhatsApp
-                </h4>
-                <p className="text-base mb-2">
-                  Deciles que vas de parte de{' '}
-                  <strong className="text-green-dark">Por los Animales Maldonado</strong>
-                </p>
-                <SmartLink
-                  href="https://wa.me/59899128780"
-                  className="flex items-center gap-2 max-w-fit bg-green-500 hover:bg-green-600 text-white font-bold text-lg px-4 py-2 rounded-md mt-2"
-                >
-                  <WhatsAppIcon size={20} color="white" /> 099 128 780
-                </SmartLink>
-              </section>
-            </main>
-
-            {/* Footer explicativo */}
-            <footer className="bg-green-forest/10 p-6 rounded-lg text-center max-w-md">
-              <p className="text-lg font-semibold text-green-dark">
-                Tu ayuda es muy importante. Por cada compra{' '}
-                <strong className="font-bold text-amber-sunset">que nos mensiones</strong>, se dona
-                1kg de comida para nuestros rescatados
-              </p>
-            </footer>
-          </article>
-        </section>
-
-        {/* COLLABORATOR CARDS */}
+        {/* MENCIONANOS Y AYUDANOS */}
         {cardSponsors.length > 0 && (
           <section className="w-full max-w-7xl px-3 py-6">
-            <h3 className="text-3xl font-bold text-green-dark text-center">
-              NUESTROS COLABORADORES
+            <h3 id="mensiones" className="text-3xl font-bold text-green-dark text-center">
+              MENCIONANOS Y AYUDANOS!!!
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 w-full py-6 gap-4">
               {cardSponsors.map((sponsor) => (

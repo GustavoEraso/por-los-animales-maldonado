@@ -1,7 +1,16 @@
 import Image from 'next/image';
 import SmartLink from '@/lib/SmartLink';
-import { getSponsorSectionButtons, hasSponsorSectionContent } from '@/lib/sponsorCard';
-import { SponsorSection, SponsorType } from '@/types';
+import {
+  getSponsorSectionButtons,
+  hasSponsorBlockContent,
+  hasSponsorSectionContent,
+} from '@/lib/sponsorCard';
+import {
+  SPONSOR_HIGHLIGHT_WRAPPER_CLASSES,
+  resolveSponsorHighlightTone,
+} from '@/lib/sponsorColors';
+import { resolveSponsorHref } from '@/lib/sponsorLink';
+import { SponsorBlock, SponsorButtonBlock, SponsorSection, SponsorType } from '@/types';
 
 interface SponsorCardProps {
   /** Sponsor to render as a collaborator card. */
@@ -18,8 +27,140 @@ interface SponsorCardSectionProps {
   sponsorName: string;
 }
 
+interface SponsorCardBlockProps {
+  block: SponsorBlock;
+  sponsorName: string;
+}
+
 /**
- * Renders one additional section inside a collaborator card.
+ * Renders a single content block inside a collaborator card.
+ *
+ * @param props - Block content and sponsor name used for accessible labels
+ * @returns The block content, or null when there is nothing to render
+ */
+function SponsorCardBlock({
+  block,
+  sponsorName,
+}: SponsorCardBlockProps): React.ReactElement | null {
+  switch (block.type) {
+    case 'title': {
+      const text = block.text.trim();
+      if (!text) return null;
+
+      return <h5 className="text-lg font-bold text-center text-balance">{text}</h5>;
+    }
+    case 'badge': {
+      const text = block.text.trim();
+      if (!text) return null;
+
+      const tone = block.highlightTone ?? 'forest';
+      if (tone === 'none') {
+        return (
+          <mark className="inline-flex max-w-full items-center justify-center bg-transparent text-center text-lg font-extrabold uppercase leading-tight text-balance sm:text-xl">
+            {text}
+          </mark>
+        );
+      }
+
+      return (
+        <mark
+          className={`inline-flex max-w-full items-center justify-center rounded-full px-6 py-3 text-center text-lg font-extrabold uppercase leading-tight text-balance sm:text-xl ${SPONSOR_HIGHLIGHT_WRAPPER_CLASSES[tone]}`}
+        >
+          {text}
+        </mark>
+      );
+    }
+    case 'description': {
+      const text = block.text.trim();
+      if (!text) return null;
+
+      const tone = resolveSponsorHighlightTone(block.highlightTone, block.highlight);
+      const toneClass = tone ? `rounded-lg p-4 ${SPONSOR_HIGHLIGHT_WRAPPER_CLASSES[tone]}` : '';
+
+      return (
+        <div className={`w-full ${toneClass}`}>
+          <p className="text-base leading-relaxed whitespace-pre-line text-center">{text}</p>
+        </div>
+      );
+    }
+    case 'button': {
+      const label = block.label.trim();
+      const href = resolveSponsorHref(block);
+      if (!label || !href) return null;
+
+      return (
+        <SmartLink
+          href={href}
+          variant={block.variant === 'secondary' ? 'secondary' : 'primary'}
+          aria-label={`${label} - ${sponsorName}`}
+        >
+          {label}
+        </SmartLink>
+      );
+    }
+    case 'group': {
+      if (!block.blocks.some(hasSponsorBlockContent)) return null;
+
+      const tone = resolveSponsorHighlightTone(block.highlightTone, block.highlight);
+      const toneClass = tone ? `rounded-lg p-4 ${SPONSOR_HIGHLIGHT_WRAPPER_CLASSES[tone]}` : '';
+
+      return (
+        <div className={`w-full flex flex-col items-center gap-3 ${toneClass}`}>
+          <SponsorCardBlocks blocks={block.blocks} sponsorName={sponsorName} />
+        </div>
+      );
+    }
+  }
+}
+
+interface SponsorCardBlocksProps {
+  blocks: SponsorBlock[];
+  sponsorName: string;
+}
+
+/**
+ * Renders a block list, grouping consecutive buttons into a single row.
+ *
+ * @param props - Blocks to render and sponsor name used for accessible labels
+ * @returns The rendered blocks
+ */
+function SponsorCardBlocks({ blocks, sponsorName }: SponsorCardBlocksProps): React.ReactElement {
+  const renderedBlocks: React.ReactElement[] = [];
+  let buttonRun: SponsorButtonBlock[] = [];
+
+  const flushButtons = (): void => {
+    if (buttonRun.length === 0) return;
+
+    const currentRun = [...buttonRun];
+    buttonRun = [];
+    renderedBlocks.push(
+      <div key={`buttons-${currentRun[0].id}`} className="flex flex-wrap justify-center gap-3">
+        {currentRun.map((button) => (
+          <SponsorCardBlock key={button.id} block={button} sponsorName={sponsorName} />
+        ))}
+      </div>
+    );
+  };
+
+  for (const block of blocks) {
+    if (block.type === 'button') {
+      buttonRun.push(block);
+      continue;
+    }
+
+    flushButtons();
+    renderedBlocks.push(
+      <SponsorCardBlock key={block.id} block={block} sponsorName={sponsorName} />
+    );
+  }
+
+  flushButtons();
+
+  return <>{renderedBlocks}</>;
+}
+
+/**
+ * Renders one section inside a collaborator card.
  *
  * @param props - Section content and sponsor name used for accessible labels
  * @returns The section content, or null when there is nothing to render
@@ -28,6 +169,21 @@ function SponsorCardSection({
   section,
   sponsorName,
 }: SponsorCardSectionProps): React.ReactElement | null {
+  if (section.blocks && section.blocks.length > 0) {
+    if (!section.blocks.some(hasSponsorBlockContent)) return null;
+
+    const tone = resolveSponsorHighlightTone(section.highlightTone, section.highlight);
+    const toneClass = tone
+      ? `rounded-lg p-4 ${SPONSOR_HIGHLIGHT_WRAPPER_CLASSES[tone]}`
+      : 'text-green-dark';
+
+    return (
+      <div className={`w-full flex flex-col items-center gap-3 ${toneClass}`}>
+        <SponsorCardBlocks blocks={section.blocks} sponsorName={sponsorName} />
+      </div>
+    );
+  }
+
   const title = section.title?.trim();
   const badge = section.badge?.trim();
   const description = section.description?.trim();
@@ -37,21 +193,17 @@ function SponsorCardSection({
 
   const sectionLabel = title || sponsorName;
   const hasBody = Boolean(badge) || Boolean(description) || buttons.length > 0;
+  const tone = resolveSponsorHighlightTone(section.highlightTone, section.highlight);
+  const bodyToneClass = tone ? `rounded-lg p-4 ${SPONSOR_HIGHLIGHT_WRAPPER_CLASSES[tone]}` : '';
 
   return (
-    <div className="w-full flex flex-col items-center gap-3">
+    <div className="w-full flex flex-col items-center gap-3 text-green-dark">
       {title && (
         <h5 className="text-lg font-bold text-green-dark text-center text-balance">{title}</h5>
       )}
 
       {hasBody && (
-        <div
-          className={
-            section.highlight
-              ? 'w-full rounded-lg bg-cream-light p-4 flex flex-col items-center gap-3'
-              : 'w-full flex flex-col items-center gap-3'
-          }
-        >
+        <div className={`w-full flex flex-col items-center gap-3 ${bodyToneClass}`}>
           {badge && (
             <mark className="inline-flex max-w-full items-center justify-center rounded-full bg-green-forest px-6 py-3 text-center text-lg font-extrabold uppercase leading-tight text-white text-balance sm:text-xl">
               {badge}
@@ -59,7 +211,7 @@ function SponsorCardSection({
           )}
 
           {description && (
-            <p className="text-base text-green-dark leading-relaxed whitespace-pre-line text-center">
+            <p className="text-base leading-relaxed whitespace-pre-line text-center">
               {description}
             </p>
           )}
@@ -107,12 +259,24 @@ function SponsorCardSection({
  *     sections: [
  *       {
  *         id: 'section-1',
- *         title: 'Cómo ayudar',
- *         badge: '1 compra = 1 kg de comida',
- *         description: 'Elegí una de estas opciones.',
- *         highlight: true,
- *         buttons: [
- *           { id: 'button-1', label: 'Donar', href: 'https://example.com/donar' },
+ *         blocks: [
+ *           { id: 'block-1', type: 'title', text: 'Cómo ayudar' },
+ *           {
+ *             id: 'group-1',
+ *             type: 'group',
+ *             highlight: true,
+ *             blocks: [
+ *               { id: 'block-2', type: 'badge', text: '1 compra = 1 kg de comida' },
+ *               { id: 'block-3', type: 'description', text: 'Elegí una de estas opciones.' },
+ *               {
+ *                 id: 'button-1',
+ *                 type: 'button',
+ *                 label: 'Donar',
+ *                 href: 'https://example.com/donar',
+ *                 variant: 'primary',
+ *               },
+ *             ],
+ *           },
  *         ],
  *       },
  *     ],
