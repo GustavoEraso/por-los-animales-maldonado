@@ -611,12 +611,157 @@ export interface BannerType {
 }
 
 /**
- * Sponsor entity representing a partner organization displayed in the homepage carousel.
+ * Link configuration shared by sponsors and section buttons.
  */
-export interface SponsorType {
+export interface SponsorLinkConfig {
+  /** Link mode. Defaults to 'url'. */
+  linkType?: 'url' | 'whatsapp';
+  /** Uruguayan phone number without country code or leading zero. */
+  whatsappNumber?: string;
+}
+
+/**
+ * Link rendered as a button inside a sponsor card section.
+ */
+export interface SponsorButton extends SponsorLinkConfig {
+  id: string;
+  label: string;
+  href: string;
+  /** Visual style of the button. Defaults to 'primary'. */
+  variant?: 'primary' | 'secondary';
+}
+
+/** Title block inside a sponsor card section. */
+export interface SponsorTitleBlock {
+  id: string;
+  type: 'title';
+  text: string;
+}
+
+/** Badge block rendered as a rounded pill. */
+export interface SponsorBadgeBlock {
+  id: string;
+  type: 'badge';
+  text: string;
+  /** Background tone for the badge pill. Defaults to forest. */
+  highlightTone?: SponsorHighlightTone;
+}
+
+/** Predefined background tones available for card content. */
+export type SponsorHighlightTone = 'none' | 'cream' | 'amber' | 'caramel' | 'forest' | 'dark';
+
+/** Paragraph block inside a sponsor card section. */
+export interface SponsorDescriptionBlock {
+  id: string;
+  type: 'description';
+  text: string;
+  /** Background tone for this text block. */
+  highlightTone?: SponsorHighlightTone;
+  /** Legacy cream background flag. Defaults to cream when no tone is set. */
+  highlight?: boolean;
+}
+
+/** Button block inside a sponsor card section. */
+export interface SponsorButtonBlock extends SponsorButton {
+  type: 'button';
+}
+
+/** Block that can be placed directly inside a section or inside a group. */
+export type SponsorLeafBlock =
+  | SponsorTitleBlock
+  | SponsorBadgeBlock
+  | SponsorDescriptionBlock
+  | SponsorButtonBlock;
+
+/** Group block that can wrap a set of leaf blocks with an optional cream background. */
+export interface SponsorGroupBlock {
+  id: string;
+  type: 'group';
+  /** Background tone around the group's blocks. */
+  highlightTone?: SponsorHighlightTone;
+  /** Legacy cream background flag. Defaults to cream when no tone is set. */
+  highlight?: boolean;
+  blocks: SponsorLeafBlock[];
+}
+
+/** Ordered content block inside a sponsor card section. */
+export type SponsorBlock = SponsorLeafBlock | SponsorGroupBlock;
+
+/**
+ * Editable section rendered inside a sponsor collaborator card.
+ * New sections use ordered blocks. Legacy fields are kept for backwards
+ * compatibility and are migrated to blocks when editing.
+ */
+export interface SponsorSection {
+  id: string;
+  /** Ordered blocks that make up the section content. */
+  blocks?: SponsorBlock[];
+  /**
+   * Legacy section title.
+   * @deprecated Use a title block instead.
+   */
+  title?: string;
+  /**
+   * Legacy green pill text.
+   * @deprecated Use a badge block instead.
+   */
+  badge?: string;
+  /**
+   * Legacy section description.
+   * @deprecated Use a description block instead.
+   */
+  description?: string;
+  /**
+   * Background tone around the whole section.
+   */
+  highlightTone?: SponsorHighlightTone;
+  /**
+   * Legacy cream background flag. Defaults to cream when no tone is set.
+   */
+  highlight?: boolean;
+  /**
+   * Legacy button list.
+   * @deprecated Use individual button blocks instead.
+   */
+  buttons?: SponsorButton[];
+}
+
+/**
+ * Sponsor entity representing a partner organization displayed in logo
+ * carousels and collaborator cards.
+ */
+export interface SponsorType extends SponsorLinkConfig {
   id: string;
   name: string;
+  /** Sponsor link used by logo carousels. */
   href?: string;
+  /**
+   * Optional legacy description. New sponsors should use `sections` instead.
+   * @deprecated Use `sections` instead.
+   */
+  description?: string;
+  /**
+   * Optional legacy main button label. New sponsors should use section buttons.
+   * @deprecated Use section buttons instead.
+   */
+  linkLabel?: string;
+  /**
+   * Logo layout used on the collaborator card.
+   * @deprecated Use `logoWidth` for new sponsors.
+   */
+  logoAspect?: 'auto' | 'square' | 'wide';
+  /**
+   * Logo width as a percentage of the card content width (20-100).
+   * When set, it takes precedence over `logoAspect`.
+   */
+  logoWidth?: number;
+  /**
+   * Whether the collaborator card is shown on the donations page.
+   * When undefined, legacy content detection is used.
+   */
+  showInDonations?: boolean;
+  /** Card content sections, rendered in order below the sponsor name. */
+  sections?: SponsorSection[];
   image: Img;
 }
 
