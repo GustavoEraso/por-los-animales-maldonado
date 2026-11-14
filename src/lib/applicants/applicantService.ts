@@ -23,6 +23,7 @@ import { getFirestoreDocById } from '@/lib/firebase/getFirestoreDocById';
 import { postFirestoreData } from '@/lib/firebase/postFirestoreData';
 import { createAuditLog } from '@/lib/firebase/createAuditLog';
 import { logger } from '@/lib/logger';
+import { sumApplicantCounts } from '@/lib/applicants/counts';
 import {
   applicantContactKey,
   contactIndexDocId,
@@ -1152,8 +1153,8 @@ export async function mergeApplicantProfiles(
       nameAliases: combinedAliases,
       notes: combinedNotes,
       formsCount: (target.formsCount ?? 0) + (source.formsCount ?? 0),
-      adoptionCount: (target.adoptionCount ?? 0) + (source.adoptionCount ?? 0),
-      returnCount: (target.returnCount ?? 0) + (source.returnCount ?? 0),
+      adoptionCount: sumApplicantCounts(target.adoptionCount, source.adoptionCount),
+      returnCount: sumApplicantCounts(target.returnCount, source.returnCount),
       identityStatus: mergedIdentityStatus,
       ...(mergedIdentityStatus === 'needs_review'
         ? {

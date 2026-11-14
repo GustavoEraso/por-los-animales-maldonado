@@ -37,8 +37,14 @@ interface Props<T> {
  * await postFirestoreData<AnimalTransactionType>({ data: updatedTransaction, currentCollection: 'animalTransactions', id: 'txn456' });
  */
 /**
- * Removes undefined values recursively from objects and arrays so the result
- * can be written to Firestore (which rejects undefined fields).
+ * Removes undefined values recursively from plain objects and arrays so the
+ * result can be written to Firestore (which rejects undefined fields).
+ *
+ * Non-plain objects (Firestore `FieldValue` sentinels, `Timestamp`, `GeoPoint`,
+ * `DocumentReference`, etc.) are returned untouched. Rebuilding them as plain
+ * objects would silently destroy their behavior: for example, `increment(1)`
+ * would be persisted as a map like `{ _methodName: 'increment', Cc: 1 }`
+ * instead of being applied as an atomic increment.
  *
  * @param value - Any value that may contain undefined nested fields
  * @returns The same value with all undefined fields removed
@@ -47,17 +53,24 @@ export function removeUndefinedDeep<V>(value: V): V {
   if (value === null || value === undefined) return value;
 
   if (Array.isArray(value)) {
-    const items = value.map((v: unknown) => removeUndefinedDeep<unknown>(v));
-    return items.filter((v): v is Exclude<unknown, undefined> => v !== undefined) as unknown as V;
+    const items = value.map((item: unknown) => removeUndefinedDeep<unknown>(item));
+    return items.filter(
+      (item): item is Exclude<unknown, undefined> => item !== undefined
+    ) as unknown as V;
   }
 
   if (typeof value === 'object') {
-    const obj: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      const cleaned = removeUndefinedDeep(v as unknown);
-      if (cleaned !== undefined) obj[k] = cleaned;
+    const prototype = Reflect.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      return value;
     }
-    return obj as V;
+
+    const cleanedObject: Record<string, unknown> = {};
+    for (const [key, entryValue] of Object.entries(value as Record<string, unknown>)) {
+      const cleanedValue = removeUndefinedDeep(entryValue as unknown);
+      if (cleanedValue !== undefined) cleanedObject[key] = cleanedValue;
+    }
+    return cleanedObject as V;
   }
 
   return value;

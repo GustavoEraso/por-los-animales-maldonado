@@ -9,6 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { getFirestorePage } from '@/lib/firebase/getFirestoreData';
 import type { FirestoreFilter } from '@/lib/firebase/getFirestoreData';
 import { searchApplicantProfiles } from '@/lib/applicants/search';
+import { getStoredApplicantCount } from '@/lib/applicants/counts';
 import { logger } from '@/lib/logger';
 import type { ApplicantProfile } from '@/types';
 
@@ -26,7 +27,7 @@ function matchesListFilter(profile: ApplicantProfile, filter: ListFilter): boole
     case 'merged':
       return profile.identityStatus === 'merged';
     case 'with_adoptions':
-      return (profile.adoptionCount ?? 0) > 0;
+      return (getStoredApplicantCount(profile.adoptionCount) ?? 0) > 0;
     default:
       return true;
   }
@@ -322,6 +323,7 @@ function PostulantesList() {
               ?.filter((contact) => contact.type === 'phone')
               .map((contact) => contact.value);
             const isBlacklisted = profile.blacklist?.active ?? false;
+            const adoptionCount = getStoredApplicantCount(profile.adoptionCount) ?? 0;
 
             return (
               <li key={profile.id}>
@@ -349,9 +351,9 @@ function PostulantesList() {
                           Fusionado
                         </span>
                       )}
-                      {(profile.adoptionCount ?? 0) > 0 && (
+                      {adoptionCount > 0 && (
                         <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-800 shrink-0">
-                          {profile.adoptionCount} adop.
+                          {adoptionCount} adop.
                         </span>
                       )}
                     </div>

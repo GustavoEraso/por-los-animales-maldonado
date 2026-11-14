@@ -20,6 +20,7 @@ import {
   resolveApplicantReview,
 } from '@/lib/applicants/applicantService';
 import { getApplicantContactStatus } from '@/lib/applicants/contacts';
+import { resolveApplicantCount } from '@/lib/applicants/counts';
 import ApplicantContactsSection from '@/components/ApplicantContactsSection';
 import type {
   ApplicantContactIndexEntry,
@@ -546,8 +547,10 @@ export default function PostulanteDetailContent({ applicantId }: { applicantId: 
   const isBlacklisted = profile.blacklist?.active ?? false;
   const identityStatus = profile.identityStatus ?? 'active';
   const formsCount = profile.formsCount ?? forms.length;
-  const adoptionCount = profile.adoptionCount ?? 0;
-  const returnCount = profile.returnCount ?? 0;
+  // Stored counters can be corrupted by legacy writes, so fall back to the
+  // adoption/return transactions already loaded for this profile.
+  const adoptionCount = resolveApplicantCount(profile.adoptionCount, transactions, 'adoption');
+  const returnCount = resolveApplicantCount(profile.returnCount, transactions, 'return');
   const activeContactCount = (profile.contacts ?? []).filter(
     (contact) => getApplicantContactStatus(contact) !== 'discarded'
   ).length;
